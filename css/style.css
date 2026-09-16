@@ -335,3 +335,30 @@ body {
 @media (prefers-reduced-motion: reduce) {
   #handle, #toast, .icon-btn { transition: none; }
 }
+
+/* --- site nav, top left --- */
+.site-nav {
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top));
+  left: max(14px, env(safe-area-inset-left));
+  z-index: 30;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--mist);
+  opacity: 0.5;
+  transition: opacity 0.18s ease, background 0.18s ease;
+}
+.site-nav:hover, .site-nav:focus-within { opacity: 1; background: var(--mist-hover); }
+.site-nav a {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  text-decoration: none;
+  color: var(--graphite);
+  white-space: nowrap;
+}
+.site-nav a:hover { background: var(--mist-hover); color: var(--ink); }
+.site-nav a.active { background: var(--ink); color: var(--paper); }

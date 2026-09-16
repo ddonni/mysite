@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>로비</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/lobby.css">
+</head>
+<body>
+
+<div id="stage">
+  <canvas id="canvas3d"></canvas>
+  <div id="loading">로비 불러오는 중…</div>
+</div>
+
+<div id="ui">
+  <div id="header">
+    <div class="eyebrow">Lobby</div>
+    <h1>로비</h1>
+    <p>그림 그리는 방과 기록을 남기는 방, 둘 중 하나로 들어가 보세요.</p>
+  </div>
+
+  <div id="hint">드래그해서 둘러보기 · 가구를 클릭해서 입장</div>
+
+  <div id="cta">
+    <button class="room-btn" data-room="sketchbook" aria-pressed="false"><span class="dot"></span>스케치북</button>
+    <button class="room-btn" data-room="library" aria-pressed="false"><span class="dot"></span>기록 보관소</button>
+  </div>
+
+  <div id="card" data-room="sketchbook">
+    <div class="room-tag">Room</div>
+    <h2 id="cardTitle">스케치북</h2>
+    <p id="cardBody">번호 매긴 페이지를 넘기며 자유롭게 그리는 캔버스 방이에요.</p>
+    <div class="card-actions">
+      <button id="cardBack">돌아가기</button>
+      <button id="cardEnter">입장하기</button>
+    </div>
+  </div>
+</div>
+
+<div id="fallbackLinks">
+  <p>이 브라우저에서는 3D 로비를 표시할 수 없어요. 바로 이동해 주세요.</p>
+  <a href="sketchbook.html">스케치북</a>
+  <a href="library.html">기록 보관소</a>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.152.2/three.min.js"></script>
+<script src="js/lobby.js"></script>
+</body>
+</html>

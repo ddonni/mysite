@@ -23,6 +23,22 @@ body{
   padding: 40px 20px 100px;
 }
 
+/* site nav */
+.site-nav{
+  display:flex; gap:4px;
+  padding:12px 20px;
+  border-bottom:1px solid var(--line-soft);
+}
+.site-nav a{
+  color: var(--ink-dim);
+  text-decoration:none;
+  font-size:12.5px;
+  padding:5px 10px;
+  border-radius:3px;
+}
+.site-nav a:hover{ background: var(--accent-soft); color: var(--ink); }
+.site-nav a.active{ background: var(--accent-soft); color: var(--ink); font-weight:600; }
+
 /* header */
 .top{
   display:flex; align-items:baseline; justify-content:space-between;
