@@ -21,17 +21,36 @@
 ## 파일 구조
 
 ```
-index.html        # 3D 로비 마크업
-sketchbook.html    # 스케치북 마크업
-library.html       # 기록 보관소 마크업
-css/lobby.css      # 로비 스타일
-css/style.css      # 스케치북 스타일
-css/library.css    # 기록 보관소 스타일
-js/lobby.js        # 로비 로직 (Three.js)
-js/app.js          # 스케치북 로직
-js/library.js      # 기록 보관소 로직
+index.html          # 3D 로비 마크업
+sketchbook.html      # 스케치북 마크업
+library.html         # 기록 보관소 마크업
+css/lobby.css        # 로비 스타일
+css/style.css        # 스케치북 스타일
+css/library.css      # 기록 보관소 스타일
+
+js/shared/config.js  # API_BASE 등, 여러 방이 공통으로 쓰는 값
+
+js/sketchbook/
+  main.js            # 시작점 — 아래 모듈들을 만들고 서로 연결함
+  store.js           # 저장소: 백엔드 API / 이 기기 로컬 저장, 둘 중 하나
+  canvas.js          # 캔버스에 선 그리기 + 지금 페이지에 뭐가 그려져 있는지
+  pager.js           # 페이지 넘기기/삭제/점프 + canvas의 변경사항을 저장소에 반영
+  dock.js            # 색상·굵기·지우개·되돌리기 등 도구 서랍 UI
+  toast.js           # 화면 아래 잠깐 뜨는 알림
+
+js/library/
+  main.js            # 시작점 — list/modal을 만들고 연결함
+  records.js         # 백엔드와 통신 (목록 조회, 저장, 삭제, 사진 업로드)
+  list.js            # 탭 + 목록 렌더링
+  modal.js           # 추가/수정 모달 (제목·별점·사진·저장)
+
+js/lobby/
+  main.js            # 시작점 — WebGL 확인, 렌더 루프, 페이지 이동
+  scene.js           # 3D 방의 생김새 (바닥/벽/가구/조명/먼지)
+  controls.js        # 카메라 조작 + 가구 클릭 시 카드 UI
 ```
 
-`js/app.js`, `js/library.js` 맨 위 `API_BASE` 상수가 둘 다 같은 백엔드
-서버 주소를 가리킴. 백엔드를 재배포해서 주소가 바뀌면 두 파일 모두
-고쳐야 함.
+각 페이지의 `main.js`가 그 페이지의 "시작점"이자 목차 역할을 함 — 전체
+흐름이 궁금하면 거기부터 열어보면 됨. 백엔드 서버 주소가 바뀌면
+`js/shared/config.js` 한 곳만 고치면 스케치북/기록 보관소 양쪽에 다
+반영됨(예전엔 두 파일에 따로 적혀 있어서 둘 다 고쳐야 했음).
