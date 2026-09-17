@@ -29,7 +29,13 @@ function pad(n) {
 // 서버에 fetch를 날리고, 실패하면 서버가 보낸 에러 메시지(detail)를
 // err.code에 담아 던져주는 작은 헬퍼. 이렇게 해두면 위쪽 코드에서
 // `err.code === 'last_page'` 같은 식으로 "어떤 에러인지" 구분할 수 있음.
-function apiFetch(path, opts) {
+// ownerToken이 있으면 쓰기 요청임을 증명하는 X-Room-Token 헤더로 실어보냄
+// — 남의 방을 읽기 전용으로 볼 때는 이 값이 없어서 서버가 403으로 막음.
+function apiFetch(path, opts, ownerToken) {
+  opts = opts || {};
+  if (ownerToken) {
+    opts.headers = Object.assign({}, opts.headers, { 'X-Room-Token': ownerToken });
+  }
   return fetch(API_BASE + path, opts).then((res) => {
     if (res.ok) return res.json().catch(() => ({}));
     return res.json().catch(() => ({})).then((body) => {
@@ -40,39 +46,44 @@ function apiFetch(path, opts) {
   });
 }
 
-// 서버가 살아있는지 짧게(ms 밀리초 안에) 확인만 해보는 함수.
-// 응답이 오든, 타임아웃이 나든, 네트워크 에러가 나든 — 어쨌든
-// true/false로 딱 떨어지는 답을 주기 때문에 호출하는 쪽에서 다루기 쉬움.
-export function checkApi(ms) {
+// 그 방 코드가 실제로 존재하는 방인지, 서버가 짧게(ms 밀리초 안에)
+// 응답하는지를 확인만 해보는 함수. 응답이 오든, 타임아웃이 나든,
+// 네트워크 에러가 나든 — 어쨌든 true/false로 딱 떨어지는 답을 주기
+// 때문에 호출하는 쪽에서 다루기 쉬움.
+export function checkApi(roomCode, ms) {
   const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
   const timer = ctrl && setTimeout(() => ctrl.abort(), ms);
-  return fetch(API_BASE + '/api/meta', ctrl ? { signal: ctrl.signal } : {})
+  return fetch(API_BASE + '/api/rooms/' + roomCode, ctrl ? { signal: ctrl.signal } : {})
     .then((res) => { clearTimeout(timer); return res.ok; })
     .catch(() => { clearTimeout(timer); return false; });
 }
 
-// 진짜 백엔드(FastAPI + PostgreSQL)에 그림을 저장하는 저장소.
-// 실시간 동기화는 WebSocket으로: 다른 탭/다른 기기가 같은 페이지를 열고
-// 있으면 서로 그림이 실시간으로 반영됨.
-export function makeApiStore() {
+// 진짜 백엔드(FastAPI + PostgreSQL)에 그림을 저장하는 저장소, 특정 방
+// 하나에 스코핑됨. ownerToken이 없으면(남의 방을 구경할 때) 쓰기
+// 메서드들은 서버가 403으로 거부함 — 화면 쪽(dock/pager)에서도 애초에
+// 그 버튼들을 안 보여주지만, 최종 방어선은 항상 서버 쪽에 있음.
+// 실시간 동기화는 WebSocket으로: 다른 탭/다른 기기가 같은 (방, 페이지)를
+// 보고 있으면 서로 그림이 실시간으로 반영됨.
+export function makeApiStore(roomCode, ownerToken) {
+  const base = '/api/rooms/' + roomCode;
   return {
     shared: true,
-    getMeta: () => apiFetch('/api/meta').then((d) => d.count),
+    getMeta: () => apiFetch(base + '/meta').then((d) => d.count),
     subscribeMeta: () => () => {}, // 지금은 메타 정보 실시간 구독은 안 씀 (자리만 맞춰둠)
-    addPage: () => apiFetch('/api/pages', { method: 'POST' }).then((d) => d.count),
-    deletePage: (n) => apiFetch('/api/pages/' + n, { method: 'DELETE' }).then((d) => d.count),
-    getPage: (n) => apiFetch('/api/pages/' + n)
+    addPage: () => apiFetch(base + '/pages', { method: 'POST' }, ownerToken).then((d) => d.count),
+    deletePage: (n) => apiFetch(base + '/pages/' + n, { method: 'DELETE' }, ownerToken).then((d) => d.count),
+    getPage: (n) => apiFetch(base + '/pages/' + n)
       .then((d) => d.strokes || [])
       .catch((err) => { if (err.code === 'page not found') return []; throw err; }),
-    setPage: (n, strokes) => apiFetch('/api/pages/' + n, {
+    setPage: (n, strokes) => apiFetch(base + '/pages/' + n, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ strokes }),
-    }),
+    }, ownerToken),
     subscribePage: (n, cb) => {
       let ws = null;
       try {
-        ws = new WebSocket(WS_BASE + '/ws/pages/' + n);
+        ws = new WebSocket(WS_BASE + '/ws/rooms/' + roomCode + '/pages/' + n);
         ws.addEventListener('message', (ev) => {
           try {
             const msg = JSON.parse(ev.data);

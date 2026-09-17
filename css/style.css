@@ -362,3 +362,31 @@ body {
 }
 .site-nav a:hover { background: var(--mist-hover); color: var(--ink); }
 .site-nav a.active { background: var(--ink); color: var(--paper); }
+
+/* --- room UI (roomNav.js가 site-nav 안에 붙임) --- */
+.site-nav { flex-wrap: wrap; align-items: center; }
+.room-box { display: flex; align-items: center; gap: 4px; padding: 2px 4px 2px 10px; }
+.room-tag { font-size: 11px; color: var(--graphite); white-space: nowrap; }
+.room-tag b { color: var(--ink); }
+.room-tag.readonly { color: var(--accent); }
+.room-copy, .room-home {
+  font-size: 11px; padding: 4px 10px; border-radius: 999px; border: none;
+  background: none; cursor: pointer; color: var(--graphite); text-decoration: none;
+}
+.room-copy:hover, .room-home:hover { background: var(--mist-hover); color: var(--ink); }
+.room-visit { display: flex; gap: 4px; padding: 2px 4px; }
+.room-visit input {
+  width: 84px; padding: 4px 8px; border-radius: 999px; border: 1px solid var(--line);
+  font-size: 11px; background: var(--paper); color: var(--ink); text-transform: uppercase;
+}
+.room-visit button {
+  font-size: 11px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line);
+  background: none; cursor: pointer; color: var(--graphite);
+}
+.room-visit button:hover { background: var(--mist-hover); color: var(--ink); }
+
+/* --- 읽기 전용(남의 방 구경 중): 그리기 도구/페이지 삭제 숨기고 캔버스는
+   클릭해도 반응 없게 --- */
+body.read-only #dock { display: none; }
+body.read-only #canvas { pointer-events: none; touch-action: none; }
+body.read-only #deletePageBtn { display: none; }

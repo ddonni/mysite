@@ -6,7 +6,7 @@
 // 그려졌다"는 소식을 받아서 실제로 store.setPage(현재_페이지_번호, …)를
 // 불러주는 것도 이 모듈의 역할임 (persistChange).
 
-export function createPager({ store, canvas, toast }) {
+export function createPager({ store, canvas, toast, readOnly }) {
   let count = 1;      // 전체 페이지 수
   let currentN = 1;   // 지금 보고 있는 페이지 번호
   let pageUnsub = null; // 실시간 구독을 끊는 함수 (페이지를 옮길 때마다 이전 구독은 정리해야 함)
@@ -72,6 +72,9 @@ export function createPager({ store, canvas, toast }) {
   function nextPage() {
     if (currentN < count) { goToPage(currentN + 1); return; }
     // 마지막 페이지에서 한 번 더 넘기면 = 새 빈 페이지를 만드는 것.
+    // 남의 방을 구경하는 중엔 새 페이지를 못 만듦(서버도 403으로 막지만,
+    // 굳이 요청을 보내고 실패 토스트를 보여줄 필요 없이 여기서 끝냄).
+    if (readOnly) { toast('이 방은 보기만 가능해요'); return; }
     store.addPage().then((newCount) => {
       count = newCount;
       goToPage(count);
@@ -91,6 +94,7 @@ export function createPager({ store, canvas, toast }) {
   const deleteState = { armed: false, timer: null, busy: false };
 
   function deleteCurrentPage() {
+    if (readOnly) return; // 버튼 자체가 숨겨져 있지만, 만일을 위한 방어선
     if (count <= 1) { toast('마지막 남은 페이지는 지울 수 없어요'); return; }
     if (deleteState.busy) return;
     deleteState.busy = true;
@@ -148,8 +152,10 @@ export function createPager({ store, canvas, toast }) {
       if (!isNaN(n) && n >= 1) {
         if (n > count) {
           // 지금 있는 페이지 수보다 큰 번호로 점프하면, 그 번호가 될
-          // 때까지 빈 페이지를 계속 추가하면서 늘려나감.
-          (function grow() {
+          // 때까지 빈 페이지를 계속 추가하면서 늘려나감. 남의 방에서는
+          // 페이지를 늘릴 수 없으니 있는 범위 안으로 자름.
+          if (readOnly) { goToPage(count); }
+          else (function grow() {
             if (count >= n) { goToPage(n); return; }
             store.addPage().then((c) => { count = c; grow(); });
           })();

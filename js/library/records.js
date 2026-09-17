@@ -22,14 +22,32 @@ export const PRESETS = {
   movie: ["기생충","라라랜드","인터스텔라","이터널 선샤인","그랜드 부다페스트 호텔","500일의 썸머","리틀 포레스트","어바웃 타임","헤어질 결심","파리, 텍사스"],
 };
 
+// 이 방 코드를 기준으로 요청 경로를 만들고, 쓰기 요청엔 소유자 토큰을
+// 헤더로 실어 보내는 작은 헬퍼들. main.js가 모듈 로드 시점에 한 번
+// setRoom()으로 방을 정해주면, 이 파일의 나머지 함수들은 그 방을 씀.
+let roomCode = null;
+let ownerToken = null;
+
+export function setRoom(code, token) {
+  roomCode = code;
+  ownerToken = token;
+}
+
+function authHeaders() {
+  return ownerToken ? { 'X-Room-Token': ownerToken } : {};
+}
+
 // 전체 기록 목록을 가져옴.
 export function fetchRecords() {
-  return fetch(API_BASE + '/api/records').then((res) => res.json());
+  return fetch(API_BASE + '/api/rooms/' + roomCode + '/records').then((res) => res.json());
 }
 
 // 기록 하나를 삭제.
 export function deleteRecord(id) {
-  return fetch(API_BASE + '/api/records/' + id, { method: 'DELETE' });
+  return fetch(API_BASE + '/api/rooms/' + roomCode + '/records/' + id, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
 }
 
 // 사진 파일을 서버(S3)에 업로드하고, 나중에 쓸 수 있는 URL을 돌려받음.
@@ -38,7 +56,11 @@ export function deleteRecord(id) {
 export function uploadPhoto(file) {
   const form = new FormData();
   form.append('file', file);
-  return fetch(API_BASE + '/api/uploads', { method: 'POST', body: form })
+  return fetch(API_BASE + '/api/rooms/' + roomCode + '/uploads', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: form,
+  })
     .then((res) => {
       if (!res.ok) throw new Error('photo upload failed');
       return res.json();
@@ -50,10 +72,11 @@ export function uploadPhoto(file) {
 // (editingId가 있을 때). record는 { cat, title, creator, rating, memo,
 // photo_url } 모양의 평범한 객체.
 export function saveRecord(record, editingId) {
-  const url = editingId ? `${API_BASE}/api/records/${editingId}` : `${API_BASE}/api/records`;
+  const base = API_BASE + '/api/rooms/' + roomCode + '/records';
+  const url = editingId ? `${base}/${editingId}` : base;
   return fetch(url, {
     method: editingId ? 'PUT' : 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
     body: JSON.stringify(record),
   }).then((res) => {
     if (!res.ok) throw new Error('save failed');

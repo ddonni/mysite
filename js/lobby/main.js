@@ -5,12 +5,37 @@
 //   4. 카드의 "입장하기"를 누르면 실제로 다른 페이지로 이동시킴
 import { buildScene } from './scene.js';
 import { createRoomInteraction } from './controls.js';
+import { getMyRoom, roomLink } from '../shared/room.js';
 
 const PAGES = { sketchbook: 'sketchbook.html', library: 'library.html' };
 const ROOM_INFO = {
   sketchbook: { title: '스케치북', body: '번호 매긴 페이지를 넘기며 자유롭게 그리는 캔버스 방이에요.' },
   library: { title: '기록 보관소', body: '읽고 본 책·애니·영화를 기록하는 방이에요.' },
 };
+
+// 내 방 코드 표시 + 남의 방 코드로 바로 방문하기. 3D든 폴백 링크 화면이든
+// 둘 다에 있는 .room-info 자리를 똑같이 채움(둘 중 하나만 실제로 보임).
+getMyRoom().then((mine) => {
+  document.querySelectorAll('.room-info').forEach((el) => {
+    el.innerHTML = `
+      <span class="room-tag">내 방 코드 <b>${mine.code}</b></span>
+      <button class="room-copy" type="button">복사</button>
+      <form class="room-visit">
+        <input type="text" maxlength="6" placeholder="방 코드로 방문" aria-label="방 코드">
+        <button type="submit">방문</button>
+      </form>
+    `;
+    el.querySelector('.room-copy').addEventListener('click', () => {
+      (navigator.clipboard ? navigator.clipboard.writeText(mine.code) : Promise.reject())
+        .catch(() => {});
+    });
+    el.querySelector('.room-visit').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const code = el.querySelector('.room-visit input').value.trim().toUpperCase();
+      if (code) window.location.href = roomLink('sketchbook.html', code, mine.code);
+    });
+  });
+});
 
 function webglAvailable() {
   try {

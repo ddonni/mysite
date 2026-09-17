@@ -23,7 +23,7 @@ function ratingText(r) {
   return '★' + r.toFixed(1);
 }
 
-export function createList({ onEdit, onDelete }) {
+export function createList({ onEdit, onDelete, readOnly }) {
   const tabsEl = document.getElementById('tabs');
   const listEl = document.getElementById('list');
 
@@ -88,12 +88,14 @@ export function createList({ onEdit, onDelete }) {
       ${it.photo_url ? `<img class="thumb" src="${it.photo_url}">` : ''}
       <div class="body">
         <div class="memo ${it.memo ? '' : 'empty-memo'}">${it.memo ? escapeHtml(it.memo) : '남긴 감상이 없어요.'}</div>
+        ${readOnly ? '' : `
         <div class="actions" id="actions-${it.id}">
           <span data-act="edit">고쳐 쓰기</span>
           <span data-act="delete">삭제</span>
-        </div>
+        </div>`}
       </div>
     `;
+    if (readOnly) return det; // 남의 방을 보는 중엔 수정/삭제 버튼 자체가 없음
     det.querySelector('[data-act="edit"]').addEventListener('click', (e) => {
       e.stopPropagation();
       onEdit(it); // list.js는 이미 item 전체를 갖고 있으니, id가 아니라 통째로 넘겨줌
