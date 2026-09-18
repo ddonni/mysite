@@ -59,7 +59,14 @@ export function createPager({ store, canvas, toast, readOnly }) {
     currentN = n;
     canvas.loadPage([]); // 실제 내용이 도착하기 전까지 일단 빈 페이지를 보여줌
     updatePagerUI();
-    try { history.replaceState(null, '', '#' + currentN); } catch (e) {}
+    // popstate(뒤/앞으로가기)에 반응해서 부른 경우엔 주소가 이미
+    // 브라우저에 의해 바뀐 뒤이므로, 여기서 또 history를 건드리면 안 됨.
+    if (!opts.fromPopState) {
+      try {
+        if (opts.replace) history.replaceState(null, '', '#' + currentN);
+        else history.pushState(null, '', '#' + currentN); // 페이지 한 장 = 되돌아갈 수 있는 한 걸음
+      } catch (e) {}
+    }
 
     store.getPage(n).then((strokes) => {
       if (n !== currentN) return; // 응답이 오기 전에 또 페이지를 옮겼으면 무시
@@ -103,7 +110,10 @@ export function createPager({ store, canvas, toast, readOnly }) {
       .then((newCount) => {
         count = newCount;
         const target = Math.min(delN, count);
-        goToPage(target, { force: true, animate: false });
+        // 삭제로 페이지 번호들이 밀려났으니, 방금 전까지의 히스토리
+        // 항목이 가리키던 페이지 번호는 더 이상 의미가 없음 — 새로
+        // 쌓지 않고 지금 자리를 그대로 갱신만 함.
+        goToPage(target, { force: true, animate: false, replace: true });
         updatePagerUI();
         toast('페이지를 삭제했어요');
       })
@@ -169,6 +179,14 @@ export function createPager({ store, canvas, toast, readOnly }) {
   });
   pageJump.addEventListener('blur', closeJump);
 
+  // 브라우저 뒤로/앞으로가기로 주소의 #페이지번호가 바뀌면, 실제로
+  // 캔버스도 그 페이지로 갱신함. 이게 없으면 주소만 바뀌고 화면은
+  // 그대로 멈춰 있어서 "뒤로가기가 안 먹는" 것처럼 보임.
+  window.addEventListener('popstate', () => {
+    const n = parseInt((location.hash || '').replace('#', ''), 10);
+    if (!isNaN(n) && n >= 1) goToPage(n, { fromPopState: true });
+  });
+
   return {
     // canvas.js가 "그려진 내용이 바뀌었다"고 알려줄 때 실제로 저장하는
     // 함수. canvas.setOnChange(pager.persistChange) 형태로 main.js에서
@@ -188,7 +206,10 @@ export function createPager({ store, canvas, toast, readOnly }) {
         let initial = 1;
         if (!isNaN(initialHashN) && initialHashN >= 1) initial = Math.min(initialHashN, count);
         updatePagerUI();
-        goToPage(initial, { animate: false, force: true });
+        // 이 페이지에 처음 들어왔을 때 자리 — 새 히스토리 항목을 쌓지 않고
+        // 지금 있는 주소만 정리함(뒤로가기 한 번에 곧장 이 사이트 밖으로
+        // 나가지도, 쓸데없이 한 단계 더 늘지도 않게).
+        goToPage(initial, { animate: false, force: true, replace: true });
         store.subscribeMeta((c2) => { count = Math.max(count, c2); updatePagerUI(); });
       });
     },
