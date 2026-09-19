@@ -22,25 +22,6 @@
   </div>
 </div>
 
-<div id="pager" role="group" aria-label="페이지 넘기기">
-  <button class="nav-btn" id="prevBtn" title="이전 페이지">
-    <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6" /></svg>
-  </button>
-  <span id="pageLabel">1 / 1</span>
-  <input id="pageJump" type="number" min="1" step="1" />
-  <button class="nav-btn" id="nextBtn" title="다음 페이지">
-    <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6" /></svg>
-  </button>
-  <span class="pager-divider"></span>
-  <button class="nav-btn" id="deletePageBtn" title="이 페이지 삭제">
-    <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none">
-      <path d="M6 4v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8l-5-5H7a1 1 0 0 0-1 1Z" />
-      <path d="M13 3v4a1 1 0 0 0 1 1h4" />
-      <path d="M9.5 13.5l5 5M14.5 13.5l-5 5" />
-    </svg>
-  </button>
-</div>
-
 <div id="dock">
   <div id="panel" role="group" aria-label="그리기 도구">
     <div class="row swatches" id="swatches"></div>
@@ -69,15 +50,15 @@
           <path d="m4 17 5-5 4 4 3-3 4 4" />
         </svg>
       </button>
-      <button class="icon-btn danger" id="clearBtn" title="이 페이지 전부 지우기">
-        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 7h16" />
-          <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-          <path d="m6 7 1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" />
-        </svg>
-      </button>
     </div>
   </div>
+  <button class="icon-btn danger" id="clearBtn" title="이 페이지 전부 지우기">
+    <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 7h16" />
+      <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+      <path d="m6 7 1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" />
+    </svg>
+  </button>
   <button id="handle" title="도구 열기/닫기" aria-expanded="false" aria-controls="panel">
     <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none">
       <path d="m14.5 3.5 6 6L8 22H2v-6Z" />

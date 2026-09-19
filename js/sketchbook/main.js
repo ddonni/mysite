@@ -37,16 +37,15 @@ async function main() {
   if (!reachable) toast(readOnly ? '이 방을 지금 불러올 수 없어요' : '서버에 연결할 수 없어 이 기기에만 저장돼요');
 
   const canvas = createCanvas({ toast });
-  const pager = createPager({ store, canvas, toast, readOnly });
-  // canvas는 "그림이 바뀌었다"는 것만 알고, 그걸 실제로 어디에(몇
-  // 페이지에) 저장할지는 pager가 알고 있으므로 이제서야 연결해줌.
+  const pager = createPager({ store, canvas });
+  // canvas는 "그림이 바뀌었다"는 것만 알고, 그걸 실제로 저장할지는
+  // pager가 알고 있으므로 이제서야 연결해줌.
   canvas.setOnChange(pager.persistChange);
 
   initDock({ canvas, toast });
 
   canvas.layout();
-  const hashN = parseInt((location.hash || '').replace('#', ''), 10);
-  await pager.boot(hashN);
+  await pager.boot();
 }
 
 main();

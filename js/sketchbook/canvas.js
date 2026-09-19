@@ -11,7 +11,8 @@
 // 개념을 몰라도 되고, pager.js는 "그림을 어떻게 그리는지"를 몰라도 됨 —
 // 서로의 세부사항에 얽매이지 않게(관심사 분리).
 
-const PAGE_BG = '#fffdfa';
+import { PAGE_BG, drawStroke } from '../shared/strokes.js';
+
 const MAX_STROKES = 300; // 한 페이지에 너무 많은 획이 쌓이면 오래된 것부터 버림
 const MIN_POINT_DIST = 0.004; // 이 거리(0~1 정규화 좌표 기준)보다 가까운 점은 저장 안 함 — 데이터 용량 절약
 const PALETTE = ['#2b2b2e', '#33456b', '#365c3f', '#9c3f34', '#c1712f'];
@@ -71,27 +72,7 @@ export function createCanvas({ toast }) {
   }
 
   function drawFullStroke(st) {
-    if (!st.points || !st.points.length) return;
-    ctx.globalCompositeOperation = st.eraser ? 'destination-out' : 'source-over';
-    ctx.strokeStyle = st.color || 'rgba(0,0,0,1)';
-    ctx.fillStyle = st.color || 'rgba(0,0,0,1)';
-    ctx.lineWidth = st.width;
-    if (st.points.length === 1) {
-      // 점 하나만 찍고 뗀 경우(콕 찍기) — 선이 아니라 동그라미로 그림.
-      const pt = st.points[0];
-      ctx.beginPath();
-      ctx.arc(pt[0] * dispW, pt[1] * dispH, st.width / 2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalCompositeOperation = 'source-over';
-      return;
-    }
-    ctx.beginPath();
-    ctx.moveTo(st.points[0][0] * dispW, st.points[0][1] * dispH);
-    for (let i = 1; i < st.points.length; i++) {
-      ctx.lineTo(st.points[i][0] * dispW, st.points[i][1] * dispH);
-    }
-    ctx.stroke();
-    ctx.globalCompositeOperation = 'source-over';
+    drawStroke(ctx, st, dispW, dispH);
   }
 
   function renderAll() {
@@ -101,14 +82,17 @@ export function createCanvas({ toast }) {
     mergedStrokes().forEach(drawFullStroke);
   }
 
-  // 화면 크기에 맞춰 캔버스 크기를 다시 잡음. A4 비율(가로:세로)을
-  // 유지하면서 화면에 꽉 차게 — 종이 한 장이 화면 안에 딱 들어오는
-  // 느낌을 주려는 것.
+  // 화면 크기에 맞춰 캔버스 크기를 다시 잡음. 가로가 긴 스케치북
+  // 비율(A4를 눕힌 가로:세로)을 유지하면서 화면에 꽉 차게 — 종이
+  // 한 장이 화면 안에 딱 들어오는 느낌을 주려는 것.
   function layout() {
-    const PAGE_W = 1000, PAGE_H = 1414;
-    const padding = 30;
-    const availW = window.innerWidth - padding * 2;
-    const availH = window.innerHeight - padding * 2;
+    const PAGE_W = 1414, PAGE_H = 1000;
+    const padX = 30;
+    // 위아래 여백을 좌우보다 넉넉히 둬서, 페이지가 화면을 꽉 채워도
+    // 좌상단의 .site-nav(페이지 이동 네비바)를 가리지 않게 함.
+    const padY = 70;
+    const availW = window.innerWidth - padX * 2;
+    const availH = window.innerHeight - padY * 2;
     const ratio = PAGE_W / PAGE_H;
     let w = availW, h = w / ratio;
     if (h > availH) { h = availH; w = h * ratio; }
