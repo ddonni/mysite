@@ -6,6 +6,7 @@
   --paper-dim:#b7ac98;
   --ember:#d9793a;
   --gold:#c79a4b;
+  --teal:#4a9fc9;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;background:var(--void);overflow:hidden;}
@@ -71,10 +72,12 @@ body{
 .room-btn .dot{width:7px;height:7px;border-radius:50%;flex:none;}
 .room-btn[data-room="sketchbook"] .dot{background:var(--ember);}
 .room-btn[data-room="library"] .dot{background:var(--gold);}
+.room-btn[data-room="music"] .dot{background:var(--teal);}
 .room-btn:hover{border-color:var(--void-border);background:#241d15;transform:translateY(-1px);}
 .room-btn[aria-pressed="true"]{border-color:currentColor;}
 .room-btn[data-room="sketchbook"][aria-pressed="true"]{color:var(--ember);}
 .room-btn[data-room="library"][aria-pressed="true"]{color:var(--gold);}
+.room-btn[data-room="music"][aria-pressed="true"]{color:var(--teal);}
 
 #card{
   position:absolute;left:50%;bottom:max(78px, calc(env(safe-area-inset-bottom) + 78px));
@@ -90,6 +93,7 @@ body{
 #card .room-tag{font-size:10.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--paper-dim);}
 #card[data-room="sketchbook"] .room-tag{color:var(--ember);}
 #card[data-room="library"] .room-tag{color:var(--gold);}
+#card[data-room="music"] .room-tag{color:var(--teal);}
 #card h2{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:19px;margin:4px 0 6px;}
 #card p{margin:0 0 14px;font-size:12.5px;line-height:1.6;color:var(--paper-dim);}
 #card .card-actions{display:flex;gap:8px;}
@@ -102,6 +106,7 @@ body{
 #cardEnter{color:var(--void);border:none;}
 #card[data-room="sketchbook"] #cardEnter{background:var(--ember);}
 #card[data-room="library"] #cardEnter{background:var(--gold);}
+#card[data-room="music"] #cardEnter{background:var(--teal);}
 #cardEnter:hover{filter:brightness(1.08);}
 
 #fallbackLinks{

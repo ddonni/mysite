@@ -11,6 +11,7 @@ export const CATS = [
   { key: 'book', label: '책' },
   { key: 'anime', label: '애니' },
   { key: 'movie', label: '영화' },
+  { key: 'music', label: '음악' },
 ];
 
 // 제목 입력창에 뭘 타이핑하면 "혹시 이거 아니에요?" 하고 보여주는

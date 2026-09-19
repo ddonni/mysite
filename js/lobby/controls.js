@@ -15,6 +15,7 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
   const FOCUS = {
     sketchbook: { theta: 0.95, phi: 1.05, radius: 4.6, target: new THREE.Vector3(-2.9, 1.1, -0.5) },
     library: { theta: 0.25, phi: 1.0, radius: 4.8, target: new THREE.Vector3(1.9, 1.1, -2.6) },
+    music: { theta: 0.6, phi: 1.02, radius: 4.5, target: new THREE.Vector3(-0.9, 0.9, -2.0) },
   };
   const MIN_R = 4.5, MAX_R = 13, MIN_PHI = 0.55, MAX_PHI = 1.5;
 

@@ -7,12 +7,22 @@
 // 따라 모달 UI를 어떻게 바꿀지"만 신경 씀.
 import { CATS, PRESETS, uploadPhoto, saveRecord } from './records.js';
 
+// 카테고리마다 "작가/감독/제작" 칸의 라벨과 placeholder가 다름 — 음악은
+// 그 자리에 가수 이름을 받음.
+const CREATOR_FIELD = {
+  book: { label: '작가 / 감독 / 제작', placeholder: '예: 미야자키 하야오' },
+  anime: { label: '작가 / 감독 / 제작', placeholder: '예: 미야자키 하야오' },
+  movie: { label: '작가 / 감독 / 제작', placeholder: '예: 미야자키 하야오' },
+  music: { label: '가수', placeholder: '예: 아이유' },
+};
+
 export function createModal({ onSaved }) {
   const overlay = document.getElementById('overlay');
   const catTabsEl = document.getElementById('catTabs');
   const presetListEl = document.getElementById('presetList');
   const fTitle = document.getElementById('fTitle');
   const fCreator = document.getElementById('fCreator');
+  const creatorLabel = document.getElementById('creatorLabel');
   const fMemo = document.getElementById('fMemo');
   const starPicker = document.getElementById('starPicker');
   const fPhoto = document.getElementById('fPhoto');
@@ -34,7 +44,13 @@ export function createModal({ onSaved }) {
   let currentPhotoFile = null;
   let currentPhotoUrl = null;
 
-  // ---- 카테고리 탭(책/애니/영화) ----
+  function updateCreatorField() {
+    const field = CREATOR_FIELD[currentCat] || CREATOR_FIELD.book;
+    creatorLabel.textContent = field.label;
+    fCreator.placeholder = field.placeholder;
+  }
+
+  // ---- 카테고리 탭(책/애니/영화/음악) ----
   CATS.forEach((cat) => {
     const btn = document.createElement('button');
     btn.textContent = cat.label;
@@ -43,6 +59,7 @@ export function createModal({ onSaved }) {
     btn.addEventListener('click', () => {
       currentCat = cat.key;
       [...catTabsEl.children].forEach((b) => b.classList.toggle('active', b.dataset.key === cat.key));
+      updateCreatorField();
       renderPresetList(fTitle.value.trim());
     });
     catTabsEl.appendChild(btn);
@@ -144,6 +161,7 @@ export function createModal({ onSaved }) {
     currentCat = 'book';
     currentRating = 0;
     [...catTabsEl.children].forEach((b) => b.classList.toggle('active', b.dataset.key === currentCat));
+    updateCreatorField();
     fTitle.value = '';
     fCreator.value = '';
     fMemo.value = '';
@@ -209,6 +227,7 @@ export function createModal({ onSaved }) {
       currentCat = item.cat;
       currentRating = item.rating || 0;
       [...catTabsEl.children].forEach((b) => b.classList.toggle('active', b.dataset.key === currentCat));
+      updateCreatorField();
       fTitle.value = item.title;
       fCreator.value = item.creator || '';
       fMemo.value = item.memo || '';

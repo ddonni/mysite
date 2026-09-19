@@ -17,9 +17,14 @@ initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: 'library.
   setRoom(viewingCode, readOnly ? null : mine.token);
   document.body.classList.toggle('read-only', readOnly);
 
+  // 로비의 턴테이블처럼 특정 카테고리를 먼저 보여주고 싶을 때
+  // library.html?cat=music 형태로 들어옴.
+  const initialTab = new URLSearchParams(location.search).get('cat');
+
   const modal = createModal({ onSaved: reload });
   list = createList({
     readOnly,
+    initialTab,
     onEdit: (item) => modal.openEdit(item),
     onDelete: (id) => deleteRecord(id).then(reload),
   });

@@ -6,11 +6,13 @@
 import { buildScene } from './scene.js';
 import { createRoomInteraction } from './controls.js';
 import { getMyRoom, roomLink } from '../shared/room.js';
+import { API_BASE } from '../shared/config.js';
 
-const PAGES = { sketchbook: 'sketchbook.html', library: 'library.html' };
+const PAGES = { sketchbook: 'sketchbook.html', library: 'library.html', music: 'library.html?cat=music' };
 const ROOM_INFO = {
   sketchbook: { title: '스케치북', body: '번호 매긴 페이지를 넘기며 자유롭게 그리는 캔버스 방이에요.' },
   library: { title: '기록 보관소', body: '읽고 본 책·애니·영화를 기록하는 방이에요.' },
+  music: { title: '턴테이블', body: '모아둔 노래를 들어보는 공간이에요.' },
 };
 
 // 내 방 코드 표시 + 남의 방 코드로 바로 방문하기. 3D든 폴백 링크 화면이든
@@ -73,7 +75,23 @@ function boot() {
 
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 60);
 
-  const { scene, interactiveGroups, updateMotes } = buildScene();
+  const { scene, interactiveGroups, updateMotes, updateTurntable, setSketchbookPreview, setFeaturedSong } = buildScene();
+
+  // 이젤 보드에 실제 내 방 1페이지 그림을 채워넣음. 실시간 동기화는
+  // 필요 없어서(로비에서 그리는 기능도 없음) 로드 시 한 번만 조회.
+  getMyRoom()
+    .then((mine) => fetch(`${API_BASE}/api/rooms/${mine.code}/pages/1`))
+    .then((res) => (res.ok ? res.json() : null))
+    .then((page) => { if (page) setSketchbookPreview(page.strokes || []); })
+    .catch(() => {}); // 실패해도 이젤은 그냥 빈 종이로 남아있을 뿐, 로비 자체는 멀쩡히 작동함
+
+  // 턴테이블에 대표곡(가장 최근에 추가한 음악 기록)을 채워넣음 —
+  // 목록은 이미 최신순 정렬이라 첫 번째 항목이 곧 최신곡.
+  getMyRoom()
+    .then((mine) => fetch(`${API_BASE}/api/rooms/${mine.code}/records?cat=music`))
+    .then((res) => (res.ok ? res.json() : []))
+    .then((records) => { if (records && records.length) setFeaturedSong(records[0]); })
+    .catch(() => {}); // 실패해도 턴테이블은 기본 상태로 남을 뿐, 로비 자체는 멀쩡히 작동함
 
   // 카드에서 "입장하기"를 누르면 실제로 페이지를 옮기는 함수. 화면을
   // 살짝 어둡게 페이드아웃한 뒤 이동시켜서, 뚝 끊기지 않고 자연스럽게
@@ -120,6 +138,7 @@ function boot() {
 
     interaction.update(dt);
     updateMotes(dt);
+    updateTurntable(dt);
     renderer.render(scene, camera);
   }
   requestAnimationFrame(tick);

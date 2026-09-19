@@ -8,6 +8,7 @@
 // (main.js)이 onEdit/onDelete 콜백으로 정해줌 — list.js는 "언제
 // 눌렸는지"만 알려주고 "그래서 뭘 할지"는 모름.
 import { CATS } from './records.js';
+import { defaultAlbumDataUrl } from '../shared/album.js';
 
 function escapeHtml(str) {
   // 사용자가 입력한 제목/감상 등을 그대로 innerHTML에 넣으면 안 되므로
@@ -23,11 +24,11 @@ function ratingText(r) {
   return '★' + r.toFixed(1);
 }
 
-export function createList({ onEdit, onDelete, readOnly }) {
+export function createList({ onEdit, onDelete, readOnly, initialTab }) {
   const tabsEl = document.getElementById('tabs');
   const listEl = document.getElementById('list');
 
-  let activeTab = 'all';
+  let activeTab = initialTab || 'all';
   let openId = null; // 지금 펼쳐진(아코디언 열린) 기록의 id, 없으면 null
   let currentItems = [];
 
@@ -84,8 +85,11 @@ export function createList({ onEdit, onDelete, readOnly }) {
   function renderDetailRow(it) {
     const det = document.createElement('div');
     det.className = 'detail-row';
+    // 음악은 항상 앨범 이미지 자리를 보여줌 — 없으면 기본 이미지로 채움
+    // (책/애니/영화는 사진이 없으면 원래부터 썸네일 자체를 안 보여줌).
+    const thumbSrc = it.photo_url || (it.cat === 'music' ? defaultAlbumDataUrl() : null);
     det.innerHTML = `
-      ${it.photo_url ? `<img class="thumb" src="${it.photo_url}">` : ''}
+      ${thumbSrc ? `<img class="thumb" src="${thumbSrc}">` : ''}
       <div class="body">
         <div class="memo ${it.memo ? '' : 'empty-memo'}">${it.memo ? escapeHtml(it.memo) : '남긴 감상이 없어요.'}</div>
         ${readOnly ? '' : `

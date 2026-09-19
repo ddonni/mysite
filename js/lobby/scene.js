@@ -9,8 +9,13 @@
 // THREE는 index.html에서 <script>로 먼저 불러온 전역 변수라서 따로
 // import할 필요 없음 (UMD 빌드라 window.THREE에 붙어 있음).
 
+import { PAGE_BG, drawStroke } from '../shared/strokes.js';
+import { drawDefaultAlbumArt } from '../shared/album.js';
+
 const VOID = 0x120f0c;
 const FLOOR_W = 9, FLOOR_D = 6.6, WALL_H = 4.1;
+const BOARD_TEX_W = 260, BOARD_TEX_H = 200; // sketchbook.js 페이지 비율(가로가 긴 쪽)과 맞춤
+const PLATTER_TEX_SIZE = 256;
 
 // 캔버스 2D로 그림을 그려서 THREE 텍스처로 만드는 공용 헬퍼.
 // (이미지 파일 없이도 라벨 글자나 그라데이션 같은 걸 만들 수 있음)
@@ -72,6 +77,37 @@ function labelSprite(text, colorHex) {
   return sprite;
 }
 
+// labelSprite와 같은 알약 모양이지만, 제목/가수처럼 두 줄이 필요할 때
+// 쓰는 버전 (턴테이블의 대표곡 표시용).
+function twoLineLabelSprite(line1, line2, colorHex) {
+  const tex = makeCanvasTexture((ctx, w, h) => {
+    ctx.clearRect(0, 0, w, h);
+    const r = 30;
+    ctx.fillStyle = 'rgba(18,15,12,0.62)';
+    ctx.strokeStyle = colorHex;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(r, 6);
+    ctx.arcTo(w - 6, 6, w - 6, h - 6, r);
+    ctx.arcTo(w - 6, h - 6, 6, h - 6, r);
+    ctx.arcTo(6, h - 6, 6, 6, r);
+    ctx.arcTo(6, 6, w - 6, 6, r);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#f3ece0';
+    ctx.font = '600 38px Manrope, sans-serif';
+    ctx.fillText(line1, w / 2, h * 0.38);
+    ctx.fillStyle = 'rgba(243,236,224,0.75)';
+    ctx.font = '500 28px Manrope, sans-serif';
+    ctx.fillText(line2, w / 2, h * 0.72);
+  }, 560, 200);
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+  sprite.scale.set(2.1, 0.75, 1);
+  return sprite;
+}
+
 // 방의 뼈대: 나무 바닥(판자 여러 개를 이어붙여 살짝 얼룩덜룩하게),
 // 뒷벽 + 왼쪽 벽(카메라가 있는 쪽은 뚫려 있어야 안이 들여다보임),
 // 걸레받이, 가운데 러그.
@@ -124,6 +160,16 @@ function buildRoomShell() {
 // 텍스처) + 스툴. userData.room = 'sketchbook' 을 붙여둬서, 나중에
 // controls.js가 레이캐스팅(마우스가 가리키는 3D 오브젝트 찾기)으로
 // "이게 어느 방 소속인지" 바로 알 수 있게 함.
+// 이젤 보드에 실제 스케치북 1페이지 내용을 그려주는 헬퍼. 로비가 뜬
+// 직후엔 빈 종이로 시작했다가, main.js가 서버에서 스트로크를 받아오면
+// 이 함수로 다시 그려서 보드 텍스처를 갱신함.
+function drawBoardPreview(ctx, strokes) {
+  ctx.clearRect(0, 0, BOARD_TEX_W, BOARD_TEX_H);
+  ctx.fillStyle = PAGE_BG;
+  ctx.fillRect(0, 0, BOARD_TEX_W, BOARD_TEX_H);
+  (strokes || []).forEach((st) => drawStroke(ctx, st, BOARD_TEX_W, BOARD_TEX_H));
+}
+
 function buildEasel() {
   const easel = new THREE.Group();
   easel.userData.room = 'sketchbook';
@@ -141,23 +187,21 @@ function buildEasel() {
   easel.add(leg(0.34, 0.18, -0.16, 0));
   easel.add(leg(0, -0.32, 0, -0.22));
 
-  const boardTex = makeCanvasTexture((ctx, w, h) => {
-    ctx.fillStyle = '#efe6d4';
-    ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = '#d9793a';
-    ctx.lineWidth = 7;
-    ctx.beginPath(); ctx.moveTo(20, h * 0.7); ctx.quadraticCurveTo(w * 0.35, h * 0.25, w * 0.55, h * 0.5); ctx.quadraticCurveTo(w * 0.7, h * 0.68, w - 20, h * 0.3); ctx.stroke();
-    ctx.strokeStyle = '#c79a4b';
-    ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(30, h * 0.85); ctx.quadraticCurveTo(w * 0.5, h * 0.95, w - 30, h * 0.8); ctx.stroke();
-  }, 200, 260);
+  const boardCanvas = document.createElement('canvas');
+  boardCanvas.width = BOARD_TEX_W; boardCanvas.height = BOARD_TEX_H;
+  const boardCtx = boardCanvas.getContext('2d');
+  drawBoardPreview(boardCtx, []); // 실제 데이터가 도착하기 전까지는 빈 종이로 시작
+  const boardTex = new THREE.CanvasTexture(boardCanvas);
+  boardTex.needsUpdate = true;
   const boardSideMat = new THREE.MeshStandardMaterial({ color: 0x6b5236, roughness: 0.8 });
   const board = new THREE.Mesh(
-    new THREE.BoxGeometry(1.0, 1.3, 0.04),
+    new THREE.BoxGeometry(1.3, 1.0, 0.04),
     [boardSideMat, boardSideMat, boardSideMat, boardSideMat,
       new THREE.MeshStandardMaterial({ map: boardTex, roughness: 0.9 }), boardSideMat]
   );
-  board.position.set(0, 1.35, 0.05);
+  // z를 앞다리(z=0.18)보다 확실히 앞으로 빼서, 다리 막대가 그림을
+  // 가로막지 않고 보드가 다리 앞에 놓인 것처럼 보이게 함.
+  board.position.set(0, 1.2, 0.34); // 바닥 쪽 가장자리(~0.7)는 이전 세로형 보드와 맞춤
   board.rotation.x = -0.12;
   board.castShadow = true;
   easel.add(board);
@@ -177,11 +221,19 @@ function buildEasel() {
 
   easel.add(aoBlob(1.15));
   const label = labelSprite('스케치북', '#d9793a');
-  label.position.set(0, 2.35, 0);
+  label.position.set(0, 2.05, 0); // 보드 상단(~1.7)에서 같은 간격만큼 띄움
   easel.add(label);
 
   easel.position.set(-2.9, 0, -0.5);
   easel.rotation.y = 0.5;
+
+  // main.js가 서버에서 스트로크를 받아온 뒤 이걸 호출해서 보드에 실제
+  // 1페이지 그림을 채워넣음.
+  easel.userData.setPreview = (strokes) => {
+    drawBoardPreview(boardCtx, strokes);
+    boardTex.needsUpdate = true;
+  };
+
   return easel;
 }
 
@@ -240,6 +292,132 @@ function buildBookshelf() {
   return shelf;
 }
 
+// 판(platter) 텍스처에 기본 앨범 이미지를 원형으로 잘라 그려넣음 — 실제
+// 곡의 앨범 이미지가 없거나 아직 안 왔을 때 쓰는 상태.
+function drawPlatterDefault(ctx) {
+  ctx.clearRect(0, 0, PLATTER_TEX_SIZE, PLATTER_TEX_SIZE);
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(PLATTER_TEX_SIZE / 2, PLATTER_TEX_SIZE / 2, PLATTER_TEX_SIZE / 2, 0, Math.PI * 2);
+  ctx.clip();
+  drawDefaultAlbumArt(ctx, PLATTER_TEX_SIZE, PLATTER_TEX_SIZE);
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(PLATTER_TEX_SIZE / 2, PLATTER_TEX_SIZE / 2, PLATTER_TEX_SIZE / 2 - 2, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+// 음악 방을 나타내는 가구: 사이드 테이블 위의 턴테이블(계속 도는 LP +
+// 톤암) + 대표곡 제목/가수 이름표. LP 위에 실제 앨범 이미지를 원형으로
+// 감싸서 보여줌 — 없으면 기본 이미지로.
+function buildTurntable() {
+  const group = new THREE.Group();
+  group.userData.room = 'music';
+
+  const woodMat = new THREE.MeshStandardMaterial({ color: 0x3a2c1f, roughness: 0.75 });
+  const table = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.55, 0.7), woodMat);
+  table.position.set(0, 0.275, 0);
+  table.castShadow = true; table.receiveShadow = true;
+  group.add(table);
+
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x171310, roughness: 0.55 });
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.06, 32), bodyMat);
+  body.position.set(0, 0.585, 0);
+  body.castShadow = true;
+  group.add(body);
+
+  const platterCanvas = document.createElement('canvas');
+  platterCanvas.width = PLATTER_TEX_SIZE; platterCanvas.height = PLATTER_TEX_SIZE;
+  const platterCtx = platterCanvas.getContext('2d');
+  drawPlatterDefault(platterCtx);
+  const platterTex = new THREE.CanvasTexture(platterCanvas);
+  platterTex.needsUpdate = true;
+  const platter = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.36, 0.36, 0.015, 48),
+    new THREE.MeshStandardMaterial({ map: platterTex, roughness: 0.5 })
+  );
+  platter.position.set(0, 0.625, 0);
+  platter.castShadow = true;
+  group.add(platter);
+
+  // 톤암: 뒤쪽 모서리에 얹혀서 판 가장자리 쪽으로만 살짝 걸침 — 중앙
+  // 이미지는 안 가림.
+  const armMat = new THREE.MeshStandardMaterial({ color: 0x9c9086, roughness: 0.4, metalness: 0.3 });
+  const armPivot = new THREE.Group();
+  armPivot.position.set(0.34, 0.63, -0.28);
+  armPivot.rotation.y = 0.5;
+  const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.42, 8), armMat);
+  arm.position.set(-0.19, 0, 0);
+  arm.rotation.z = Math.PI / 2;
+  armPivot.add(arm);
+  const armHead = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.02, 0.03), armMat);
+  armHead.position.set(-0.38, 0, 0);
+  armPivot.add(armHead);
+  group.add(armPivot);
+
+  group.add(aoBlob(0.85));
+  let label = twoLineLabelSprite('턴테이블', '노래를 추가해보세요', '#4a9fc9');
+  label.position.set(0, 1.55, 0);
+  group.add(label);
+
+  // 이젤(왼쪽, x=-2.9)과 책장(오른쪽, x=1.9) 사이, 스케치북 쪽으로
+  // 더 뒤로 들어간 구석 자리 — 이젤이 회전해서 놓인 방향(rotation.y=0.5)과
+  // 어긋나 있어서 이젤이 턴테이블을 가리지 않음.
+  group.position.set(-0.9, 0, -2.4);
+  group.rotation.y = 0.2;
+
+  // main.js가 라이브러리의 최근 음악 기록을 받아온 뒤 이걸 호출해서
+  // LP와 이름표를 실제 곡 정보로 채워넣음. song이 없으면(음악 기록이
+  // 하나도 없으면) 기본 상태 그대로 둠.
+  group.userData.setFeaturedSong = (song) => {
+    group.remove(label);
+    label = twoLineLabelSprite(
+      (song && song.title) || '턴테이블',
+      (song && (song.creator || '아티스트 미상')) || '노래를 추가해보세요',
+      '#4a9fc9'
+    );
+    label.position.set(0, 1.55, 0);
+    group.add(label);
+
+    const url = song && song.photo_url;
+    if (!url) {
+      drawPlatterDefault(platterCtx);
+      platterTex.needsUpdate = true;
+      return;
+    }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        platterCtx.clearRect(0, 0, PLATTER_TEX_SIZE, PLATTER_TEX_SIZE);
+        platterCtx.save();
+        platterCtx.beginPath();
+        platterCtx.arc(PLATTER_TEX_SIZE / 2, PLATTER_TEX_SIZE / 2, PLATTER_TEX_SIZE / 2, 0, Math.PI * 2);
+        platterCtx.clip();
+        platterCtx.drawImage(img, 0, 0, PLATTER_TEX_SIZE, PLATTER_TEX_SIZE);
+        platterCtx.restore();
+        // S3 버킷에 CORS 설정이 없는 이미지면 캔버스가 "오염"돼서 이
+        // 텍스처를 GPU에 올리는 순간 에러가 남 — getImageData로 미리
+        // 오염 여부를 확인해서, 문제가 있으면 기본 이미지로 대체함.
+        platterCtx.getImageData(0, 0, 1, 1);
+        platterTex.needsUpdate = true;
+      } catch (e) {
+        drawPlatterDefault(platterCtx);
+        platterTex.needsUpdate = true;
+      }
+    };
+    img.onerror = () => { drawPlatterDefault(platterCtx); platterTex.needsUpdate = true; };
+    img.src = url;
+  };
+
+  // 매 프레임 LP를 천천히 돌림.
+  group.userData.spin = (dt) => { platter.rotation.y += dt * 0.6; };
+
+  return group;
+}
+
 // 조명 한 세트를 장면에 붙임: 은은한 반구 조명(hemi, 전체 밝기),
 // 위에서 비추는 스포트라이트(그림자를 만듦 — "무대 조명" 느낌),
 // 그리고 각 가구 옆에 그 방 색깔을 띤 포인트 라이트.
@@ -263,6 +441,10 @@ function addLighting(scene) {
   const goldLight = new THREE.PointLight(0xc79a4b, 1.0, 6, 2);
   goldLight.position.set(1.9, 2.4, -1.9);
   scene.add(goldLight);
+
+  const tealLight = new THREE.PointLight(0x4a9fc9, 0.9, 5, 2);
+  tealLight.position.set(-0.9, 1.7, -2.4);
+  scene.add(tealLight);
 }
 
 // 스포트라이트 빛줄기 속을 천천히 떠오르는 먼지 입자들 — 조명이 진짜
@@ -295,7 +477,8 @@ export function buildScene() {
   const room = buildRoomShell();
   const easel = buildEasel();
   const shelf = buildBookshelf();
-  room.add(easel, shelf);
+  const turntable = buildTurntable();
+  room.add(easel, shelf, turntable);
   scene.add(room);
 
   addLighting(scene);
@@ -307,7 +490,13 @@ export function buildScene() {
   return {
     scene,
     // 클릭/호버 대상이 되는 가구 그룹들 — controls.js가 레이캐스팅할 때 씀.
-    interactiveGroups: [easel, shelf],
+    interactiveGroups: [easel, shelf, turntable],
+    // main.js가 내 방의 1페이지 스트로크를 받아오면 이걸 호출해서
+    // 이젤 보드에 실제 그림을 채워넣음.
+    setSketchbookPreview: easel.userData.setPreview,
+    // main.js가 라이브러리의 최근 음악 기록을 받아오면 이걸 호출해서
+    // 턴테이블에 실제 대표곡을 채워넣음.
+    setFeaturedSong: turntable.userData.setFeaturedSong,
     // 매 프레임 먼지를 살짝 위로 움직이고, 천장 높이를 넘으면 바닥으로
     // 되돌려서 계속 떠다니는 것처럼 보이게 함.
     updateMotes(dt) {
@@ -318,5 +507,7 @@ export function buildScene() {
       }
       motes.geometry.attributes.position.needsUpdate = true;
     },
+    // 매 프레임 LP를 계속 돌림.
+    updateTurntable: turntable.userData.spin,
   };
 }
