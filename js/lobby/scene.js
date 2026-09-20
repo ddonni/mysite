@@ -12,7 +12,17 @@
 import { PAGE_BG, drawStroke } from '../shared/strokes.js';
 import { drawDefaultAlbumArt } from '../shared/album.js';
 
-const VOID = 0x120f0c;
+// 방 테마 프리셋 — 바닥/벽/러그/배경(안개) 색만 바꿔서 분위기를
+// 갈아끼움. 가구 자체의 나무색이나 각 방(스케치북/기록보관소/음악)의
+// 포인트 조명 색은 테마와 무관하게 항상 같게 둬서, 테마가 바뀌어도
+// "이게 무슨 방인지"는 헷갈리지 않게 함.
+export const THEMES = {
+  wood: { void: 0x120f0c, wall: 0xcdbfa4, floorA: 0x2a2016, floorB: 0x251c13, rug: 0x5a2e22 },
+  night: { void: 0x0a0e16, wall: 0x3a4759, floorA: 0x161b23, floorB: 0x11151b, rug: 0x2c3a5c },
+  pastel: { void: 0x241d1a, wall: 0xf1d9ce, floorA: 0x8a695c, floorB: 0x7b5b4f, rug: 0xd98f88 },
+};
+export const DEFAULT_THEME = 'wood';
+
 const FLOOR_W = 9, FLOOR_D = 6.6, WALL_H = 4.1;
 const BOARD_TEX_W = 260, BOARD_TEX_H = 200; // sketchbook.js 페이지 비율(가로가 긴 쪽)과 맞춤
 const PLATTER_TEX_SIZE = 256;
@@ -75,12 +85,12 @@ function twoLineLabelSprite(line1, line2) {
 // 방의 뼈대: 나무 바닥(판자 여러 개를 이어붙여 살짝 얼룩덜룩하게),
 // 뒷벽 + 왼쪽 벽(카메라가 있는 쪽은 뚫려 있어야 안이 들여다보임),
 // 걸레받이, 가운데 러그.
-function buildRoomShell() {
+function buildRoomShell(palette) {
   const room = new THREE.Group();
 
   const plankCount = 16, plankW = FLOOR_W / plankCount;
   for (let i = 0; i < plankCount; i++) {
-    const shade = (i % 2 === 0) ? 0x2a2016 : 0x251c13;
+    const shade = (i % 2 === 0) ? palette.floorA : palette.floorB;
     const plank = new THREE.Mesh(
       new THREE.BoxGeometry(plankW * 0.96, 0.05, FLOOR_D),
       new THREE.MeshStandardMaterial({ color: shade, roughness: 0.9, metalness: 0.02 })
@@ -90,7 +100,7 @@ function buildRoomShell() {
     room.add(plank);
   }
 
-  const wallMat = new THREE.MeshStandardMaterial({ color: 0xcdbfa4, roughness: 0.95 });
+  const wallMat = new THREE.MeshStandardMaterial({ color: palette.wall, roughness: 0.95 });
   const backWall = new THREE.Mesh(new THREE.BoxGeometry(FLOOR_W, WALL_H, 0.12), wallMat);
   backWall.position.set(0, WALL_H / 2, -FLOOR_D / 2);
   backWall.receiveShadow = true;
@@ -111,7 +121,7 @@ function buildRoomShell() {
 
   const rug = new THREE.Mesh(
     new THREE.CylinderGeometry(1.7, 1.7, 0.03, 40),
-    new THREE.MeshStandardMaterial({ color: 0x5a2e22, roughness: 0.95 })
+    new THREE.MeshStandardMaterial({ color: palette.rug, roughness: 0.95 })
   );
   rug.position.set(-0.4, 0.015, 1.3);
   rug.receiveShadow = true;
@@ -198,12 +208,50 @@ function buildEasel() {
   return easel;
 }
 
-// 기록 보관소 방을 나타내는 가구: 3단 책장 + 무작위로 채운 책들.
+const BOOK_COLORS = [0x8a3a2e, 0xc79a4b, 0x2f4a45, 0x5a3d24, 0x9c5b3c, 0x38343a, 0xb0673f];
+
+// 문자열마다 항상 같은 값이 나오는 간단한 해시 — 책 제목을 색으로
+// 바꿀 때 씀. 매번 랜덤이면 새로고침할 때마다 같은 책이 다른 색으로
+// 보여서 "진짜 내 목록"이라는 느낌이 안 남 — 제목이 같으면 색도 항상
+// 같아야 함.
+function hashString(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+// 책등(스파인) 텍스처 — 실제 제목을 담아서 색 상자만 쭉 늘어선
+// 심심한 모습을 깨줌. 책등은 세로로 긴 모양이라, 실제 책처럼 아래에서
+// 위로 읽히도록 글자를 90도 돌려서 씀.
+function drawBookSpine(ctx, w, h, colorHex, title) {
+  ctx.fillStyle = colorHex;
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = 'rgba(243,236,224,0.16)';
+  ctx.fillRect(0, h * 0.07, w, h * 0.05);
+  ctx.fillRect(0, h * 0.88, w, h * 0.05);
+
+  const label = title.length > 16 ? title.slice(0, 15) + '…' : title;
+  ctx.fillStyle = 'rgba(243,236,224,0.92)';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `600 ${Math.floor(w * 0.6)}px Manrope, sans-serif`;
+  ctx.save();
+  ctx.translate(w / 2, h / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText(label, 0, 0, h * 0.82);
+  ctx.restore();
+}
+
+// 기록 보관소 방을 나타내는 가구: 뒷벽을 꽉 채우는 책장. 칸에 꽂히는
+// 책은 shelf.userData.setBooks(titles)로 실제 기록 제목 목록을 받아
+// 그 개수만큼만 꽂아 넣음 — 기록이 늘어나면 책장도 자연스럽게 채워짐.
+// 데이터가 아직 없을 때(로드 전/실패)는 무작위로 채워서 빈 벽처럼
+// 보이지 않게 함.
 function buildBookshelf() {
   const shelf = new THREE.Group();
   shelf.userData.room = 'library';
   const caseMat = new THREE.MeshStandardMaterial({ color: 0x3a2c1f, roughness: 0.75 });
-  const SW = 2.15, SH = 2.5, SD = 0.36;
+  const SW = 8.2, SH = 2.5, SD = 0.36; // SW: 뒷벽(FLOOR_W=9) 양쪽에 0.4씩만 남기고 꽉 채움
 
   const back = new THREE.Mesh(new THREE.BoxGeometry(SW, SH, 0.04), caseMat);
   back.position.set(0, SH / 2, -SD / 2);
@@ -221,32 +269,116 @@ function buildBookshelf() {
     shelf.add(board);
   });
 
-  const bookColors = [0x8a3a2e, 0xc79a4b, 0x2f4a45, 0x5a3d24, 0x9c5b3c, 0x38343a, 0xb0673f];
+  // 뒷벽 폭 전체에 걸쳐 세워둔 칸막이 — 아무것도 안 채워진 넓은 벽처럼
+  // 보이지 않게, 시각적으로 여러 개의 작은 책장이 이어붙은 느낌을 줌.
+  const BAY_W = 2.1;
+  const bayCount = Math.round(SW / BAY_W);
+  for (let i = 1; i < bayCount; i++) {
+    const divider = new THREE.Mesh(new THREE.BoxGeometry(0.04, SH, SD), caseMat);
+    divider.position.set(-SW / 2 + i * (SW / bayCount), SH / 2, 0);
+    divider.castShadow = true;
+    shelf.add(divider);
+  }
+
   const shelfYs = [0.09, SH * 0.34 + 0.09, SH * 0.67 + 0.09];
-  shelfYs.forEach((y) => {
-    let x = -SW / 2 + 0.14;
-    let guard = 0; // 무한루프 방지용 안전장치 (책 너비가 랜덤이라 이론상 끝이 안 날 수도 있어서)
-    while (x < SW / 2 - 0.14 && guard < 40) {
+  let bookMeshes = [];
+
+  function clearBooks() {
+    bookMeshes.forEach((m) => shelf.remove(m));
+    bookMeshes = [];
+  }
+
+  // 한 칸(level)의 [xStart, xEnd] 구간 안에 책을 최대한 채워 넣음.
+  // titles가 있으면 그 개수만큼만(색·책등 글자를 제목에서 뽑음),
+  // 없으면(기본 상태) 안전장치(guard) 걸린 채로 무작위 채움.
+  function fillLevel(y, xStart, xEnd, titles) {
+    let x = xStart;
+    let guard = 0;
+    let i = 0;
+    const limit = titles ? titles.length : Infinity;
+    while (x < xEnd - 0.02 && guard < 200 && i < limit) {
       guard++;
       const bw = 0.07 + Math.random() * 0.05;
+      if (x + bw > xEnd) break;
       const bh = 0.32 + Math.random() * 0.16;
       const bd = SD - 0.1;
-      const col = bookColors[Math.floor(Math.random() * bookColors.length)];
-      const book = new THREE.Mesh(
-        new THREE.BoxGeometry(bw, bh, bd),
-        new THREE.MeshStandardMaterial({ color: col, roughness: 0.85 })
-      );
+      let book;
+      if (titles) {
+        const title = titles[i];
+        const col = BOOK_COLORS[hashString(title) % BOOK_COLORS.length];
+        const colorHex = '#' + col.toString(16).padStart(6, '0');
+        const sideMat = new THREE.MeshStandardMaterial({ color: col, roughness: 0.85 });
+        // 책등(카메라를 향하는 +z 면)에만 제목 텍스처를 입히고, 나머지
+        // 5면은 그냥 색만 — BoxGeometry 재질 배열 순서는 [+x,-x,+y,-y,+z,-z].
+        const spineTex = makeCanvasTexture((ctx, w, h) => drawBookSpine(ctx, w, h, colorHex, title), 64, 256);
+        const spineMat = new THREE.MeshStandardMaterial({ map: spineTex, roughness: 0.85 });
+        book = new THREE.Mesh(
+          new THREE.BoxGeometry(bw, bh, bd),
+          [sideMat, sideMat, sideMat, sideMat, spineMat, sideMat]
+        );
+      } else {
+        const col = BOOK_COLORS[Math.floor(Math.random() * BOOK_COLORS.length)];
+        book = new THREE.Mesh(
+          new THREE.BoxGeometry(bw, bh, bd),
+          new THREE.MeshStandardMaterial({ color: col, roughness: 0.85 })
+        );
+      }
       book.position.set(x + bw / 2, y + bh / 2, 0);
       book.rotation.y = (Math.random() - 0.5) * 0.05; // 살짝 삐뚤빼뚤하게 꽂힌 느낌
       book.castShadow = true; book.receiveShadow = true;
       shelf.add(book);
+      bookMeshes.push(book);
       x += bw + 0.012;
+      i++;
     }
-  });
+    return i; // 이 칸에 실제로 꽂은 책 수 — 다음 칸에 넘길 titles 인덱스 계산용
+  }
 
-  shelf.add(aoBlob(1.4));
+  // 칸막이로 나뉜 b번째(왼쪽부터 0,1,2...) 책장 구획의 [xStart, xEnd].
+  function bayRange(b) {
+    const bayW = SW / bayCount;
+    return [-SW / 2 + b * bayW + 0.12, -SW / 2 + (b + 1) * bayW - 0.12];
+  }
 
-  shelf.position.set(1.9, 0, -FLOOR_D / 2 + SD / 2 + 0.06);
+  // 위 칸부터 아래 칸 순서(shelfYs는 아래→위라 뒤집어서 씀).
+  const levelsTopFirst = [...shelfYs].reverse();
+
+  // 맨 왼쪽 책장의 맨 위 칸부터 채우고, 그 칸이 다 차면 같은 책장의
+  // 다음 칸(위→아래)으로, 그 책장이 다 차면 오른쪽 책장으로 넘어감 —
+  // "책장 하나를 위에서부터 채우고 다음 책장으로" 순서.
+  function fillAll(titles) {
+    clearBooks();
+    if (!titles) {
+      // 기본(로딩 전) 상태는 순서가 안 중요하니 책장마다 그냥 다 채움.
+      for (let b = 0; b < bayCount; b++) {
+        const [xStart, xEnd] = bayRange(b);
+        levelsTopFirst.forEach((y) => fillLevel(y, xStart, xEnd, null));
+      }
+      return;
+    }
+    let offset = 0;
+    for (let b = 0; b < bayCount && offset < titles.length; b++) {
+      const [xStart, xEnd] = bayRange(b);
+      for (const y of levelsTopFirst) {
+        if (offset >= titles.length) break;
+        offset += fillLevel(y, xStart, xEnd, titles.slice(offset));
+      }
+    }
+  }
+
+  fillAll(null); // 실제 기록을 받아오기 전까지는 무작위로 채워둔 기본 모습
+
+  shelf.add(aoBlob(4.0));
+
+  shelf.position.set(0, 0, -FLOOR_D / 2 + SD / 2 + 0.06);
+
+  // main.js가 라이브러리 전체 기록(책/애니/영화)의 제목 목록을 받아온
+  // 뒤 이걸 호출해서, 그 개수만큼만 책을 다시 꽂아 넣음.
+  shelf.userData.setBooks = (titles) => {
+    if (!titles || titles.length === 0) return; // 기록이 없으면 기본(무작위) 모습 유지
+    fillAll(titles);
+  };
+
   return shelf;
 }
 
@@ -274,10 +406,10 @@ function drawFrameArtDefault(ctx, w, h) {
   ctx.stroke();
 }
 
-// 벽에 거는 액자: 이달의 작품(가장 최근 책/애니/영화 기록)의 표지 이미지를
-// 담음. main.js가 setFeaturedWork로 실제 데이터를 채워줌 — 없으면 위의
-// 기본 아이콘 그대로 둠.
-function buildFeaturedFrame() {
+// 벽에 거는 액자 하나. main.js가 setFeaturedWork로 책/애니/영화 기록
+// 하나를 채워줌 — 없으면 아래 기본 아이콘 그대로 둠. x로 벽 위 위치를
+// 잡음(왼쪽/가운데/오른쪽에 하나씩 걸 예정이라 위치를 파라미터로 뺌).
+function buildFrame(x) {
   const group = new THREE.Group();
   group.userData.room = 'library';
 
@@ -300,7 +432,7 @@ function buildFeaturedFrame() {
   art.position.z = FRAME_D / 2 + 0.002;
   group.add(art);
 
-  group.position.set(1.9, 3.3, -FLOOR_D / 2 + FRAME_D / 2 + 0.09);
+  group.position.set(x, 3.3, -FLOOR_D / 2 + FRAME_D / 2 + 0.09);
 
   // main.js가 라이브러리의 최근 책/애니/영화 기록을 받아온 뒤 이걸
   // 호출해서 액자를 실제 표지 이미지로 채워넣음. work가 없으면(기록이
@@ -409,10 +541,10 @@ function buildTurntable() {
   label.position.set(0, 1.55, 0);
   group.add(label);
 
-  // 이젤(왼쪽, x=-2.9)과 책장(오른쪽, x=1.9) 사이, 스케치북 쪽으로
-  // 더 뒤로 들어간 구석 자리 — 이젤이 회전해서 놓인 방향(rotation.y=0.5)과
-  // 어긋나 있어서 이젤이 턴테이블을 가리지 않음.
-  group.position.set(-0.9, 0, -2.4);
+  // 뒷벽을 꽉 채운 책장 앞으로 살짝 나와 서 있는 자리 — 책장이 뒷벽에
+  // 바짝 붙어 있어서(z ≈ -3.06), 턴테이블은 그 앞으로 충분히 빼둬야
+  // 책장을 가리지 않고 독립된 가구로 보임.
+  group.position.set(-0.9, 0, -1.6);
   group.rotation.y = 0.2;
 
   // main.js가 라이브러리의 최근 음악 기록을 받아온 뒤 이걸 호출해서
@@ -513,21 +645,108 @@ function buildDustMotes() {
   }));
 }
 
+const BALL_RADIUS = 0.22;
+
+// 공 텍스처: 방 곳곳의 포인트 조명 색(주황/종이색/청록/금색)을 세로
+// 줄무늬로 둘러서 비치볼 느낌을 냄 — 구 UV 매핑에서 가로로 감기는
+// 텍스처라 이렇게 그리면 자연스럽게 경도 줄무늬가 됨.
+function drawBallTexture(ctx, w, h) {
+  const colors = ['#d9793a', '#f3ece0', '#4a9fc9', '#f3ece0', '#c79a4b', '#f3ece0'];
+  const stripeW = w / colors.length;
+  colors.forEach((c, i) => {
+    ctx.fillStyle = c;
+    ctx.fillRect(Math.floor(i * stripeW), 0, Math.ceil(stripeW) + 1, h);
+  });
+}
+
+// 방 한가운데 굴러다니는 장난감 공. 어느 "방"에도 속하지 않는 순수한
+// 장난감이라 userData.room은 안 붙임 — 대신 userData.isBall을 붙여서
+// controls.js가 클릭했을 때 방 이동이 아니라 kick()으로 튕겨내도록
+// 구분함. 물리는 진짜 엔진 없이 중력 + 바닥/벽 반사만 흉내 낸 값싼
+// 시뮬레이션.
+function buildBall() {
+  const tex = makeCanvasTexture(drawBallTexture, 240, 120);
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(BALL_RADIUS, 24, 16),
+    new THREE.MeshStandardMaterial({ map: tex, roughness: 0.45 })
+  );
+  // 러그(중심 -0.4,1.3 반지름 1.7)와 다른 가구를 피한 트인 바닥 자리.
+  mesh.position.set(2.0, BALL_RADIUS, 1.6);
+  mesh.castShadow = true; mesh.receiveShadow = true;
+  mesh.userData.isBall = true;
+
+  const velocity = new THREE.Vector3(0, 0, 0);
+  const GRAVITY = -12, RESTITUTION = 0.62, WALL_BOUNCE = 0.75, AIR_DRAG = 0.998;
+  const xMin = -FLOOR_W / 2 + BALL_RADIUS, xMax = FLOOR_W / 2 - BALL_RADIUS;
+  const zMin = -FLOOR_D / 2 + BALL_RADIUS, zMax = FLOOR_D / 2 - BALL_RADIUS;
+
+  // 클릭할 때마다 호출 — 무작위 방향으로 튕겨나가게 함.
+  mesh.userData.kick = () => {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 2.2 + Math.random() * 1.8;
+    velocity.set(Math.cos(angle) * speed, 3.2 + Math.random() * 1.6, Math.sin(angle) * speed);
+  };
+
+  // 매 프레임 중력을 적용하고, 바닥/벽에 닿으면 속도를 반사시켜
+  // 튕기게 함. 가만히 멈춰 있을 땐(속도 0 + 바닥에 붙어있음) 계산을
+  // 건너뛰어 매 프레임 불필요한 연산을 안 하게 함.
+  mesh.userData.update = (dt) => {
+    if (velocity.lengthSq() < 0.0001 && mesh.position.y <= BALL_RADIUS + 0.001) return;
+
+    velocity.y += GRAVITY * dt;
+    velocity.x *= AIR_DRAG; velocity.z *= AIR_DRAG;
+    mesh.position.addScaledVector(velocity, dt);
+
+    if (mesh.position.y < BALL_RADIUS) {
+      mesh.position.y = BALL_RADIUS;
+      if (velocity.y < 0) velocity.y = -velocity.y * RESTITUTION;
+      if (Math.abs(velocity.y) < 0.5) velocity.y = 0;
+      velocity.x *= 0.88; velocity.z *= 0.88; // 바닥 마찰
+    }
+    if (mesh.position.x < xMin) { mesh.position.x = xMin; velocity.x = Math.abs(velocity.x) * WALL_BOUNCE; }
+    else if (mesh.position.x > xMax) { mesh.position.x = xMax; velocity.x = -Math.abs(velocity.x) * WALL_BOUNCE; }
+    if (mesh.position.z < zMin) { mesh.position.z = zMin; velocity.z = Math.abs(velocity.z) * WALL_BOUNCE; }
+    else if (mesh.position.z > zMax) { mesh.position.z = zMax; velocity.z = -Math.abs(velocity.z) * WALL_BOUNCE; }
+
+    // 굴러가는 방향에 맞게 회전축을 잡아서 실제로 굴러가는 것처럼 보이게 함.
+    const speed = Math.hypot(velocity.x, velocity.z);
+    if (speed > 0.02) {
+      const axis = new THREE.Vector3(-velocity.z, 0, velocity.x).normalize();
+      mesh.rotateOnWorldAxis(axis, (speed * dt) / BALL_RADIUS);
+    }
+
+    if (velocity.lengthSq() < 0.01 && mesh.position.y <= BALL_RADIUS + 0.001) {
+      velocity.set(0, 0, 0);
+    }
+  };
+
+  return mesh;
+}
+
 // 이 모듈에서 밖으로 내놓는 단 하나의 함수. 로비 장면 전체를 한 번에
-// 만들어서, main.js/controls.js가 필요로 하는 것들을 돌려줌.
-export function buildScene() {
+// 만들어서, main.js/controls.js가 필요로 하는 것들을 돌려줌. theme은
+// THEMES의 키 중 하나(모르는 값이면 기본 테마로 대체).
+export function buildScene(theme) {
+  const palette = THEMES[theme] || THEMES[DEFAULT_THEME];
+
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(VOID);
+  scene.background = new THREE.Color(palette.void);
   // 멀어질수록 안개에 잠기게 해서, 방의 경계가 딱딱 잘려 보이는 대신
   // 어둠 속으로 자연스럽게 사라지는 느낌을 줌.
-  scene.fog = new THREE.Fog(VOID, 7, 17);
+  scene.fog = new THREE.Fog(palette.void, 7, 17);
 
-  const room = buildRoomShell();
+  const room = buildRoomShell(palette);
   const easel = buildEasel();
   const shelf = buildBookshelf();
   const turntable = buildTurntable();
-  const frame = buildFeaturedFrame();
-  room.add(easel, shelf, turntable, frame);
+  // 벽에 왼쪽/가운데/오른쪽으로 하나씩 — 가운데가 제일 눈에 띄는
+  // 자리라 "이달의 작품"(별표 지정 우선)을 걸고, 양옆엔 그다음으로
+  // 최근인 작품 두 개를 걺(main.js가 setFeaturedWorks로 셋을 채움).
+  const frameLeft = buildFrame(-2.7);
+  const frameMid = buildFrame(0);
+  const frameRight = buildFrame(2.7);
+  const ball = buildBall();
+  room.add(easel, shelf, turntable, frameLeft, frameMid, frameRight, ball);
   scene.add(room);
 
   addLighting(scene);
@@ -539,16 +758,22 @@ export function buildScene() {
   return {
     scene,
     // 클릭/호버 대상이 되는 가구 그룹들 — controls.js가 레이캐스팅할 때 씀.
-    interactiveGroups: [easel, shelf, turntable, frame],
+    // ball도 여기 포함시켜서 클릭/호버 판정을 받지만, userData.room이
+    // 없어서 방 이동으로는 안 이어지고 controls.js가 따로 kickBall로 연결함.
+    interactiveGroups: [easel, shelf, turntable, frameLeft, frameMid, frameRight, ball],
     // main.js가 내 방의 1페이지 스트로크를 받아오면 이걸 호출해서
     // 이젤 보드에 실제 그림을 채워넣음.
     setSketchbookPreview: easel.userData.setPreview,
     // main.js가 라이브러리의 최근 음악 기록을 받아오면 이걸 호출해서
     // 턴테이블에 실제 대표곡을 채워넣음.
     setFeaturedSong: turntable.userData.setFeaturedSong,
-    // main.js가 라이브러리의 최근 책/애니/영화 기록을 받아오면 이걸
-    // 호출해서 벽 액자에 이달의 작품 표지를 채워넣음.
-    setFeaturedWork: frame.userData.setFeaturedWork,
+    // main.js가 골라준 최대 3개의 책/애니/영화 기록을 [왼쪽, 가운데,
+    // 오른쪽] 순서로 각 액자에 채워넣을 때 씀 — 셋보다 적으면 남는
+    // 자리는 기본 아이콘 그대로.
+    setFeaturedWorks: [frameLeft.userData.setFeaturedWork, frameMid.userData.setFeaturedWork, frameRight.userData.setFeaturedWork],
+    // main.js가 라이브러리 전체 기록(책/애니/영화)의 제목 목록을
+    // 받아오면 이걸 호출해서 책장에 그 개수만큼 책을 꽂아넣음.
+    setLibraryBooks: shelf.userData.setBooks,
     // 매 프레임 먼지를 살짝 위로 움직이고, 천장 높이를 넘으면 바닥으로
     // 되돌려서 계속 떠다니는 것처럼 보이게 함.
     updateMotes(dt) {
@@ -561,5 +786,9 @@ export function buildScene() {
     },
     // 매 프레임 LP를 계속 돌림.
     updateTurntable: turntable.userData.spin,
+    // 공을 클릭했을 때 무작위 방향으로 튕겨내는 함수.
+    kickBall: ball.userData.kick,
+    // 매 프레임 공의 물리(중력/바닥·벽 반사/구르는 회전)를 갱신함.
+    updateBall: ball.userData.update,
   };
 }

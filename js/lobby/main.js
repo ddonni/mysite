@@ -3,10 +3,11 @@
 //   2. scene.js로 3D 방을 만들고, controls.js로 인터랙션을 연결
 //   3. 매 프레임 화면을 그리는 루프를 돌림
 //   4. 카드의 "입장하기"를 누르면 실제로 다른 페이지로 이동시킴
-import { buildScene } from './scene.js';
+import { buildScene, THEMES, DEFAULT_THEME } from './scene.js';
 import { createRoomInteraction } from './controls.js';
 import { getMyRoom, roomLink } from '../shared/room.js';
 import { API_BASE } from '../shared/config.js';
+import { renderGoogleButton } from '../shared/googleAuth.js';
 
 const PAGES = { sketchbook: 'sketchbook.html', library: 'library.html', music: 'library.html?cat=music' };
 const ROOM_INFO = {
@@ -37,7 +38,52 @@ getMyRoom().then((mine) => {
       if (code) window.location.href = roomLink('sketchbook.html', code, mine.code);
     });
   });
+
+  // 3D 로비든 폴백 링크 화면이든 상관없이 "구글 계정으로 방 복구/연결"
+  // 버튼을 둠 — GOOGLE_CLIENT_ID가 안 채워져 있으면 renderGoogleButton이
+  // 그냥 아무것도 안 그림.
+  document.querySelectorAll('.google-btn').forEach((el) => renderGoogleButton(el));
+
+  // 3D 로비에만 있는 테마 스위처(폴백 링크 화면엔 씬이 없어서 #themePicker
+  // 자체가 없음). 지금 테마를 알아야 어느 스와치를 눌린 상태로 보여줄지
+  // 정할 수 있어서, 방 정보를 한 번 더 조회함.
+  const picker = document.getElementById('themePicker');
+  if (picker) {
+    fetch(`${API_BASE}/api/rooms/${mine.code}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((info) => renderThemePicker(picker, mine, (info && info.theme) || DEFAULT_THEME))
+      .catch(() => renderThemePicker(picker, mine, DEFAULT_THEME));
+  }
 });
+
+const THEME_LABELS = { wood: '우드', night: '나이트', pastel: '파스텔' };
+
+function renderThemePicker(picker, mine, current) {
+  picker.innerHTML = '';
+  Object.keys(THEMES).forEach((key) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'theme-swatch';
+    btn.style.background = '#' + THEMES[key].wall.toString(16).padStart(6, '0');
+    btn.title = THEME_LABELS[key] || key;
+    btn.setAttribute('aria-pressed', String(key === current));
+    btn.addEventListener('click', () => {
+      if (key === current || btn.disabled) return;
+      btn.disabled = true;
+      fetch(`${API_BASE}/api/rooms/${mine.code}/theme`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Room-Token': mine.token },
+        body: JSON.stringify({ theme: key }),
+      })
+        // 씬 색상을 그때그때 다시 칠하는 대신, 저장 후 새로고침해서
+        // buildScene이 처음부터 새 팔레트로 다시 짓게 함 — 훨씬 간단하고
+        // 로비는 어차피 자주 여는 화면이 아니라 새로고침 비용이 적음.
+        .then((res) => { if (res.ok) window.location.reload(); else btn.disabled = false; })
+        .catch(() => { btn.disabled = false; });
+    });
+    picker.appendChild(btn);
+  });
+}
 
 function webglAvailable() {
   try {
@@ -54,15 +100,23 @@ function webglAvailable() {
 if (typeof THREE === 'undefined' || !webglAvailable()) {
   document.body.classList.add('no-3d');
 } else {
-  try {
-    boot();
-  } catch (e) {
+  boot().catch((e) => {
     document.body.classList.add('no-3d');
     console.error('lobby init failed', e);
-  }
+  });
 }
 
+// 방의 테마(색 팔레트)를 서버에서 받아온 뒤에야 씬을 만들 수 있어서,
+// 이 함수 전체가 그 조회를 기다리는 프로미스임 — 실패하면 위 .catch가
+// no-3d 폴백으로 넘김.
 function boot() {
+  return getMyRoom()
+    .then((mine) => fetch(`${API_BASE}/api/rooms/${mine.code}`))
+    .then((res) => (res.ok ? res.json() : null))
+    .then((info) => bootWithTheme((info && info.theme) || DEFAULT_THEME));
+}
+
+function bootWithTheme(theme) {
   const canvasEl = document.getElementById('canvas3d');
   const stage = document.getElementById('stage');
   const ui = document.getElementById('ui');
@@ -75,7 +129,7 @@ function boot() {
 
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 60);
 
-  const { scene, interactiveGroups, updateMotes, updateTurntable, setSketchbookPreview, setFeaturedSong, setFeaturedWork } = buildScene();
+  const { scene, interactiveGroups, updateMotes, updateTurntable, updateBall, kickBall, setSketchbookPreview, setFeaturedSong, setFeaturedWorks, setLibraryBooks } = buildScene(theme);
 
   // 이젤 보드에 실제 내 방 1페이지 그림을 채워넣음. 실시간 동기화는
   // 필요 없어서(로비에서 그리는 기능도 없음) 로드 시 한 번만 조회.
@@ -93,19 +147,26 @@ function boot() {
     .then((records) => { if (records && records.length) setFeaturedSong(records[0]); })
     .catch(() => {}); // 실패해도 턴테이블은 기본 상태로 남을 뿐, 로비 자체는 멀쩡히 작동함
 
-  // 벽 액자에 이달의 작품을 채워넣음 — library.html에서 별표(⭐)로
-  // 직접 지정한 기록이 있으면 그걸 쓰고, 아직 아무것도 지정 안 했으면
-  // 책/애니/영화 중 가장 최근 기록으로 대신함(목록이 이미 최신순
-  // 정렬이라 그중 첫 항목).
+  // 벽 액자 3개(왼쪽/가운데/오른쪽) + 책장을 실제 기록으로 채워넣음.
+  // 같은 목록을 두 군데에 다 쓰므로 요청은 한 번만 함:
+  //  - 가운데 액자: library.html에서 별표(⭐)로 직접 지정한 기록이
+  //    있으면 그걸 쓰고, 없으면 책/애니/영화 중 가장 최근 기록으로
+  //    대신함(목록이 이미 최신순 정렬이라 그중 첫 항목) — 가장 눈에
+  //    띄는 자리라 "대표작"을 걺.
+  //  - 왼쪽/오른쪽 액자: 가운데를 뺀 나머지 중 최신 두 개.
+  //  - 책장: 음악을 뺀 나머지 기록 전부의 제목으로 그 개수만큼만 채움.
   getMyRoom()
     .then((mine) => fetch(`${API_BASE}/api/rooms/${mine.code}/records`))
     .then((res) => (res.ok ? res.json() : []))
     .then((records) => {
       const list = records || [];
-      const work = list.find((r) => r.featured) || list.find((r) => r.cat !== 'music');
-      if (work) setFeaturedWork(work);
+      const works = list.filter((r) => r.cat !== 'music');
+      const mid = list.find((r) => r.featured) || works[0];
+      const rest = works.filter((r) => r !== mid);
+      [rest[0], mid, rest[1]].forEach((work, i) => { if (work) setFeaturedWorks[i](work); });
+      setLibraryBooks(works.map((r) => r.title));
     })
-    .catch(() => {}); // 실패해도 액자는 기본 상태로 남을 뿐, 로비 자체는 멀쩡히 작동함
+    .catch(() => {}); // 실패해도 액자/책장은 기본 상태로 남을 뿐, 로비 자체는 멀쩡히 작동함
 
   // 카드에서 "입장하기"를 누르면 실제로 페이지를 옮기는 함수. 화면을
   // 살짝 어둡게 페이드아웃한 뒤 이동시켜서, 뚝 끊기지 않고 자연스럽게
@@ -124,6 +185,7 @@ function boot() {
     interactiveGroups,
     roomInfo: ROOM_INFO,
     onConfirm: goToRoom,
+    kickBall,
     dom: {
       hint: document.getElementById('hint'),
       card: document.getElementById('card'),
@@ -153,6 +215,7 @@ function boot() {
     interaction.update(dt);
     updateMotes(dt);
     updateTurntable(dt);
+    updateBall(dt);
     renderer.render(scene, camera);
   }
   requestAnimationFrame(tick);

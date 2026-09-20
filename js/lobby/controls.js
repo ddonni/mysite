@@ -7,15 +7,17 @@
 // 긴밀하게 붙어 있는 동작(같은 클릭 한 번으로 둘 다 바뀜)이라 일부러
 // 한 파일에 같이 둠 — 억지로 나누면 오히려 두 파일이 서로를 계속
 // 호출하며 복잡해지기만 함.
-export function createRoomInteraction({ canvas, camera, interactiveGroups, roomInfo, dom, onConfirm }) {
+export function createRoomInteraction({ canvas, camera, interactiveGroups, roomInfo, dom, onConfirm, kickBall }) {
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const HOME = { theta: 0.62, phi: 1.12, radius: 9.2, target: new THREE.Vector3(-0.3, 1.0, -0.9) };
   // 각 방을 클릭했을 때 카메라가 다가갈 목표 지점 (방마다 다르게 잡아둠).
   const FOCUS = {
     sketchbook: { theta: 0.95, phi: 1.05, radius: 4.6, target: new THREE.Vector3(-3.7, 1.1, 0.6) },
-    library: { theta: 0.25, phi: 1.0, radius: 4.8, target: new THREE.Vector3(1.9, 1.1, -2.6) },
-    music: { theta: 0.6, phi: 1.02, radius: 4.5, target: new THREE.Vector3(-0.9, 0.9, -2.0) },
+    // 책장이 뒷벽 전체로 넓어져서, 좁게 당겨찍으면 일부만 보임 —
+    // radius를 키우고 target을 벽 중앙(x=0)으로 맞춰 전체가 들어오게 함.
+    library: { theta: 0.1, phi: 1.0, radius: 6.8, target: new THREE.Vector3(0, 1.3, -2.6) },
+    music: { theta: 0.6, phi: 1.02, radius: 4.5, target: new THREE.Vector3(-0.9, 0.9, -1.2) },
   };
   const MIN_R = 4.5, MAX_R = 13, MIN_PHI = 0.55, MAX_PHI = 1.5;
 
@@ -96,6 +98,12 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
     while (o) { if (o.userData && o.userData.room) return o.userData.room; o = o.parent; }
     return null;
   }
+  function isBall(obj) {
+    // 공은 어느 방에도 속하지 않는 장난감이라 userData.isBall로 따로 구분함.
+    let o = obj;
+    while (o) { if (o.userData && o.userData.isBall) return true; o = o.parent; }
+    return false;
+  }
   function checkHover(e) {
     setNDC(e);
     raycaster.setFromCamera(mouseNDC, camera);
@@ -106,10 +114,10 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
     setNDC(e);
     raycaster.setFromCamera(mouseNDC, camera);
     const hits = raycaster.intersectObjects(interactiveGroups, true);
-    if (hits.length) {
-      const room = roomOfObject(hits[0].object);
-      if (room) enterRoom(room);
-    }
+    if (!hits.length) return;
+    if (isBall(hits[0].object)) { kickBall(); return; }
+    const room = roomOfObject(hits[0].object);
+    if (room) enterRoom(room);
   }
 
   // ---- 카드/버튼 DOM 연결 ----

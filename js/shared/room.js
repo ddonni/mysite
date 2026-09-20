@@ -32,6 +32,20 @@ function writeStored(room) {
 
 let creating = null;
 
+// 지금 이 브라우저가 갖고 있는 방을 읽기만 함(없으면 null) — getMyRoom과
+// 달리 없다고 새로 만들지 않음. googleAuth.js가 "구글 계정으로 복구"
+// 요청을 보낼 때 "지금 브라우저의 방"을 함께 실어 보내는 데 씀.
+export function getStoredRoom() {
+  return readStored();
+}
+
+// 구글 계정으로 되찾아온(또는 새로 연결한) {code, token}을 이 브라우저의
+// "내 방"으로 덮어씀. googleAuth.js 전용 — 그 외엔 getMyRoom()이 이미
+// 갖고 있는 방을 그대로 쓰면 되니 이 함수를 부를 일이 없음.
+export function adoptRoom(room) {
+  writeStored(room);
+}
+
 // 내 방의 {code, token}을 반환. 아직 없으면 서버에 새로 만듦. 여러
 // 모듈이 동시에 불러도 방 생성 요청은 한 번만 나가도록 캐싱해둠.
 export function getMyRoom() {

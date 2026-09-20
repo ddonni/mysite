@@ -145,6 +145,20 @@ body{
 }
 .room-info .room-visit button:hover{filter:brightness(1.08);}
 
+/* --- 테마 스위처(js/lobby/main.js가 채움): 방 색 팔레트 고르기 --- */
+.theme-picker{display:flex;align-items:center;gap:6px;margin-top:8px;pointer-events:auto;}
+.theme-swatch{
+  width:20px;height:20px;border-radius:50%;padding:0;cursor:pointer;
+  border:2px solid transparent;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);
+  transition:border-color .15s ease, transform .15s ease;
+}
+.theme-swatch:hover{transform:scale(1.1);}
+.theme-swatch[aria-pressed="true"]{border-color:var(--paper);}
+
+/* --- 구글 로그인 버튼(js/shared/googleAuth.js가 GIS 위젯을 그려넣음) --- */
+.google-btn{margin-top:8px;pointer-events:auto;}
+.google-btn:empty{display:none;} /* GOOGLE_CLIENT_ID 미설정 시 빈 채로 남으니 자리도 안 차지하게 */
+
 @media (max-width:560px){
   #header{max-width:70vw;}
   #header p{display:none;}
