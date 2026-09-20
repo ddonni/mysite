@@ -2,8 +2,7 @@
 // 서버 주소가 바뀌면(재배포 등) 이 한 줄만 고치면 모든 페이지에 반영됨 —
 // 예전엔 js/app.js, js/library.js 두 군데에 똑같은 값이 따로 적혀 있어서
 // 매번 둘 다 고쳐야 했음. 이제는 이 파일 하나만 import해서 씀.
-// export const API_BASE = 'https://sketchbook-api.onrender.com';
-export const API_BASE = 'http://localhost:8000';
+export const API_BASE = 'https://sketchbook-api.onrender.com';
 
 // "구글 계정으로 내 방 복구" 버튼(js/shared/googleAuth.js)용 OAuth
 // client id. 비밀은 아니지만(브라우저에 그대로 노출됨) 아무 값이나
