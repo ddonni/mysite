@@ -16,6 +16,7 @@ const VOID = 0x120f0c;
 const FLOOR_W = 9, FLOOR_D = 6.6, WALL_H = 4.1;
 const BOARD_TEX_W = 260, BOARD_TEX_H = 200; // sketchbook.js 페이지 비율(가로가 긴 쪽)과 맞춤
 const PLATTER_TEX_SIZE = 256;
+const FRAME_TEX_W = 220, FRAME_TEX_H = 280; // 책/애니/영화 포스터에 흔한 세로형 비율
 
 // 캔버스 2D로 그림을 그려서 THREE 텍스처로 만드는 공용 헬퍼.
 // (이미지 파일 없이도 라벨 글자나 그라데이션 같은 걸 만들 수 있음)
@@ -49,53 +50,16 @@ function aoBlob(radius) {
   return mesh;
 }
 
-// 가구 위에 둥둥 떠 있는 이름표(알약 모양 배경 + 글자)를 만드는 헬퍼.
-// Sprite라서 카메라가 어느 각도에 있든 항상 정면으로 보임.
-function labelSprite(text, colorHex) {
+// 턴테이블 위에 떠서 대표곡의 제목/가수를 보여주는 두 줄짜리 라벨 —
+// 배경/테두리 없이 글자만. Sprite라서 카메라가 어느 각도에 있든 항상
+// 정면으로 보임. 그림자를 살짝 넣어 배경 없이도 글자가 눈에 띄게 함.
+function twoLineLabelSprite(line1, line2) {
   const tex = makeCanvasTexture((ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
-    const r = 26;
-    ctx.fillStyle = 'rgba(18,15,12,0.62)';
-    ctx.strokeStyle = colorHex;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(r, h * 0.5 - 32);
-    ctx.arcTo(w - 8, h * 0.5 - 32, w - 8, h * 0.5 + 32, r);
-    ctx.arcTo(w - 8, h * 0.5 + 32, 8, h * 0.5 + 32, r);
-    ctx.arcTo(8, h * 0.5 + 32, 8, h * 0.5 - 32, r);
-    ctx.arcTo(8, h * 0.5 - 32, w - 8, h * 0.5 - 32, r);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#f3ece0';
-    ctx.font = '600 40px Manrope, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, w / 2, h * 0.5 + 2);
-  }, 512, 160);
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
-  sprite.scale.set(1.9, 0.6, 1);
-  return sprite;
-}
-
-// labelSprite와 같은 알약 모양이지만, 제목/가수처럼 두 줄이 필요할 때
-// 쓰는 버전 (턴테이블의 대표곡 표시용).
-function twoLineLabelSprite(line1, line2, colorHex) {
-  const tex = makeCanvasTexture((ctx, w, h) => {
-    ctx.clearRect(0, 0, w, h);
-    const r = 30;
-    ctx.fillStyle = 'rgba(18,15,12,0.62)';
-    ctx.strokeStyle = colorHex;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(r, 6);
-    ctx.arcTo(w - 6, 6, w - 6, h - 6, r);
-    ctx.arcTo(w - 6, h - 6, 6, h - 6, r);
-    ctx.arcTo(6, h - 6, 6, 6, r);
-    ctx.arcTo(6, 6, w - 6, 6, r);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.85)';
+    ctx.shadowBlur = 8;
     ctx.fillStyle = '#f3ece0';
     ctx.font = '600 38px Manrope, sans-serif';
     ctx.fillText(line1, w / 2, h * 0.38);
@@ -220,11 +184,8 @@ function buildEasel() {
   easel.add(stool);
 
   easel.add(aoBlob(1.15));
-  const label = labelSprite('스케치북', '#d9793a');
-  label.position.set(0, 2.05, 0); // 보드 상단(~1.7)에서 같은 간격만큼 띄움
-  easel.add(label);
 
-  easel.position.set(-2.9, 0, -0.5);
+  easel.position.set(-3.7, 0, 0.6);
   easel.rotation.y = 0.5;
 
   // main.js가 서버에서 스트로크를 받아온 뒤 이걸 호출해서 보드에 실제
@@ -284,12 +245,98 @@ function buildBookshelf() {
   });
 
   shelf.add(aoBlob(1.4));
-  const label = labelSprite('기록 보관소', '#c79a4b');
-  label.position.set(0, SH + 0.5, 0);
-  shelf.add(label);
 
   shelf.position.set(1.9, 0, -FLOOR_D / 2 + SD / 2 + 0.06);
   return shelf;
+}
+
+// 액자 캔버스에 그릴 기본 이미지 — 아직 이달의 작품이 정해지지
+// 않았을(기록이 하나도 없을) 때 대신 보여주는 빈 액자 느낌의 아이콘.
+function drawFrameArtDefault(ctx, w, h) {
+  const g = ctx.createLinearGradient(0, 0, w, h);
+  g.addColorStop(0, '#3a2c1f');
+  g.addColorStop(1, '#201d1a');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.strokeStyle = 'rgba(255,253,250,0.3)';
+  ctx.lineWidth = Math.max(1, w * 0.012);
+  ctx.beginPath();
+  ctx.moveTo(w * 0.28, h * 0.34);
+  ctx.lineTo(w * 0.28, h * 0.7);
+  ctx.lineTo(w * 0.5, h * 0.62);
+  ctx.lineTo(w * 0.72, h * 0.7);
+  ctx.lineTo(w * 0.72, h * 0.34);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(w * 0.5, h * 0.62);
+  ctx.lineTo(w * 0.5, h * 0.28);
+  ctx.stroke();
+}
+
+// 벽에 거는 액자: 이달의 작품(가장 최근 책/애니/영화 기록)의 표지 이미지를
+// 담음. main.js가 setFeaturedWork로 실제 데이터를 채워줌 — 없으면 위의
+// 기본 아이콘 그대로 둠.
+function buildFeaturedFrame() {
+  const group = new THREE.Group();
+  group.userData.room = 'library';
+
+  const FRAME_W = 0.85, FRAME_H = 1.05, FRAME_D = 0.05;
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x2a2016, roughness: 0.7 });
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(FRAME_W, FRAME_H, FRAME_D), frameMat);
+  frame.castShadow = true;
+  group.add(frame);
+
+  const artCanvas = document.createElement('canvas');
+  artCanvas.width = FRAME_TEX_W; artCanvas.height = FRAME_TEX_H;
+  const artCtx = artCanvas.getContext('2d');
+  drawFrameArtDefault(artCtx, FRAME_TEX_W, FRAME_TEX_H);
+  const artTex = new THREE.CanvasTexture(artCanvas);
+  artTex.needsUpdate = true;
+  const art = new THREE.Mesh(
+    new THREE.PlaneGeometry(FRAME_W - 0.1, FRAME_H - 0.1),
+    new THREE.MeshStandardMaterial({ map: artTex, roughness: 0.85 })
+  );
+  art.position.z = FRAME_D / 2 + 0.002;
+  group.add(art);
+
+  group.position.set(1.9, 3.3, -FLOOR_D / 2 + FRAME_D / 2 + 0.09);
+
+  // main.js가 라이브러리의 최근 책/애니/영화 기록을 받아온 뒤 이걸
+  // 호출해서 액자를 실제 표지 이미지로 채워넣음. work가 없으면(기록이
+  // 하나도 없으면) 기본 아이콘 그대로 둠.
+  group.userData.setFeaturedWork = (work) => {
+    const url = work && work.photo_url;
+    if (!url) {
+      drawFrameArtDefault(artCtx, FRAME_TEX_W, FRAME_TEX_H);
+      artTex.needsUpdate = true;
+      return;
+    }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        artCtx.clearRect(0, 0, FRAME_TEX_W, FRAME_TEX_H);
+        // 커버 이미지 비율이 액자와 달라도 잘리지 않고 꽉 채워지도록
+        // (object-fit: cover와 같은 계산) 중앙을 기준으로 크롭해서 그림.
+        const scale = Math.max(FRAME_TEX_W / img.width, FRAME_TEX_H / img.height);
+        const dw = img.width * scale, dh = img.height * scale;
+        artCtx.drawImage(img, (FRAME_TEX_W - dw) / 2, (FRAME_TEX_H - dh) / 2, dw, dh);
+        // S3 버킷에 CORS 설정이 없는 이미지면 캔버스가 "오염"돼서 이
+        // 텍스처를 GPU에 올리는 순간 에러가 남 — getImageData로 미리
+        // 오염 여부를 확인해서, 문제가 있으면 기본 이미지로 대체함.
+        artCtx.getImageData(0, 0, 1, 1);
+        artTex.needsUpdate = true;
+      } catch (e) {
+        drawFrameArtDefault(artCtx, FRAME_TEX_W, FRAME_TEX_H);
+        artTex.needsUpdate = true;
+      }
+    };
+    img.onerror = () => { drawFrameArtDefault(artCtx, FRAME_TEX_W, FRAME_TEX_H); artTex.needsUpdate = true; };
+    img.src = url;
+  };
+
+  return group;
 }
 
 // 판(platter) 텍스처에 기본 앨범 이미지를 원형으로 잘라 그려넣음 — 실제
@@ -358,7 +405,7 @@ function buildTurntable() {
   group.add(armPivot);
 
   group.add(aoBlob(0.85));
-  let label = twoLineLabelSprite('턴테이블', '노래를 추가해보세요', '#4a9fc9');
+  let label = twoLineLabelSprite('🎵 턴테이블', '노래를 추가해보세요');
   label.position.set(0, 1.55, 0);
   group.add(label);
 
@@ -374,9 +421,8 @@ function buildTurntable() {
   group.userData.setFeaturedSong = (song) => {
     group.remove(label);
     label = twoLineLabelSprite(
-      (song && song.title) || '턴테이블',
-      (song && (song.creator || '아티스트 미상')) || '노래를 추가해보세요',
-      '#4a9fc9'
+      `🎵 ${(song && song.title) || '턴테이블'}`,
+      (song && (song.creator || '아티스트 미상')) || '노래를 추가해보세요'
     );
     label.position.set(0, 1.55, 0);
     group.add(label);
@@ -422,10 +468,10 @@ function buildTurntable() {
 // 위에서 비추는 스포트라이트(그림자를 만듦 — "무대 조명" 느낌),
 // 그리고 각 가구 옆에 그 방 색깔을 띤 포인트 라이트.
 function addLighting(scene) {
-  const hemi = new THREE.HemisphereLight(0x3a2c1e, 0x0a0806, 0.55);
+  const hemi = new THREE.HemisphereLight(0x3a2c1e, 0x0a0806, 0.45);
   scene.add(hemi);
 
-  const spot = new THREE.SpotLight(0xfff1de, 3.2, 18, 0.62, 0.55, 1.4);
+  const spot = new THREE.SpotLight(0xfff1de, 2.7, 22, 0.95, 0.6, 1.1);
   spot.position.set(0.5, 6.4, 3.2);
   spot.target.position.set(-0.4, 0.3, -0.8);
   spot.castShadow = true;
@@ -434,15 +480,17 @@ function addLighting(scene) {
   spot.shadow.camera.far = 14;
   scene.add(spot, spot.target);
 
-  const emberLight = new THREE.PointLight(0xd9793a, 1.1, 5.5, 2);
+  // distance를 방 대각선 길이(~11)보다 넉넉히 키우고 decay를 낮춰서,
+  // 각 가구 옆 불빛이 그 자리에만 고이지 않고 방 전체로 은은하게 퍼지게 함.
+  const emberLight = new THREE.PointLight(0xd9793a, 0.9, 13, 1.4);
   emberLight.position.set(-2.6, 1.9, 0.2);
   scene.add(emberLight);
 
-  const goldLight = new THREE.PointLight(0xc79a4b, 1.0, 6, 2);
+  const goldLight = new THREE.PointLight(0xc79a4b, 0.85, 13, 1.4);
   goldLight.position.set(1.9, 2.4, -1.9);
   scene.add(goldLight);
 
-  const tealLight = new THREE.PointLight(0x4a9fc9, 0.9, 5, 2);
+  const tealLight = new THREE.PointLight(0x4a9fc9, 0.75, 13, 1.4);
   tealLight.position.set(-0.9, 1.7, -2.4);
   scene.add(tealLight);
 }
@@ -478,7 +526,8 @@ export function buildScene() {
   const easel = buildEasel();
   const shelf = buildBookshelf();
   const turntable = buildTurntable();
-  room.add(easel, shelf, turntable);
+  const frame = buildFeaturedFrame();
+  room.add(easel, shelf, turntable, frame);
   scene.add(room);
 
   addLighting(scene);
@@ -490,13 +539,16 @@ export function buildScene() {
   return {
     scene,
     // 클릭/호버 대상이 되는 가구 그룹들 — controls.js가 레이캐스팅할 때 씀.
-    interactiveGroups: [easel, shelf, turntable],
+    interactiveGroups: [easel, shelf, turntable, frame],
     // main.js가 내 방의 1페이지 스트로크를 받아오면 이걸 호출해서
     // 이젤 보드에 실제 그림을 채워넣음.
     setSketchbookPreview: easel.userData.setPreview,
     // main.js가 라이브러리의 최근 음악 기록을 받아오면 이걸 호출해서
     // 턴테이블에 실제 대표곡을 채워넣음.
     setFeaturedSong: turntable.userData.setFeaturedSong,
+    // main.js가 라이브러리의 최근 책/애니/영화 기록을 받아오면 이걸
+    // 호출해서 벽 액자에 이달의 작품 표지를 채워넣음.
+    setFeaturedWork: frame.userData.setFeaturedWork,
     // 매 프레임 먼지를 살짝 위로 움직이고, 천장 높이를 넘으면 바닥으로
     // 되돌려서 계속 떠다니는 것처럼 보이게 함.
     updateMotes(dt) {

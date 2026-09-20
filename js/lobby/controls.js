@@ -13,7 +13,7 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
   const HOME = { theta: 0.62, phi: 1.12, radius: 9.2, target: new THREE.Vector3(-0.3, 1.0, -0.9) };
   // 각 방을 클릭했을 때 카메라가 다가갈 목표 지점 (방마다 다르게 잡아둠).
   const FOCUS = {
-    sketchbook: { theta: 0.95, phi: 1.05, radius: 4.6, target: new THREE.Vector3(-2.9, 1.1, -0.5) },
+    sketchbook: { theta: 0.95, phi: 1.05, radius: 4.6, target: new THREE.Vector3(-3.7, 1.1, 0.6) },
     library: { theta: 0.25, phi: 1.0, radius: 4.8, target: new THREE.Vector3(1.9, 1.1, -2.6) },
     music: { theta: 0.6, phi: 1.02, radius: 4.5, target: new THREE.Vector3(-0.9, 0.9, -2.0) },
   };
@@ -39,15 +39,14 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
   }
 
   // ---- 드래그로 회전 / 휠로 줌 ----
-  let dragging = false, lastX = 0, lastY = 0, downX = 0, downY = 0, downT = 0, moved = false;
-  let idleT = 0;
-  const AUTOROTATE_DELAY = 3.2; // 이만큼(초) 가만히 두면 저절로 천천히 회전 시작 (전시 진열장 느낌)
+  let dragging = false, lastX = 0, lastY = 0, downX = 0, downY = 0, downT = 0;
   let entered = null; // 지금 카드가 열려있는 방 이름, 없으면 null
 
   canvas.addEventListener('pointerdown', (e) => {
-    if (entered) return; // 카드가 열려있는 동안은 드래그로 회전 안 되게 함
-    dragging = true; moved = false;
-    lastX = downX = e.clientX; lastY = downY = e.clientY; downT = performance.now();
+    downX = e.clientX; downY = e.clientY; downT = performance.now();
+    if (entered) return; // 카드가 열려있는 동안은 드래그로 회전 안 되게 함 (탭 여부는 pointerup에서 판단)
+    dragging = true;
+    lastX = e.clientX; lastY = e.clientY;
     canvas.classList.add('dragging');
     canvas.setPointerCapture(e.pointerId);
   });
@@ -55,27 +54,31 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
     if (dragging) {
       const dx = e.clientX - lastX, dy = e.clientY - lastY;
       lastX = e.clientX; lastY = e.clientY;
-      if (Math.abs(e.clientX - downX) > 4 || Math.abs(e.clientY - downY) > 4) moved = true;
       want.theta -= dx * 0.0055;
       want.phi = Math.min(MAX_PHI, Math.max(MIN_PHI, want.phi - dy * 0.004));
-      idleT = 0;
       hideHint();
     } else if (!entered) {
       checkHover(e);
     }
   });
   window.addEventListener('pointerup', (e) => {
+    // 드래그 없이 살짝 눌렀다 뗀 것(450ms 안, 거의 안 움직인 것)만 "클릭"으로 침 —
+    // 안 그러면 회전하려고 드래그할 때마다 가구를 잘못 클릭한 걸로 오해함.
+    const tapped = Math.abs(e.clientX - downX) <= 4 && Math.abs(e.clientY - downY) <= 4
+      && performance.now() - downT < 450;
+    if (entered) {
+      // 카드가 열려있을 땐 3D 캔버스(=카드 뒤 배경) 아무 데나 탭하면 포커스가 풀림.
+      if (tapped) leaveRoom();
+      return;
+    }
     if (!dragging) return;
     dragging = false;
     canvas.classList.remove('dragging');
-    // 드래그 없이 살짝 눌렀다 뗀 것(450ms 안, 거의 안 움직임)만 "클릭"으로 침 —
-    // 안 그러면 회전하려고 드래그할 때마다 가구를 잘못 클릭한 걸로 오해함.
-    if (!moved && performance.now() - downT < 450) handleClick(e);
+    if (tapped) handleClick(e);
   });
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
     want.radius = Math.min(MAX_R, Math.max(MIN_R, want.radius + e.deltaY * 0.012));
-    idleT = 0;
   }, { passive: false });
 
   // ---- 가구 위에 마우스를 올리면 커서 변경, 클릭하면 입장 ----
@@ -157,13 +160,8 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
 
   return {
     // main.js의 렌더 루프가 매 프레임 불러줌: 목표 각도(want)를 향해
-    // 부드럽게 따라가고, 아무 조작 없이 한참 지나면 천천히 자동
-    // 회전시킴.
+    // 부드럽게 따라감(자동 회전은 하지 않음).
     update(dt) {
-      if (!dragging && !entered && !REDUCED) {
-        idleT += dt;
-        if (idleT > AUTOROTATE_DELAY) want.theta += dt * 0.06;
-      }
       const damp = REDUCED ? 1 : 0.09;
       spherical.theta += (want.theta - spherical.theta) * damp;
       spherical.phi += (want.phi - spherical.phi) * damp;

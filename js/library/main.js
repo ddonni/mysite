@@ -1,6 +1,6 @@
 // 기록 보관소 페이지의 시작점. list.js(목록 그리기)와 modal.js(추가/
 // 수정 창)를 만들어서 서로 연결하고, 첫 목록을 불러옴.
-import { fetchRecords, deleteRecord, setRoom } from './records.js';
+import { fetchRecords, deleteRecord, setFeatured, setRoom } from './records.js';
 import { createList } from './list.js';
 import { createModal } from './modal.js';
 import { initRoomNav } from '../shared/roomNav.js';
@@ -27,6 +27,7 @@ initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: 'library.
     initialTab,
     onEdit: (item) => modal.openEdit(item),
     onDelete: (id) => deleteRecord(id).then(reload),
+    onFeature: (item) => setFeatured(item.id, !item.featured).then(reload),
   });
 
   document.getElementById('addTabBtn').addEventListener('click', () => modal.openAdd());

@@ -24,7 +24,7 @@ function ratingText(r) {
   return '★' + r.toFixed(1);
 }
 
-export function createList({ onEdit, onDelete, readOnly, initialTab }) {
+export function createList({ onEdit, onDelete, onFeature, readOnly, initialTab }) {
   const tabsEl = document.getElementById('tabs');
   const listEl = document.getElementById('list');
 
@@ -66,7 +66,7 @@ export function createList({ onEdit, onDelete, readOnly, initialTab }) {
       row.className = 'row';
       row.innerHTML = `
         <span class="cat">${cat ? cat.label : ''}</span>
-        <span class="title">${escapeHtml(it.title)}${it.creator ? `<span class="creator">${escapeHtml(it.creator)}</span>` : ''}</span>
+        <span class="title">${it.featured ? '⭐ ' : ''}${escapeHtml(it.title)}${it.creator ? `<span class="creator">${escapeHtml(it.creator)}</span>` : ''}</span>
         <span class="rating">${ratingText(it.rating)}</span>
         <span class="date">${it.date || ''}</span>
       `;
@@ -96,6 +96,7 @@ export function createList({ onEdit, onDelete, readOnly, initialTab }) {
         <div class="actions" id="actions-${it.id}">
           <span data-act="edit">고쳐 쓰기</span>
           <span data-act="delete">삭제</span>
+          ${it.cat !== 'music' ? `<span data-act="feature">${it.featured ? '이달의 작품 해제' : '이달의 작품으로'}</span>` : ''}
         </div>`}
       </div>
     `;
@@ -122,6 +123,13 @@ export function createList({ onEdit, onDelete, readOnly, initialTab }) {
         renderList();
       });
     });
+    const featureBtn = det.querySelector('[data-act="feature"]');
+    if (featureBtn) {
+      featureBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        onFeature(it);
+      });
+    }
     return det;
   }
 

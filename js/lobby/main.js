@@ -75,7 +75,7 @@ function boot() {
 
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 60);
 
-  const { scene, interactiveGroups, updateMotes, updateTurntable, setSketchbookPreview, setFeaturedSong } = buildScene();
+  const { scene, interactiveGroups, updateMotes, updateTurntable, setSketchbookPreview, setFeaturedSong, setFeaturedWork } = buildScene();
 
   // 이젤 보드에 실제 내 방 1페이지 그림을 채워넣음. 실시간 동기화는
   // 필요 없어서(로비에서 그리는 기능도 없음) 로드 시 한 번만 조회.
@@ -92,6 +92,20 @@ function boot() {
     .then((res) => (res.ok ? res.json() : []))
     .then((records) => { if (records && records.length) setFeaturedSong(records[0]); })
     .catch(() => {}); // 실패해도 턴테이블은 기본 상태로 남을 뿐, 로비 자체는 멀쩡히 작동함
+
+  // 벽 액자에 이달의 작품을 채워넣음 — library.html에서 별표(⭐)로
+  // 직접 지정한 기록이 있으면 그걸 쓰고, 아직 아무것도 지정 안 했으면
+  // 책/애니/영화 중 가장 최근 기록으로 대신함(목록이 이미 최신순
+  // 정렬이라 그중 첫 항목).
+  getMyRoom()
+    .then((mine) => fetch(`${API_BASE}/api/rooms/${mine.code}/records`))
+    .then((res) => (res.ok ? res.json() : []))
+    .then((records) => {
+      const list = records || [];
+      const work = list.find((r) => r.featured) || list.find((r) => r.cat !== 'music');
+      if (work) setFeaturedWork(work);
+    })
+    .catch(() => {}); // 실패해도 액자는 기본 상태로 남을 뿐, 로비 자체는 멀쩡히 작동함
 
   // 카드에서 "입장하기"를 누르면 실제로 페이지를 옮기는 함수. 화면을
   // 살짝 어둡게 페이드아웃한 뒤 이동시켜서, 뚝 끊기지 않고 자연스럽게

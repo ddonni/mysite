@@ -69,6 +69,20 @@ export function uploadPhoto(file) {
     .then((data) => data.url);
 }
 
+// 이 기록을 "이달의 작품"으로 켜거나 끔 — 켜면 서버가 같은 방의
+// 나머지 기록은 자동으로 꺼줌(방마다 최대 하나). rating/memo 등 다른
+// 필드는 안 건드리는 별도 엔드포인트라서, saveRecord처럼 전체를 다시
+// 보낼 필요가 없음.
+export function setFeatured(id, featured) {
+  return fetch(API_BASE + '/api/rooms/' + roomCode + '/records/' + id + '/feature', {
+    method: 'PUT',
+    headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+    body: JSON.stringify({ featured }),
+  }).then((res) => {
+    if (!res.ok) throw new Error('feature toggle failed');
+  });
+}
+
 // 새 기록을 만들거나(editingId가 없을 때), 기존 기록을 덮어씀
 // (editingId가 있을 때). record는 { cat, title, creator, rating, memo,
 // photo_url } 모양의 평범한 객체.
