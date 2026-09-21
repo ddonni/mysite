@@ -158,6 +158,10 @@ body{
 /* --- 구글 로그인 버튼(js/shared/googleAuth.js가 GIS 위젯을 그려넣음) --- */
 .google-btn{margin-top:8px;pointer-events:auto;}
 .google-btn:empty{display:none;} /* GOOGLE_CLIENT_ID 미설정 시 빈 채로 남으니 자리도 안 차지하게 */
+.google-linked{
+  display:inline-block;font-size:11.5px;color:var(--paper-dim);
+  background:rgba(18,15,12,0.55);padding:5px 10px;border-radius:999px;
+}
 
 @media (max-width:560px){
   #header{max-width:70vw;}

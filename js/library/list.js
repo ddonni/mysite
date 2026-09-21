@@ -9,15 +9,7 @@
 // 눌렸는지"만 알려주고 "그래서 뭘 할지"는 모름.
 import { CATS } from './records.js';
 import { defaultAlbumDataUrl } from '../shared/album.js';
-
-function escapeHtml(str) {
-  // 사용자가 입력한 제목/감상 등을 그대로 innerHTML에 넣으면 안 되므로
-  // (예: 제목에 <script> 같은 게 들어있을 경우) 브라우저의 텍스트
-  // 이스케이프 기능을 이용해 안전한 문자열로 바꿔줌.
-  const d = document.createElement('div');
-  d.textContent = str;
-  return d.innerHTML;
-}
+import { escapeHtml } from '../shared/dom.js';
 
 function ratingText(r) {
   r = r || 0;

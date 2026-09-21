@@ -375,8 +375,8 @@ function buildBookshelf() {
   // main.js가 라이브러리 전체 기록(책/애니/영화)의 제목 목록을 받아온
   // 뒤 이걸 호출해서, 그 개수만큼만 책을 다시 꽂아 넣음.
   shelf.userData.setBooks = (titles) => {
-    if (!titles || titles.length === 0) return; // 기록이 없으면 기본(무작위) 모습 유지
-    fillAll(titles);
+    if (!titles) return; // 아직 못 받아왔을 때(로드 전/실패)는 기본(무작위) 모습 유지
+    fillAll(titles); // 빈 배열이면 실제로 빈 책장으로 비움 — 기록이 0개인 걸 그대로 보여줌
   };
 
   return shelf;

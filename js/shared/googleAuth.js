@@ -6,15 +6,35 @@
 // 버튼도 콜백도 하나로 끝남 — "연결하기"/"복구하기" 버튼을 따로 안 둠.
 import { API_BASE, GOOGLE_CLIENT_ID } from './config.js';
 import { getStoredRoom, adoptRoom } from './room.js';
+import { escapeHtml } from './dom.js';
 
 // index.html이 <script src=".../gsi/client">를 THREE.js처럼 모듈
 // 스크립트보다 먼저 (async/defer 없이) 불러와서, 이 모듈이 실행되는
 // 시점엔 전역 google이 이미 준비돼 있음.
-export function renderGoogleButton(containerEl) {
+function renderGoogleButton(containerEl) {
   if (!GOOGLE_CLIENT_ID || typeof google === 'undefined' || !containerEl) return; // 설정 안 했으면 버튼 자체를 안 띄움
 
   google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleCredential });
   google.accounts.id.renderButton(containerEl, { type: 'standard', theme: 'outline', size: 'medium', text: 'signin_with' });
+}
+
+// 이미 이 방에 구글 계정이 연동돼 있으면 로그인 버튼 대신 어느 계정인지
+// 보여주고, 아직이면 기존처럼 로그인 버튼을 그림. 소유자만 자기 방의
+// 연동 상태를 볼 수 있으므로(room.js의 mine 토큰 필요) 남의 방을 보는
+// 중엔 호출하지 않아야 함.
+export function initGoogleAuth(containerEl, mine) {
+  if (!GOOGLE_CLIENT_ID || !containerEl || !mine) return;
+
+  fetch(`${API_BASE}/api/rooms/${mine.code}/google`, { headers: { 'X-Room-Token': mine.token } })
+    .then((res) => (res.ok ? res.json() : null))
+    .then((status) => {
+      if (status && status.linked) {
+        containerEl.innerHTML = `<span class="google-linked">${escapeHtml(status.email || '')} 계정과 연동됨</span>`;
+        return;
+      }
+      renderGoogleButton(containerEl);
+    })
+    .catch(() => renderGoogleButton(containerEl)); // 상태 조회 실패해도 로그인은 계속 가능해야 함
 }
 
 function handleCredential(response) {
@@ -32,8 +52,10 @@ function handleCredential(response) {
     .then(({ code, token, linked_new }) => {
       if (linked_new) {
         // 처음 연결된 것 — 지금 방은 그대로고, 나중에 이 계정으로
-        // 로그인하면 이 방을 되찾을 수 있다는 것만 알려주면 됨.
+        // 로그인하면 이 방을 되찾을 수 있다는 것만 알려주면 됨. 새로고침해서
+        // 로그인 버튼이 "연동됨" 표시로 곧바로 바뀌게 함.
         alert('구글 계정을 이 방에 연결했어요. 나중에 다른 기기에서 같은 계정으로 로그인하면 이 방을 불러올 수 있어요.');
+        window.location.reload();
         return;
       }
       if (stored && stored.code === code) {

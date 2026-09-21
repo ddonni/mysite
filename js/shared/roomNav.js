@@ -2,6 +2,7 @@
 // "지금 어느 방을 보고 있는가" UI를 여기 한 곳에서 만듦 — 코드 복사,
 // 다른 방 코드로 이동, 읽기 전용일 때 "내 방으로" 돌아가기.
 import { getMyRoom, getViewingRoomCode, roomLink } from './room.js';
+import { copyToClipboard } from './dom.js';
 
 // currentPage: 지금 페이지 자신의 파일명(예: 'sketchbook.html') — 코드
 // 입력창에서 "이동"을 누르면 같은 페이지를 그 방 코드로 다시 여는 데 씀.
@@ -33,7 +34,7 @@ export function initRoomNav({ navEl, currentPage }) {
     if (!readOnly) {
       const copyBtn = box.querySelector('.room-copy');
       copyBtn.addEventListener('click', () => {
-        (navigator.clipboard ? navigator.clipboard.writeText(mine.code) : Promise.reject())
+        copyToClipboard(mine.code)
           .then(() => { copyBtn.textContent = '복사됨'; setTimeout(() => { copyBtn.textContent = '복사'; }, 1500); })
           .catch(() => {});
       });

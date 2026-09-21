@@ -7,7 +7,8 @@ import { buildScene, THEMES, DEFAULT_THEME } from './scene.js';
 import { createRoomInteraction } from './controls.js';
 import { getMyRoom, roomLink } from '../shared/room.js';
 import { API_BASE } from '../shared/config.js';
-import { renderGoogleButton } from '../shared/googleAuth.js';
+import { initGoogleAuth } from '../shared/googleAuth.js';
+import { copyToClipboard } from '../shared/dom.js';
 
 const PAGES = { sketchbook: 'sketchbook.html', library: 'library.html', music: 'library.html?cat=music' };
 const ROOM_INFO = {
@@ -29,8 +30,7 @@ getMyRoom().then((mine) => {
       </form>
     `;
     el.querySelector('.room-copy').addEventListener('click', () => {
-      (navigator.clipboard ? navigator.clipboard.writeText(mine.code) : Promise.reject())
-        .catch(() => {});
+      copyToClipboard(mine.code).catch(() => {});
     });
     el.querySelector('.room-visit').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -40,9 +40,9 @@ getMyRoom().then((mine) => {
   });
 
   // 3D 로비든 폴백 링크 화면이든 상관없이 "구글 계정으로 방 복구/연결"
-  // 버튼을 둠 — GOOGLE_CLIENT_ID가 안 채워져 있으면 renderGoogleButton이
-  // 그냥 아무것도 안 그림.
-  document.querySelectorAll('.google-btn').forEach((el) => renderGoogleButton(el));
+  // 자리를 둠 — 이미 연동된 계정이 있으면 버튼 대신 그 이메일을 보여주고,
+  // GOOGLE_CLIENT_ID가 안 채워져 있으면 initGoogleAuth이 그냥 아무것도 안 그림.
+  document.querySelectorAll('.google-btn').forEach((el) => initGoogleAuth(el, mine));
 
   // 3D 로비에만 있는 테마 스위처(폴백 링크 화면엔 씬이 없어서 #themePicker
   // 자체가 없음). 지금 테마를 알아야 어느 스와치를 눌린 상태로 보여줄지
@@ -110,13 +110,14 @@ if (typeof THREE === 'undefined' || !webglAvailable()) {
 // 이 함수 전체가 그 조회를 기다리는 프로미스임 — 실패하면 위 .catch가
 // no-3d 폴백으로 넘김.
 function boot() {
-  return getMyRoom()
-    .then((mine) => fetch(`${API_BASE}/api/rooms/${mine.code}`))
-    .then((res) => (res.ok ? res.json() : null))
-    .then((info) => bootWithTheme((info && info.theme) || DEFAULT_THEME));
+  return getMyRoom().then((mine) =>
+    fetch(`${API_BASE}/api/rooms/${mine.code}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((info) => bootWithTheme(mine, (info && info.theme) || DEFAULT_THEME))
+  );
 }
 
-function bootWithTheme(theme) {
+function bootWithTheme(mine, theme) {
   const canvasEl = document.getElementById('canvas3d');
   const stage = document.getElementById('stage');
   const ui = document.getElementById('ui');
@@ -133,16 +134,14 @@ function bootWithTheme(theme) {
 
   // 이젤 보드에 실제 내 방 1페이지 그림을 채워넣음. 실시간 동기화는
   // 필요 없어서(로비에서 그리는 기능도 없음) 로드 시 한 번만 조회.
-  getMyRoom()
-    .then((mine) => fetch(`${API_BASE}/api/rooms/${mine.code}/pages/1`))
+  fetch(`${API_BASE}/api/rooms/${mine.code}/pages/1`)
     .then((res) => (res.ok ? res.json() : null))
     .then((page) => { if (page) setSketchbookPreview(page.strokes || []); })
     .catch(() => {}); // 실패해도 이젤은 그냥 빈 종이로 남아있을 뿐, 로비 자체는 멀쩡히 작동함
 
   // 턴테이블에 대표곡(가장 최근에 추가한 음악 기록)을 채워넣음 —
   // 목록은 이미 최신순 정렬이라 첫 번째 항목이 곧 최신곡.
-  getMyRoom()
-    .then((mine) => fetch(`${API_BASE}/api/rooms/${mine.code}/records?cat=music`))
+  fetch(`${API_BASE}/api/rooms/${mine.code}/records?cat=music`)
     .then((res) => (res.ok ? res.json() : []))
     .then((records) => { if (records && records.length) setFeaturedSong(records[0]); })
     .catch(() => {}); // 실패해도 턴테이블은 기본 상태로 남을 뿐, 로비 자체는 멀쩡히 작동함
@@ -155,8 +154,7 @@ function bootWithTheme(theme) {
   //    띄는 자리라 "대표작"을 걺.
   //  - 왼쪽/오른쪽 액자: 가운데를 뺀 나머지 중 최신 두 개.
   //  - 책장: 음악을 뺀 나머지 기록 전부의 제목으로 그 개수만큼만 채움.
-  getMyRoom()
-    .then((mine) => fetch(`${API_BASE}/api/rooms/${mine.code}/records`))
+  fetch(`${API_BASE}/api/rooms/${mine.code}/records`)
     .then((res) => (res.ok ? res.json() : []))
     .then((records) => {
       const list = records || [];
