@@ -5,7 +5,7 @@
 //   4. 카드의 "입장하기"를 누르면 실제로 다른 페이지로 이동시킴
 import { buildScene, THEMES, DEFAULT_THEME } from './scene.js';
 import { createRoomInteraction } from './controls.js';
-import { getMyRoom, roomLink } from '../shared/room.js';
+import { getMyRoom, getViewingRoomCode } from '../shared/room.js';
 import { API_BASE } from '../shared/config.js';
 import { initGoogleAuth } from '../shared/googleAuth.js';
 import { copyToClipboard } from '../shared/dom.js';
@@ -17,44 +17,162 @@ const ROOM_INFO = {
   music: { title: '턴테이블', body: '모아둔 노래를 들어보는 공간이에요.' },
 };
 
-// 내 방 코드 표시 + 남의 방 코드로 바로 방문하기. 3D든 폴백 링크 화면이든
-// 둘 다에 있는 .room-info 자리를 똑같이 채움(둘 중 하나만 실제로 보임).
-getMyRoom().then((mine) => {
+// 지금 화면에 띄울 방: 주소에 ?room=코드가 있으면 그 방(남의 방 — 이 경우
+// 로비의 모든 게 읽기 전용), 없으면 내 방. 이 파일의 모든 조회와 이동이
+// 이 값을 기준으로 함.
+const roomContext = getMyRoom().then((mine) => {
+  const viewingCode = getViewingRoomCode(mine.code);
+  return { mine, viewingCode, readOnly: viewingCode !== mine.code };
+});
+
+// sketchbook.html/library.html로 넘어갈 때, 남의 방을 보던 중이면 ?room=을
+// 이어 붙여서 거기서도 그 방을 읽기 전용으로 보게 함. page에 이미
+// 쿼리(예: library.html?cat=music)가 있을 수 있어서 ?와 &를 구분함.
+function pageUrl(page, { mine, viewingCode }) {
+  if (viewingCode === mine.code) return page;
+  return page + (page.includes('?') ? '&' : '?') + 'room=' + encodeURIComponent(viewingCode);
+}
+
+// 지금 보는 방의 API 주소. 코드는 주소창(?room=)에서 온 값이라 아무 문자열일
+// 수 있어서, 경로에 그대로 끼우면 `/`나 `?` 때문에 엉뚱한 경로를 조회하게 될
+// 수 있음 — 인코딩해서 항상 "방 하나"를 가리키게 함.
+function roomApi({ viewingCode }) {
+  return `${API_BASE}/api/rooms/${encodeURIComponent(viewingCode)}`;
+}
+
+// 지금 보는 방의 정보(테마, 이름). 헤더(이름/테마 스위처)와 씬 생성이 둘 다
+// 필요로 해서 요청을 한 번만 보냄. 남의 방 코드가 없는 방이면 { missing: true }.
+const roomInfo = roomContext.then((ctx) =>
+  fetch(roomApi(ctx)).then((res) => (res.status === 404 && ctx.readOnly ? { missing: true } : res.ok ? res.json() : null))
+);
+
+// 로비 자체로 가는 주소 — "방 코드로 방문" 폼과 "내 방으로"가 씀.
+function lobbyUrl(code, myCode) {
+  return code === myCode ? 'index.html' : 'index.html?room=' + encodeURIComponent(code);
+}
+
+// 방 코드 표시 + 다른 방 방문 폼(+ 남의 방을 보는 중이면 "내 방으로"). 3D든
+// 폴백 링크 화면이든 둘 다에 있는 .room-info 자리를 똑같이 채움(둘 중
+// 하나만 실제로 보임).
+roomContext.then((ctx) => {
+  const { mine, viewingCode, readOnly } = ctx;
+
   document.querySelectorAll('.room-info').forEach((el) => {
-    el.innerHTML = `
-      <span class="room-tag">내 방 코드 <b>${mine.code}</b></span>
-      <button class="room-copy" type="button">복사</button>
+    const visitForm = `
       <form class="room-visit">
         <input type="text" maxlength="6" placeholder="방 코드로 방문" aria-label="방 코드">
         <button type="submit">방문</button>
       </form>
     `;
-    el.querySelector('.room-copy').addEventListener('click', () => {
-      copyToClipboard(mine.code).catch(() => {});
-    });
+    if (readOnly) {
+      el.innerHTML = `
+        <span class="room-tag readonly">방 <b class="viewing-code"></b> 보는 중 · 읽기 전용</span>
+        <a class="room-home" href="${lobbyUrl(mine.code, mine.code)}">내 방으로</a>
+      ` + visitForm;
+      // 주소창의 ?room= 값이라 아무 문자열이나 들어올 수 있음 — innerHTML에
+      // 직접 끼우지 않고 textContent로 넣어서 HTML 주입을 막음.
+      el.querySelector('.viewing-code').textContent = viewingCode;
+    } else {
+      el.innerHTML = `
+        <span class="room-tag">내 방 코드 <b>${mine.code}</b></span>
+        <button class="room-copy" type="button">복사</button>
+      ` + visitForm;
+      el.querySelector('.room-copy').addEventListener('click', () => {
+        copyToClipboard(mine.code).catch(() => {});
+      });
+    }
     el.querySelector('.room-visit').addEventListener('submit', (e) => {
       e.preventDefault();
       const code = el.querySelector('.room-visit input').value.trim().toUpperCase();
-      if (code) window.location.href = roomLink('sketchbook.html', code, mine.code);
+      if (code) window.location.href = lobbyUrl(code, mine.code);
     });
   });
 
-  // 3D 로비든 폴백 링크 화면이든 상관없이 "구글 계정으로 방 복구/연결"
-  // 자리를 둠 — 이미 연동된 계정이 있으면 버튼 대신 그 이메일을 보여주고,
-  // GOOGLE_CLIENT_ID가 안 채워져 있으면 initGoogleAuth이 그냥 아무것도 안 그림.
-  document.querySelectorAll('.google-btn').forEach((el) => initGoogleAuth(el, mine));
-
-  // 3D 로비에만 있는 테마 스위처(폴백 링크 화면엔 씬이 없어서 #themePicker
-  // 자체가 없음). 지금 테마를 알아야 어느 스와치를 눌린 상태로 보여줄지
-  // 정할 수 있어서, 방 정보를 한 번 더 조회함.
-  const picker = document.getElementById('themePicker');
-  if (picker) {
-    fetch(`${API_BASE}/api/rooms/${mine.code}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((info) => renderThemePicker(picker, mine, (info && info.theme) || DEFAULT_THEME))
-      .catch(() => renderThemePicker(picker, mine, DEFAULT_THEME));
+  if (readOnly) {
+    // 폴백 링크 화면의 정적 링크들도 이 방을 이어서 보게 함. 테마 변경과
+    // 구글 계정 연결은 내 방을 바꾸는 일이라 남의 방에선 아예 안 그림.
+    document.querySelectorAll('#fallbackLinks a').forEach((a) => {
+      a.href = pageUrl(a.getAttribute('href'), ctx);
+    });
+  } else {
+    // 3D 로비든 폴백 링크 화면이든 상관없이 "구글 계정으로 방 복구/연결"
+    // 자리를 둠 — 이미 연동된 계정이 있으면 버튼 대신 그 이메일을 보여주고,
+    // GOOGLE_CLIENT_ID가 안 채워져 있으면 initGoogleAuth이 그냥 아무것도 안 그림.
+    const unlinkEl = document.getElementById('googleUnlink');
+    document.querySelectorAll('.google-btn').forEach((el) => initGoogleAuth(el, mine, unlinkEl));
   }
+
+  // 방 이름(누구 방인지)과 테마 스위처는 방 정보를 받아와야 그릴 수 있음.
+  // 조회가 실패해도 이름 없음 + 기본 테마로 그대로 그림.
+  roomInfo
+    .then((info) => (info && !info.missing ? info : null), () => null)
+    .then((info) => {
+      renderRoomName(ctx, info && info.name);
+      // 3D 로비에만 있는 테마 스위처(폴백 링크 화면엔 #themePicker 자체가 없음).
+      // 남의 방의 테마는 바꿀 수 없으니 내 방일 때만 그림.
+      const picker = document.getElementById('themePicker');
+      if (picker && !readOnly) renderThemePicker(picker, mine, (info && info.theme) || DEFAULT_THEME);
+    });
 });
+
+// 헤더 제목을 방 이름으로 바꿔서 "누구 방인지" 보여줌(이름이 없으면 그냥 "로비").
+// 내 방이면 제목을 클릭했을 때만 이름을 짓고 고치는 입력칸이 열리고(평소엔
+// 숨김), 남의 방이면 읽기 전용이라 이름만 보임.
+function renderRoomName(ctx, name) {
+  const h1 = document.querySelector('#header h1');
+  const showName = (n) => {
+    if (h1) h1.textContent = n || '로비';
+    document.title = n ? `${n} · 로비` : '로비';
+  };
+  showName(name);
+
+  const box = document.getElementById('roomName');
+  if (!box || ctx.readOnly) return;
+  box.innerHTML = `
+    <form class="room-name-form" hidden>
+      <input type="text" maxlength="20" placeholder="방 이름 (최대 20자)" aria-label="방 이름">
+      <button type="submit">저장</button>
+    </form>
+  `;
+  const form = box.querySelector('.room-name-form');
+  const input = form.querySelector('input');
+  const btn = form.querySelector('button');
+  input.value = name || '';
+
+  const openForm = () => { form.hidden = false; input.focus(); input.select(); };
+  const closeForm = () => { form.hidden = true; };
+  if (h1) {
+    // 제목 자체가 버튼 역할: 클릭(또는 Enter/Space)하면 입력칸이 열리고 닫힘.
+    h1.classList.add('editable');
+    h1.tabIndex = 0;
+    h1.setAttribute('role', 'button');
+    h1.title = '클릭해서 방 이름 바꾸기';
+    const toggle = () => (form.hidden ? openForm() : closeForm());
+    h1.addEventListener('click', toggle);
+    h1.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    });
+  }
+  input.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeForm(); });
+
+  const flash = (label) => {
+    btn.textContent = label;
+    setTimeout(() => { btn.textContent = '저장'; }, 1200);
+  };
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    btn.disabled = true;
+    fetch(`${roomApi(ctx)}/name`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Room-Token': ctx.mine.token },
+      body: JSON.stringify({ name: input.value.trim() }),
+    })
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((saved) => { showName(saved.name); input.value = saved.name || ''; closeForm(); })
+      .catch(() => flash('실패'))
+      .finally(() => { btn.disabled = false; });
+  });
+}
 
 const THEME_LABELS = { wood: '우드', night: '나이트', pastel: '파스텔' };
 
@@ -108,16 +226,20 @@ if (typeof THREE === 'undefined' || !webglAvailable()) {
 
 // 방의 테마(색 팔레트)를 서버에서 받아온 뒤에야 씬을 만들 수 있어서,
 // 이 함수 전체가 그 조회를 기다리는 프로미스임 — 실패하면 위 .catch가
-// no-3d 폴백으로 넘김.
+// no-3d 폴백으로 넘김. 남의 방 코드가 존재하지 않는 방이면(404) 씬을
+// 짓지 않고 알려준 뒤 내 로비로 돌려보냄.
 function boot() {
-  return getMyRoom().then((mine) =>
-    fetch(`${API_BASE}/api/rooms/${mine.code}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((info) => bootWithTheme(mine, (info && info.theme) || DEFAULT_THEME))
-  );
+  return Promise.all([roomContext, roomInfo]).then(([ctx, info]) => {
+    if (info && info.missing) {
+      alert(`방 ${ctx.viewingCode}을(를) 찾을 수 없어요. 내 방으로 돌아갈게요.`);
+      window.location.replace(lobbyUrl(ctx.mine.code, ctx.mine.code));
+      return;
+    }
+    return bootWithTheme((info && info.theme) || DEFAULT_THEME, ctx);
+  });
 }
 
-function bootWithTheme(mine, theme) {
+function bootWithTheme(theme, ctx) {
   const canvasEl = document.getElementById('canvas3d');
   const stage = document.getElementById('stage');
   const ui = document.getElementById('ui');
@@ -132,16 +254,17 @@ function bootWithTheme(mine, theme) {
 
   const { scene, interactiveGroups, updateMotes, updateTurntable, updateBall, kickBall, setSketchbookPreview, setFeaturedSong, setFeaturedWorks, setLibraryBooks } = buildScene(theme);
 
-  // 이젤 보드에 실제 내 방 1페이지 그림을 채워넣음. 실시간 동기화는
-  // 필요 없어서(로비에서 그리는 기능도 없음) 로드 시 한 번만 조회.
-  fetch(`${API_BASE}/api/rooms/${mine.code}/pages/1`)
+  // 이젤 보드에 지금 보는 방의 1페이지 그림을 채워넣음. 실시간 동기화는
+  // 필요 없어서(로비에서 그리는 기능도 없음) 로드 시 한 번만 조회. 읽기는
+  // 방 코드만 있으면 되니 남의 방이어도 그대로 동작함.
+  fetch(`${roomApi(ctx)}/pages/1`)
     .then((res) => (res.ok ? res.json() : null))
     .then((page) => { if (page) setSketchbookPreview(page.strokes || []); })
     .catch(() => {}); // 실패해도 이젤은 그냥 빈 종이로 남아있을 뿐, 로비 자체는 멀쩡히 작동함
 
   // 턴테이블에 대표곡(가장 최근에 추가한 음악 기록)을 채워넣음 —
   // 목록은 이미 최신순 정렬이라 첫 번째 항목이 곧 최신곡.
-  fetch(`${API_BASE}/api/rooms/${mine.code}/records?cat=music`)
+  fetch(`${roomApi(ctx)}/records?cat=music`)
     .then((res) => (res.ok ? res.json() : []))
     .then((records) => { if (records && records.length) setFeaturedSong(records[0]); })
     .catch(() => {}); // 실패해도 턴테이블은 기본 상태로 남을 뿐, 로비 자체는 멀쩡히 작동함
@@ -154,7 +277,7 @@ function bootWithTheme(mine, theme) {
   //    띄는 자리라 "대표작"을 걺.
   //  - 왼쪽/오른쪽 액자: 가운데를 뺀 나머지 중 최신 두 개.
   //  - 책장: 음악을 뺀 나머지 기록 전부의 제목으로 그 개수만큼만 채움.
-  fetch(`${API_BASE}/api/rooms/${mine.code}/records`)
+  fetch(`${roomApi(ctx)}/records`)
     .then((res) => (res.ok ? res.json() : []))
     .then((records) => {
       const list = records || [];
@@ -174,7 +297,7 @@ function bootWithTheme(mine, theme) {
     ui.style.transition = 'opacity .35s ease';
     stage.style.opacity = '0';
     ui.style.opacity = '0';
-    setTimeout(() => { window.location.href = PAGES[room]; }, 320);
+    setTimeout(() => { window.location.href = pageUrl(PAGES[room], ctx); }, 320);
   }
 
   const interaction = createRoomInteraction({

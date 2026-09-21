@@ -245,8 +245,9 @@ function drawBookSpine(ctx, w, h, colorHex, title) {
 // 기록 보관소 방을 나타내는 가구: 뒷벽을 꽉 채우는 책장. 칸에 꽂히는
 // 책은 shelf.userData.setBooks(titles)로 실제 기록 제목 목록을 받아
 // 그 개수만큼만 꽂아 넣음 — 기록이 늘어나면 책장도 자연스럽게 채워짐.
-// 데이터가 아직 없을 때(로드 전/실패)는 무작위로 채워서 빈 벽처럼
-// 보이지 않게 함.
+// 기록이 0개면 빈 책장 그대로이고, 아직 못 받아왔을 때(로드 전/실패)도
+// 빈 채로 시작함 — 예전엔 무작위 책으로 채워뒀다가 기록이 없는 방도 꽉 차
+// 보이는 문제가 있었음.
 function buildBookshelf() {
   const shelf = new THREE.Group();
   shelf.userData.room = 'library';
@@ -288,41 +289,30 @@ function buildBookshelf() {
     bookMeshes = [];
   }
 
-  // 한 칸(level)의 [xStart, xEnd] 구간 안에 책을 최대한 채워 넣음.
-  // titles가 있으면 그 개수만큼만(색·책등 글자를 제목에서 뽑음),
-  // 없으면(기본 상태) 안전장치(guard) 걸린 채로 무작위 채움.
+  // 한 칸(level)의 [xStart, xEnd] 구간 안에, titles 순서대로 책을 채워 넣음
+  // (색·책등 글자를 제목에서 뽑음). 칸이 차면 거기서 멈추고 꽂은 수를 돌려줌.
   function fillLevel(y, xStart, xEnd, titles) {
     let x = xStart;
     let guard = 0;
     let i = 0;
-    const limit = titles ? titles.length : Infinity;
-    while (x < xEnd - 0.02 && guard < 200 && i < limit) {
+    while (x < xEnd - 0.02 && guard < 200 && i < titles.length) {
       guard++;
       const bw = 0.07 + Math.random() * 0.05;
       if (x + bw > xEnd) break;
       const bh = 0.32 + Math.random() * 0.16;
       const bd = SD - 0.1;
-      let book;
-      if (titles) {
-        const title = titles[i];
-        const col = BOOK_COLORS[hashString(title) % BOOK_COLORS.length];
-        const colorHex = '#' + col.toString(16).padStart(6, '0');
-        const sideMat = new THREE.MeshStandardMaterial({ color: col, roughness: 0.85 });
-        // 책등(카메라를 향하는 +z 면)에만 제목 텍스처를 입히고, 나머지
-        // 5면은 그냥 색만 — BoxGeometry 재질 배열 순서는 [+x,-x,+y,-y,+z,-z].
-        const spineTex = makeCanvasTexture((ctx, w, h) => drawBookSpine(ctx, w, h, colorHex, title), 64, 256);
-        const spineMat = new THREE.MeshStandardMaterial({ map: spineTex, roughness: 0.85 });
-        book = new THREE.Mesh(
-          new THREE.BoxGeometry(bw, bh, bd),
-          [sideMat, sideMat, sideMat, sideMat, spineMat, sideMat]
-        );
-      } else {
-        const col = BOOK_COLORS[Math.floor(Math.random() * BOOK_COLORS.length)];
-        book = new THREE.Mesh(
-          new THREE.BoxGeometry(bw, bh, bd),
-          new THREE.MeshStandardMaterial({ color: col, roughness: 0.85 })
-        );
-      }
+      const title = titles[i];
+      const col = BOOK_COLORS[hashString(title) % BOOK_COLORS.length];
+      const colorHex = '#' + col.toString(16).padStart(6, '0');
+      const sideMat = new THREE.MeshStandardMaterial({ color: col, roughness: 0.85 });
+      // 책등(카메라를 향하는 +z 면)에만 제목 텍스처를 입히고, 나머지
+      // 5면은 그냥 색만 — BoxGeometry 재질 배열 순서는 [+x,-x,+y,-y,+z,-z].
+      const spineTex = makeCanvasTexture((ctx, w, h) => drawBookSpine(ctx, w, h, colorHex, title), 64, 256);
+      const spineMat = new THREE.MeshStandardMaterial({ map: spineTex, roughness: 0.85 });
+      const book = new THREE.Mesh(
+        new THREE.BoxGeometry(bw, bh, bd),
+        [sideMat, sideMat, sideMat, sideMat, spineMat, sideMat]
+      );
       book.position.set(x + bw / 2, y + bh / 2, 0);
       book.rotation.y = (Math.random() - 0.5) * 0.05; // 살짝 삐뚤빼뚤하게 꽂힌 느낌
       book.castShadow = true; book.receiveShadow = true;
@@ -348,14 +338,6 @@ function buildBookshelf() {
   // "책장 하나를 위에서부터 채우고 다음 책장으로" 순서.
   function fillAll(titles) {
     clearBooks();
-    if (!titles) {
-      // 기본(로딩 전) 상태는 순서가 안 중요하니 책장마다 그냥 다 채움.
-      for (let b = 0; b < bayCount; b++) {
-        const [xStart, xEnd] = bayRange(b);
-        levelsTopFirst.forEach((y) => fillLevel(y, xStart, xEnd, null));
-      }
-      return;
-    }
     let offset = 0;
     for (let b = 0; b < bayCount && offset < titles.length; b++) {
       const [xStart, xEnd] = bayRange(b);
@@ -366,8 +348,6 @@ function buildBookshelf() {
     }
   }
 
-  fillAll(null); // 실제 기록을 받아오기 전까지는 무작위로 채워둔 기본 모습
-
   shelf.add(aoBlob(4.0));
 
   shelf.position.set(0, 0, -FLOOR_D / 2 + SD / 2 + 0.06);
@@ -375,8 +355,8 @@ function buildBookshelf() {
   // main.js가 라이브러리 전체 기록(책/애니/영화)의 제목 목록을 받아온
   // 뒤 이걸 호출해서, 그 개수만큼만 책을 다시 꽂아 넣음.
   shelf.userData.setBooks = (titles) => {
-    if (!titles) return; // 아직 못 받아왔을 때(로드 전/실패)는 기본(무작위) 모습 유지
-    fillAll(titles); // 빈 배열이면 실제로 빈 책장으로 비움 — 기록이 0개인 걸 그대로 보여줌
+    if (!titles) return; // 못 받아왔으면 빈 책장 그대로
+    fillAll(titles); // 빈 배열이면 책 없이 비움 — 기록이 0개인 걸 그대로 보여줌
   };
 
   return shelf;
@@ -537,9 +517,7 @@ function buildTurntable() {
   group.add(armPivot);
 
   group.add(aoBlob(0.85));
-  let label = twoLineLabelSprite('🎵 턴테이블', '노래를 추가해보세요');
-  label.position.set(0, 1.55, 0);
-  group.add(label);
+  let label = null; // 곡이 있을 때만 제목/가수를 띄움 — 곡이 없으면 아무 글자도 없음
 
   // 뒷벽을 꽉 채운 책장 앞으로 살짝 나와 서 있는 자리 — 책장이 뒷벽에
   // 바짝 붙어 있어서(z ≈ -3.06), 턴테이블은 그 앞으로 충분히 빼둬야
@@ -549,15 +527,14 @@ function buildTurntable() {
 
   // main.js가 라이브러리의 최근 음악 기록을 받아온 뒤 이걸 호출해서
   // LP와 이름표를 실제 곡 정보로 채워넣음. song이 없으면(음악 기록이
-  // 하나도 없으면) 기본 상태 그대로 둠.
+  // 하나도 없으면) 이름표 없이 기본 LP 그대로 둠.
   group.userData.setFeaturedSong = (song) => {
-    group.remove(label);
-    label = twoLineLabelSprite(
-      `🎵 ${(song && song.title) || '턴테이블'}`,
-      (song && (song.creator || '아티스트 미상')) || '노래를 추가해보세요'
-    );
-    label.position.set(0, 1.55, 0);
-    group.add(label);
+    if (label) { group.remove(label); label = null; }
+    if (song) {
+      label = twoLineLabelSprite(`🎵 ${song.title}`, song.creator || '아티스트 미상');
+      label.position.set(0, 1.55, 0);
+      group.add(label);
+    }
 
     const url = song && song.photo_url;
     if (!url) {

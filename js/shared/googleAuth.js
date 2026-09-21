@@ -21,8 +21,9 @@ function renderGoogleButton(containerEl) {
 // 이미 이 방에 구글 계정이 연동돼 있으면 로그인 버튼 대신 어느 계정인지
 // 보여주고, 아직이면 기존처럼 로그인 버튼을 그림. 소유자만 자기 방의
 // 연동 상태를 볼 수 있으므로(room.js의 mine 토큰 필요) 남의 방을 보는
-// 중엔 호출하지 않아야 함.
-export function initGoogleAuth(containerEl, mine) {
+// 중엔 호출하지 않아야 함. unlinkEl을 주면 연동된 상태일 때 거기에
+// "연동 해제"를 눈에 안 띄게 따로 둠.
+export function initGoogleAuth(containerEl, mine, unlinkEl) {
   if (!GOOGLE_CLIENT_ID || !containerEl || !mine) return;
 
   fetch(`${API_BASE}/api/rooms/${mine.code}/google`, { headers: { 'X-Room-Token': mine.token } })
@@ -30,11 +31,25 @@ export function initGoogleAuth(containerEl, mine) {
     .then((status) => {
       if (status && status.linked) {
         containerEl.innerHTML = `<span class="google-linked">${escapeHtml(status.email || '')} 계정과 연동됨</span>`;
+        if (unlinkEl) renderUnlink(unlinkEl, mine);
         return;
       }
       renderGoogleButton(containerEl);
     })
     .catch(() => renderGoogleButton(containerEl)); // 상태 조회 실패해도 로그인은 계속 가능해야 함
+}
+
+// 연동 해제 — 자주 쓰는 기능도 아니고 잘못 누르면 곤란해서, 화면 아래쪽에
+// 작고 흐린 글자로만 두고 누르면 한 번 더 확인함. 방과 기록은 그대로이고
+// 구글 계정과의 연결만 끊김(서버가 sub/이메일만 지움).
+function renderUnlink(unlinkEl, mine) {
+  unlinkEl.innerHTML = '<button type="button" class="google-unlink">구글 계정 연동 해제</button>';
+  unlinkEl.querySelector('button').addEventListener('click', () => {
+    if (!confirm('구글 계정 연동을 해제할까요?\n해제하면 이 계정으로는 이 방을 다시 불러올 수 없어요. (방과 기록은 그대로예요)')) return;
+    fetch(`${API_BASE}/api/rooms/${mine.code}/google`, { method: 'DELETE', headers: { 'X-Room-Token': mine.token } })
+      .then((res) => (res.ok ? window.location.reload() : Promise.reject()))
+      .catch(() => alert('연동 해제에 실패했어요. 잠시 후 다시 시도해주세요.'));
+  });
 }
 
 function handleCredential(response) {

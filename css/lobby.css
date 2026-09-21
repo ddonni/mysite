@@ -132,6 +132,18 @@ body{
   padding:5px 12px;cursor:pointer;
 }
 .room-info .room-copy:hover{border-color:var(--paper-dim);}
+/* 남의 방을 읽기 전용으로 보는 중일 때: 안내 문구 + 내 방으로 돌아가는 링크 */
+/* 밝은 벽 위에서도 읽히도록 어두운 알약 배경을 깔음 */
+.room-info .room-tag.readonly{
+  color:var(--ember);background:rgba(18,15,12,0.78);padding:5px 11px;border-radius:999px;
+}
+.room-info .room-tag.readonly b{color:var(--paper);}
+.room-info .room-home{
+  font-family:inherit;font-size:11.5px;font-weight:600;color:var(--paper);text-decoration:none;
+  background:var(--void-2);border:1px solid var(--void-border);border-radius:999px;
+  padding:5px 12px;cursor:pointer;
+}
+.room-info .room-home:hover{border-color:var(--paper-dim);}
 .room-info .room-visit{display:flex;gap:4px;}
 .room-info .room-visit input{
   width:82px;font-family:inherit;font-size:11.5px;color:var(--paper);
@@ -144,6 +156,26 @@ body{
   background:var(--ember);border:none;border-radius:999px;padding:5px 12px;cursor:pointer;
 }
 .room-info .room-visit button:hover{filter:brightness(1.08);}
+
+/* --- 방 이름 입력(js/lobby/main.js가 내 방일 때만 채움): 이름을 짓고 고침 --- */
+.room-name:empty{display:none;}
+.room-name-form{display:flex;gap:4px;margin-top:2px;pointer-events:auto;}
+.room-name-form[hidden]{display:none;} /* display:flex가 hidden 속성을 덮어쓰지 않게 */
+/* 내 방일 때 제목이 곧 "이름 바꾸기" 버튼 — 글자 폭만큼만 클릭되게 하고 살짝 힌트 */
+#header h1.editable{align-self:flex-start;pointer-events:auto;cursor:pointer;}
+#header h1.editable:hover{text-decoration:underline dotted;text-underline-offset:6px;}
+.room-name-form input{
+  width:150px;font-family:inherit;font-size:11.5px;color:var(--paper);
+  background:var(--void-2);border:1px solid var(--void-border);border-radius:999px;
+  padding:5px 10px;
+}
+.room-name-form input::placeholder{color:var(--paper-dim);}
+.room-name-form button{
+  font-family:inherit;font-size:11.5px;font-weight:600;color:var(--void);
+  background:var(--ember);border:none;border-radius:999px;padding:5px 12px;cursor:pointer;
+}
+.room-name-form button:hover{filter:brightness(1.08);}
+.room-name-form button:disabled{opacity:.6;cursor:default;}
 
 /* --- 테마 스위처(js/lobby/main.js가 채움): 방 색 팔레트 고르기 --- */
 .theme-picker{display:flex;align-items:center;gap:6px;margin-top:8px;pointer-events:auto;}
@@ -158,6 +190,17 @@ body{
 /* --- 구글 로그인 버튼(js/shared/googleAuth.js가 GIS 위젯을 그려넣음) --- */
 .google-btn{margin-top:8px;pointer-events:auto;}
 .google-btn:empty{display:none;} /* GOOGLE_CLIENT_ID 미설정 시 빈 채로 남으니 자리도 안 차지하게 */
+/* 연동 해제: 화면 왼쪽 아래에 작고 흐리게만 — 자주 쓰는 게 아니라 일부러 눈에 안 띄게 */
+.google-unlink-slot{
+  position:absolute;left:max(22px, env(safe-area-inset-left));bottom:max(20px, env(safe-area-inset-bottom));
+  pointer-events:auto;
+}
+.google-unlink-slot:empty{display:none;}
+.google-unlink{
+  font-family:inherit;font-size:10.5px;color:var(--paper-dim);opacity:.45;
+  background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;
+}
+.google-unlink:hover{opacity:.9;}
 .google-linked{
   display:inline-block;font-size:11.5px;color:var(--paper-dim);
   background:rgba(18,15,12,0.55);padding:5px 10px;border-radius:999px;
