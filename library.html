@@ -25,8 +25,18 @@
     </div>
   </div>
 
-  <div class="tabs" id="tabs"></div>
+  <div class="tabs-row">
+    <div class="tabs" id="tabs"></div>
+    <div class="view-toggle" id="viewToggle" role="group" aria-label="보기 방식">
+      <button type="button" data-view="list" class="active" aria-pressed="true" title="목록으로 보기">☰</button>
+      <button type="button" data-view="grid" aria-pressed="false" title="사진만 보기">▦</button>
+    </div>
+  </div>
   <div class="list" id="list"><div class="empty">불러오는 중…</div></div>
+</div>
+
+<div class="thumb-lightbox" id="thumbLightbox" hidden>
+  <div class="thumb-lightbox-inner"></div>
 </div>
 
 <!-- Add/Edit Modal -->
