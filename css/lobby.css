@@ -25,6 +25,7 @@ body{
   position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
   background:var(--void);color:var(--paper-dim);font-size:13px;letter-spacing:0.04em;
   transition:opacity .5s ease;z-index:40;
+  padding:0 28px;text-align:center; /* 서버를 깨우는 중 안내는 기본 문구보다 길어서, 좁은 화면에서 줄바꿈될 여지를 둠 */
 }
 #loading.hide{opacity:0;pointer-events:none;}
 

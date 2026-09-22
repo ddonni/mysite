@@ -9,8 +9,9 @@ import { getMyRoom, getViewingRoomCode } from '../shared/room.js';
 import { API_BASE } from '../shared/config.js';
 import { initGoogleAuth } from '../shared/googleAuth.js';
 import { copyToClipboard } from '../shared/dom.js';
+import { watchForSlowWake, WAKE_MESSAGE } from '../shared/wake.js';
 
-const PAGES = { sketchbook: 'sketchbook.html', library: 'library.html', music: 'library.html?cat=music' };
+const PAGES = { sketchbook: 'sketchbook', library: 'library', music: 'library?cat=music' };
 const ROOM_INFO = {
   sketchbook: { title: '스케치북', body: '번호 매긴 페이지를 넘기며 자유롭게 그리는 캔버스 방이에요.' },
   library: { title: '기록 보관소', body: '읽고 본 책·애니·영화를 기록하는 방이에요.' },
@@ -48,7 +49,7 @@ const roomInfo = roomContext.then((ctx) =>
 
 // 로비 자체로 가는 주소 — "방 코드로 방문" 폼과 "내 방으로"가 씀.
 function lobbyUrl(code, myCode) {
-  return code === myCode ? 'index.html' : 'index.html?room=' + encodeURIComponent(code);
+  return code === myCode ? './' : './?room=' + encodeURIComponent(code);
 }
 
 // 방 코드 표시 + 다른 방 방문 폼(+ 남의 방을 보는 중이면 "내 방으로"). 3D든
@@ -229,14 +230,20 @@ if (typeof THREE === 'undefined' || !webglAvailable()) {
 // no-3d 폴백으로 넘김. 남의 방 코드가 존재하지 않는 방이면(404) 씬을
 // 짓지 않고 알려준 뒤 내 로비로 돌려보냄.
 function boot() {
-  return Promise.all([roomContext, roomInfo]).then(([ctx, info]) => {
-    if (info && info.missing) {
-      alert(`방 ${ctx.viewingCode}을(를) 찾을 수 없어요. 내 방으로 돌아갈게요.`);
-      window.location.replace(lobbyUrl(ctx.mine.code, ctx.mine.code));
-      return;
-    }
-    return bootWithTheme((info && info.theme) || DEFAULT_THEME, ctx);
-  });
+  // 서버가 잠들어 있으면 이 대기가 길어질 수 있음 — 3초가 지나도 안
+  // 끝나면 "그냥 느린 게 아니라 서버가 깨는 중"이라고 로딩 문구를 바꿔줌.
+  const loadingEl = document.getElementById('loading');
+  const stopWatch = watchForSlowWake(() => { loadingEl.textContent = WAKE_MESSAGE; });
+  return Promise.all([roomContext, roomInfo])
+    .then(([ctx, info]) => {
+      if (info && info.missing) {
+        alert(`방 ${ctx.viewingCode}을(를) 찾을 수 없어요. 내 방으로 돌아갈게요.`);
+        window.location.replace(lobbyUrl(ctx.mine.code, ctx.mine.code));
+        return;
+      }
+      return bootWithTheme((info && info.theme) || DEFAULT_THEME, ctx);
+    })
+    .finally(stopWatch);
 }
 
 function bootWithTheme(theme, ctx) {

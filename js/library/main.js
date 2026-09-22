@@ -4,16 +4,32 @@ import { fetchRecords, deleteRecord, setFeatured, setRoom } from './records.js';
 import { createList } from './list.js';
 import { createModal } from './modal.js';
 import { initRoomNav } from '../shared/roomNav.js';
+import { watchForSlowWake, WAKE_MESSAGE } from '../shared/wake.js';
 
 // 서버에서 기록을 다시 불러와 목록을 새로 그림. 추가/수정/삭제가 성공한
-// 뒤에는 항상 이 함수를 불러서 화면을 최신 상태로 맞춤.
+// 뒤에는 항상 이 함수를 불러서 화면을 최신 상태로 맞춤. 처음 불러올 때는
+// library.html이 넣어둔 "불러오는 중…" placeholder가 그대로 보이다가,
+// 3초가 지나도 안 끝나면(서버가 잠들어 있던 경우) 안내를 바꿔줌 — list.render가
+// 끝내 그 자리를 덮어쓰므로 별도로 치울 필요는 없음.
 function reload() {
-  return fetchRecords().then((items) => list.render(items));
+  const listEl = document.getElementById('list');
+  const isPlaceholder = () => listEl.children.length === 1 && listEl.firstElementChild.classList.contains('empty');
+  const stopWatch = watchForSlowWake(() => {
+    if (isPlaceholder()) listEl.firstElementChild.textContent = WAKE_MESSAGE;
+  });
+  return fetchRecords()
+    .then((items) => { stopWatch(); list.render(items); })
+    .catch(() => {
+      stopWatch();
+      // list.render()가 실행되기 전(=최초 로딩)에만 이 자리를 대신 채움 —
+      // 이미 목록이 그려진 뒤라면(새로고침 실패) 있던 목록을 그대로 둠.
+      if (isPlaceholder()) listEl.firstElementChild.textContent = '기록을 불러오지 못했어요. 새로고침해 보세요.';
+    });
 }
 
 let list; // readOnly를 알아야 목록을 그릴 수 있어서, 방을 안 뒤에 만듦
 
-initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: 'library.html' }).then(({ mine, viewingCode, readOnly }) => {
+initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: 'library' }).then(({ mine, viewingCode, readOnly }) => {
   setRoom(viewingCode, readOnly ? null : mine.token);
   document.body.classList.toggle('read-only', readOnly);
 
