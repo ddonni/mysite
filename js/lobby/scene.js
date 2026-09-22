@@ -149,17 +149,16 @@ function buildEasel() {
   easel.userData.room = 'sketchbook';
   const legMat = new THREE.MeshStandardMaterial({ color: 0x3a2c1f, roughness: 0.7 });
 
-  function leg(x, z, tiltZ, tiltX) {
-    const l = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 1.9, 8), legMat);
-    l.position.set(x, 0.95, z);
-    l.rotation.z = tiltZ || 0;
-    l.rotation.x = tiltX || 0;
-    l.castShadow = true;
-    return l;
+  // 이젤이 아니라 표지판처럼: 곧은 막대기 두 개만 땅에 박혀 있고(뒤를
+  // 받치는 세 번째 다리 없음), 그 위에 흰 도화지를 그냥 붙여놓은 모양.
+  const POLE_H = 2.0;
+  function pole(x) {
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.045, POLE_H, 8), legMat);
+    p.position.set(x, POLE_H / 2, 0);
+    p.castShadow = true;
+    return p;
   }
-  easel.add(leg(-0.34, 0.18, 0.16, 0));
-  easel.add(leg(0.34, 0.18, -0.16, 0));
-  easel.add(leg(0, -0.32, 0, -0.22));
+  easel.add(pole(-0.58), pole(0.58));
 
   const boardCanvas = document.createElement('canvas');
   boardCanvas.width = BOARD_TEX_W; boardCanvas.height = BOARD_TEX_H;
@@ -167,16 +166,14 @@ function buildEasel() {
   drawBoardPreview(boardCtx, []); // 실제 데이터가 도착하기 전까지는 빈 종이로 시작
   const boardTex = new THREE.CanvasTexture(boardCanvas);
   boardTex.needsUpdate = true;
-  const boardSideMat = new THREE.MeshStandardMaterial({ color: 0x6b5236, roughness: 0.8 });
+  const boardSideMat = new THREE.MeshStandardMaterial({ color: PAGE_BG, roughness: 0.9 });
   const board = new THREE.Mesh(
-    new THREE.BoxGeometry(1.3, 1.0, 0.04),
+    new THREE.BoxGeometry(1.3, 1.0, 0.03),
     [boardSideMat, boardSideMat, boardSideMat, boardSideMat,
       new THREE.MeshStandardMaterial({ map: boardTex, roughness: 0.9 }), boardSideMat]
   );
-  // z를 앞다리(z=0.18)보다 확실히 앞으로 빼서, 다리 막대가 그림을
-  // 가로막지 않고 보드가 다리 앞에 놓인 것처럼 보이게 함.
-  board.position.set(0, 1.2, 0.34); // 바닥 쪽 가장자리(~0.7)는 이전 세로형 보드와 맞춤
-  board.rotation.x = -0.12;
+  // 막대기 앞면에 종이를 그대로 붙여놓은 자리 — 기울이지 않고 곧게 세움.
+  board.position.set(0, 1.2, 0.045);
   board.castShadow = true;
   easel.add(board);
 

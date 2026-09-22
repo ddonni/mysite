@@ -5,7 +5,7 @@
 //   4. 카드의 "입장하기"를 누르면 실제로 다른 페이지로 이동시킴
 import { buildScene, THEMES, DEFAULT_THEME } from './scene.js';
 import { createRoomInteraction } from './controls.js';
-import { getMyRoom, getViewingRoomCode } from '../shared/room.js';
+import { getMyRoom, getViewingRoomCode, forgetMyRoom } from '../shared/room.js';
 import { API_BASE } from '../shared/config.js';
 import { initGoogleAuth } from '../shared/googleAuth.js';
 import { copyToClipboard } from '../shared/dom.js';
@@ -13,7 +13,7 @@ import { watchForSlowWake, WAKE_MESSAGE } from '../shared/wake.js';
 
 const PAGES = { sketchbook: 'sketchbook', library: 'library', music: 'library?cat=music' };
 const ROOM_INFO = {
-  sketchbook: { title: '스케치북', body: '번호 매긴 페이지를 넘기며 자유롭게 그리는 캔버스 방이에요.' },
+  sketchbook: { title: '스케치북', body: '자유롭게 그리는 캔버스 방이에요.' },
   library: { title: '기록 보관소', body: '읽고 본 책·애니·영화를 기록하는 방이에요.' },
   music: { title: '턴테이블', body: '모아둔 노래를 들어보는 공간이에요.' },
 };
@@ -42,9 +42,14 @@ function roomApi({ viewingCode }) {
 }
 
 // 지금 보는 방의 정보(테마, 이름). 헤더(이름/테마 스위처)와 씬 생성이 둘 다
-// 필요로 해서 요청을 한 번만 보냄. 남의 방 코드가 없는 방이면 { missing: true }.
+// 필요로 해서 요청을 한 번만 보냄. 코드가 서버에 없으면(404) { missing:
+// true, own } — own은 그게 남의 방이 아니라 "내 방"인 경우를 구분함(로컬/
+// 운영 서버를 오가며 테스트했거나 방이 실제로 사라진 경우 등).
 const roomInfo = roomContext.then((ctx) =>
-  fetch(roomApi(ctx)).then((res) => (res.status === 404 && ctx.readOnly ? { missing: true } : res.ok ? res.json() : null))
+  fetch(roomApi(ctx)).then((res) => {
+    if (res.status === 404) return { missing: true, own: !ctx.readOnly };
+    return res.ok ? res.json() : null;
+  })
 );
 
 // 로비 자체로 가는 주소 — "방 코드로 방문" 폼과 "내 방으로"가 씀.
@@ -220,6 +225,13 @@ if (typeof THREE === 'undefined' || !webglAvailable()) {
   document.body.classList.add('no-3d');
 } else {
   boot().catch((e) => {
+    // 이 경로로 오는 건 브라우저가 3D를 못 그려서가 아니라(그건 위
+    // 분기에서 이미 걸러짐) 방 정보를 못 받아오는 등 다른 이유로 로비
+    // 짓기 자체가 실패한 것 — index.html의 기본 문구("이 브라우저에서는
+    // 3D를 표시할 수 없어요")를 그대로 두면 원인을 완전히 잘못 짚게 되니
+    // 여기서 고쳐씀.
+    const msg = document.getElementById('fallbackMessage');
+    if (msg) msg.textContent = '지금 서버에 연결할 수 없어요. 아래 링크로 바로 이동해 주세요.';
     document.body.classList.add('no-3d');
     console.error('lobby init failed', e);
   });
@@ -227,8 +239,10 @@ if (typeof THREE === 'undefined' || !webglAvailable()) {
 
 // 방의 테마(색 팔레트)를 서버에서 받아온 뒤에야 씬을 만들 수 있어서,
 // 이 함수 전체가 그 조회를 기다리는 프로미스임 — 실패하면 위 .catch가
-// no-3d 폴백으로 넘김. 남의 방 코드가 존재하지 않는 방이면(404) 씬을
-// 짓지 않고 알려준 뒤 내 로비로 돌려보냄.
+// no-3d 폴백으로 넘김. 방 코드가 서버에 없으면(404) 씬을 짓지 않고
+// 알려줌 — 남의 방이면 내 로비로 돌려보내고, 내 방이면(로컬/운영 서버를
+// 오가며 테스트했거나 방이 실제로 사라진 경우) 낡은 방 정보를 지우고
+// 새로고침해서 새 방을 만들게 함.
 function boot() {
   // 서버가 잠들어 있으면 이 대기가 길어질 수 있음 — 3초가 지나도 안
   // 끝나면 "그냥 느린 게 아니라 서버가 깨는 중"이라고 로딩 문구를 바꿔줌.
@@ -237,6 +251,12 @@ function boot() {
   return Promise.all([roomContext, roomInfo])
     .then(([ctx, info]) => {
       if (info && info.missing) {
+        if (info.own) {
+          alert('내 방을 이 서버에서 찾을 수 없어요. 새 방을 만들게요.');
+          forgetMyRoom();
+          window.location.reload();
+          return;
+        }
         alert(`방 ${ctx.viewingCode}을(를) 찾을 수 없어요. 내 방으로 돌아갈게요.`);
         window.location.replace(lobbyUrl(ctx.mine.code, ctx.mine.code));
         return;
@@ -289,7 +309,11 @@ function bootWithTheme(theme, ctx) {
     .then((records) => {
       const list = records || [];
       const works = list.filter((r) => r.cat !== 'music');
-      const mid = list.find((r) => r.featured) || works[0];
+      // list.find를 음악 포함 전체에서 찾으면(list) 음악 기록이 featured로
+      // 지정된 경우(백엔드는 카테고리를 안 가림 — library/list.js UI에서만
+      // 막아둠) 액자에 노래가 걸려버리고, 그럼 mid가 works의 원소가 아니게
+      // 돼서 바로 아래 rest 필터링도 아무것도 못 거름 — works에서만 찾음.
+      const mid = works.find((r) => r.featured) || works[0];
       const rest = works.filter((r) => r !== mid);
       [rest[0], mid, rest[1]].forEach((work, i) => { if (work) setFeaturedWorks[i](work); });
       setLibraryBooks(works.map((r) => r.title));

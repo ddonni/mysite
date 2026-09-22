@@ -46,6 +46,13 @@ export function adoptRoom(room) {
   writeStored(room);
 }
 
+// 지금 이 브라우저가 "내 방"으로 여기는 정보를 지움 — 그 방이 지금 보고
+// 있는 서버에는 없는 걸로 확인됐을 때(로컬/운영 서버를 오가며 테스트하는
+// 경우 등) main.js가 불러서, 다음 getMyRoom()이 새 방을 만들게 함.
+export function forgetMyRoom() {
+  try { localStorage.removeItem(KEY); } catch (e) {}
+}
+
 // 내 방의 {code, token}을 반환. 아직 없으면 서버에 새로 만듦. 여러
 // 모듈이 동시에 불러도 방 생성 요청은 한 번만 나가도록 캐싱해둠.
 export function getMyRoom() {
@@ -53,8 +60,21 @@ export function getMyRoom() {
   if (stored && stored.code && stored.token) return Promise.resolve(stored);
   if (!creating) {
     creating = fetch(API_BASE + '/api/rooms', { method: 'POST' })
-      .then((res) => res.json())
-      .then((room) => { writeStored(room); return room; });
+      .then((res) => {
+        // res.ok를 안 보고 바로 res.json()을 믿으면, 방 생성 제한(429)
+        // 같은 에러 응답의 본문({"detail": "..."})을 진짜 방인 줄 알고
+        // localStorage에 그대로 저장해버림 — code/token이 없는 이
+        // "방"으로는 이후 모든 요청이 조용히 실패함.
+        if (!res.ok) throw new Error(`room creation failed (${res.status})`);
+        return res.json();
+      })
+      .then((room) => { writeStored(room); return room; })
+      .catch((err) => {
+        // 실패를 계속 캐싱해두면 다음 호출도 똑같이 실패한 채로 끝나버림
+        // — 비워서 다음 getMyRoom() 호출이 다시 시도하게 함.
+        creating = null;
+        throw err;
+      });
   }
   return creating;
 }
