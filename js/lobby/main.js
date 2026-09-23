@@ -14,11 +14,12 @@ import { roomContext, roomInfo, pageUrl, lobbyUrl } from './roomContext.js';
 import { initRoomChrome } from './roomChrome.js';
 import { loadRoomIntoScene } from './loadRoomIntoScene.js';
 import { webglAvailable } from './webgl.js';
+import { forgetMyRoom } from '../shared/room.js';
 import { watchForSlowWake, WAKE_MESSAGE } from '../shared/wake.js';
 
 const PAGES = { sketchbook: 'sketchbook', library: 'library', music: 'library?cat=music', food: 'library?cat=food' };
 const ROOM_INFO = {
-  sketchbook: { title: '스케치북', body: '번호 매긴 페이지를 넘기며 자유롭게 그리는 캔버스 방이에요.' },
+  sketchbook: { title: '스케치북', body: '자유롭게 그리는 캔버스 방이에요.' },
   library: { title: '기록 보관소', body: '읽고 본 책·애니·영화를 기록하는 방이에요.' },
   music: { title: '턴테이블', body: '모아둔 노래를 들어보는 공간이에요.' },
   food: { title: '냉장고', body: '먹은 음식을 사진으로 남겨두는 냉장고예요.' },
@@ -33,6 +34,13 @@ if (typeof THREE === 'undefined' || !webglAvailable()) {
   document.body.classList.add('no-3d');
 } else {
   boot().catch((e) => {
+    // 이 경로로 오는 건 브라우저가 3D를 못 그려서가 아니라(그건 위
+    // 분기에서 이미 걸러짐) 방 정보를 못 받아오는 등 다른 이유로 로비
+    // 짓기 자체가 실패한 것 — index.html의 기본 문구("이 브라우저에서는
+    // 3D를 표시할 수 없어요")를 그대로 두면 원인을 완전히 잘못 짚게 되니
+    // 여기서 고쳐씀.
+    const msg = document.getElementById('fallbackMessage');
+    if (msg) msg.textContent = '지금 서버에 연결할 수 없어요. 아래 링크로 바로 이동해 주세요.';
     document.body.classList.add('no-3d');
     console.error('lobby init failed', e);
   });
@@ -40,8 +48,10 @@ if (typeof THREE === 'undefined' || !webglAvailable()) {
 
 // 방의 테마(색 팔레트)를 서버에서 받아온 뒤에야 씬을 만들 수 있어서,
 // 이 함수 전체가 그 조회를 기다리는 프로미스임 — 실패하면 위 .catch가
-// no-3d 폴백으로 넘김. 남의 방 코드가 존재하지 않는 방이면(404) 씬을
-// 짓지 않고 알려준 뒤 내 로비로 돌려보냄.
+// no-3d 폴백으로 넘김. 방 코드가 서버에 없으면(404) 씬을 짓지 않고
+// 알려줌 — 남의 방이면 내 로비로 돌려보내고, 내 방이면(로컬/운영 서버를
+// 오가며 테스트했거나 방이 실제로 사라진 경우) 낡은 방 정보를 지우고
+// 새로고침해서 새 방을 만들게 함.
 function boot() {
   // 서버가 잠들어 있으면 이 대기가 길어질 수 있음 — 3초가 지나도 안
   // 끝나면 "그냥 느린 게 아니라 서버가 깨는 중"이라고 로딩 문구를 바꿔줌.
@@ -50,6 +60,12 @@ function boot() {
   return Promise.all([roomContext, roomInfo])
     .then(([ctx, info]) => {
       if (info && info.missing) {
+        if (info.own) {
+          alert('내 방을 이 서버에서 찾을 수 없어요. 새 방을 만들게요.');
+          forgetMyRoom();
+          window.location.reload();
+          return;
+        }
         alert(`방 ${ctx.viewingCode}을(를) 찾을 수 없어요. 내 방으로 돌아갈게요.`);
         window.location.replace(lobbyUrl(ctx.mine.code, ctx.mine.code));
         return;

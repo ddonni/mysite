@@ -62,7 +62,7 @@ describe('getMyRoom', () => {
   it('저장된 방이 없으면 POST /api/rooms로 새로 만들고 저장함', async () => {
     const { getMyRoom, getStoredRoom } = await freshRoomModule();
     const created = { code: 'NEW001', token: 'freshtok' };
-    global.fetch.mockResolvedValueOnce({ json: () => Promise.resolve(created) });
+    global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(created) });
 
     const room = await getMyRoom();
 
@@ -74,13 +74,29 @@ describe('getMyRoom', () => {
   it('동시에 여러 번 불러도 방 생성 요청은 한 번만 나감(캐싱)', async () => {
     const { getMyRoom } = await freshRoomModule();
     const created = { code: 'ONCE01', token: 'tok' };
-    global.fetch.mockResolvedValueOnce({ json: () => Promise.resolve(created) });
+    global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(created) });
 
     const [a, b] = await Promise.all([getMyRoom(), getMyRoom()]);
 
     expect(a).toEqual(created);
     expect(b).toEqual(created);
     expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('방 생성이 실패(예: 429 rate limit)하면 에러 바디를 방인 척 저장하지 않고, 다음 호출이 다시 시도함', async () => {
+    const { getMyRoom, getStoredRoom } = await freshRoomModule();
+    global.fetch.mockResolvedValueOnce({ ok: false, status: 429, json: () => Promise.resolve({ detail: 'too many rooms created' }) });
+
+    await expect(getMyRoom()).rejects.toThrow();
+    expect(getStoredRoom()).toBeNull(); // 에러 바디가 "방"으로 저장되지 않음
+
+    const created = { code: 'RETRY1', token: 'tok' };
+    global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(created) });
+
+    const room = await getMyRoom(); // 실패가 캐싱되지 않아서 다시 시도됨
+
+    expect(room).toEqual(created);
+    expect(global.fetch).toHaveBeenCalledTimes(2);
   });
 });
 

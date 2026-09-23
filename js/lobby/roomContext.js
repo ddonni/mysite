@@ -21,9 +21,14 @@ export function roomApi({ viewingCode }) {
 }
 
 // 지금 보는 방의 정보(테마, 이름). 헤더(이름/테마 스위처)와 씬 생성이 둘 다
-// 필요로 해서 요청을 한 번만 보냄. 남의 방 코드가 없는 방이면 { missing: true }.
+// 필요로 해서 요청을 한 번만 보냄. 코드가 서버에 없으면(404) { missing:
+// true, own } — own은 그게 남의 방이 아니라 "내 방"인 경우를 구분함(로컬/
+// 운영 서버를 오가며 테스트했거나 방이 실제로 사라진 경우 등).
 export const roomInfo = roomContext.then((ctx) =>
-  fetch(roomApi(ctx)).then((res) => (res.status === 404 && ctx.readOnly ? { missing: true } : res.ok ? res.json() : null))
+  fetch(roomApi(ctx)).then((res) => {
+    if (res.status === 404) return { missing: true, own: !ctx.readOnly };
+    return res.ok ? res.json() : null;
+  })
 );
 
 // sketchbook.html/library.html로 넘어갈 때, 남의 방을 보던 중이면 ?room=을

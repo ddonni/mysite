@@ -8,9 +8,9 @@
   보관소)을 클릭하면 카메라가 다가가며 카드가 뜨고, "입장하기"를 누르면
   해당 페이지로 이동함. WebGL을 못 쓰는 환경이면 자동으로 텍스트 링크
   폴백으로 전환됨.
-- `sketchbook.html` — 번호가 매겨진 페이지를 스케치북처럼 넘기며 자유롭게
-  그리는 캔버스. 그림 저장/실시간 동기화를 백엔드가 담당하지만, 서버가
-  꺼져 있으면 자동으로 이 기기 로컬 저장 모드로 폴백함.
+- `sketchbook.html` — 고정된 한 페이지에 자유롭게 그리는 캔버스. 그림
+  저장/실시간 동기화를 백엔드가 담당하지만, 서버가 꺼져 있으면 자동으로
+  이 기기 로컬 저장 모드로 폴백함.
 - `library.html` — 읽거나 본 책/애니/영화를 기록하는 목록. 완전히
   백엔드 API에 의존함(로컬 폴백 없음) — 서버가 꺼져 있으면 목록이
   안 뜸.
@@ -33,7 +33,8 @@ js/shared/config.js  # API_BASE 등, 여러 방이 공통으로 쓰는 값
 js/sketchbook/
   main.js            # 시작점 — 아래 모듈들을 만들고 서로 연결함
   store.js           # 저장소: 백엔드 API / 이 기기 로컬 저장, 둘 중 하나
-  canvas.js          # 캔버스에 선 그리기 + 지금 페이지에 뭐가 그려져 있는지
+  canvas.js          # 포인터 입력을 받아 실시간으로 선을 그림(접착부)
+  canvas/            #   strokeBuffer.js(획 저장/병합), renderer.js(레이아웃/전체 다시 그리기)
   pager.js           # 페이지 넘기기/삭제/점프 + canvas의 변경사항을 저장소에 반영
   dock.js            # 색상·굵기·지우개·되돌리기 등 도구 서랍 UI
   toast.js           # 화면 아래 잠깐 뜨는 알림
@@ -41,13 +42,21 @@ js/sketchbook/
 js/library/
   main.js            # 시작점 — list/modal을 만들고 연결함
   records.js         # 백엔드와 통신 (목록 조회, 저장, 삭제, 사진 업로드)
-  list.js            # 탭 + 목록 렌더링
-  modal.js           # 추가/수정 모달 (제목·별점·사진·저장)
+  list.js            # 탭/보기모드 상태 — 실제 그리기는 list/*.js에 위임
+  list/              #   itemFormat.js, detailRow.js, gridView.js, rowsView.js, lightbox.js
+  modal.js           # 추가/수정 모달 오케스트레이션
+  modal/             #   categoryFields.js, starPicker.js, photoPicker.js, presetAutocomplete.js
 
 js/lobby/
-  main.js            # 시작점 — WebGL 확인, 렌더 루프, 페이지 이동
-  scene.js           # 3D 방의 생김새 (바닥/벽/가구/조명/먼지)
-  controls.js        # 카메라 조작 + 가구 클릭 시 카드 UI
+  main.js            # 시작점 — 부팅 순서만 담당
+  roomContext.js      # "지금 보는 방이 어디인지" 계산 + URL 헬퍼
+  roomChrome.js        # 헤더/카드 주변 UI(방 코드, 구글 연동, 이름, 테마)
+  roomNameEditor.js, themePicker.js, webgl.js
+  loadRoomIntoScene.js # 씬에 실제 데이터(그림/기록)를 채워넣는 fetch들
+  scene.js            # 3D 씬 조립 지점
+  scene/              #   roomShell.js, lighting.js, dustMotes.js, aoBlob.js, canvasTexture.js, labelSprite.js, roomDimensions.js
+  scene/furniture/    #   easel.js, bookshelf.js, frame.js, turntable.js, fridge.js, ball.js, teddyBear.js
+  controls.js         # 카메라 조작 + 가구 클릭 시 카드 UI
 ```
 
 각 페이지의 `main.js`가 그 페이지의 "시작점"이자 목차 역할을 함 — 전체
