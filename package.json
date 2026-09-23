@@ -1,0 +1,14 @@
+{
+  "name": "mysite",
+  "private": true,
+  "type": "module",
+  "description": "개인 사이트 프론트엔드 — 빌드 없이 그대로 배포되는 정적 사이트. 이 package.json은 테스트(Vitest)를 돌리기 위한 용도로만 있고, 사이트 자체는 여전히 <script type=\"module\">로 js/ 아래 파일을 직접 불러옴.",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.1",
+    "vitest": "^2.1.4"
+  }
+}

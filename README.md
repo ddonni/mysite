@@ -54,3 +54,21 @@ js/lobby/
 흐름이 궁금하면 거기부터 열어보면 됨. 백엔드 서버 주소가 바뀌면
 `js/shared/config.js` 한 곳만 고치면 스케치북/기록 보관소 양쪽에 다
 반영됨(예전엔 두 파일에 따로 적혀 있어서 둘 다 고쳐야 했음).
+
+## 테스트
+
+이 사이트 자체는 빌드 없이 `<script type="module">`로 바로 서비스되는
+정적 파일이라, `package.json`은 순전히 [Vitest](https://vitest.dev/)를
+돌리기 위한 용도로만 있음(사이트 배포에는 안 씀).
+
+```bash
+npm install
+npm test
+```
+
+`tests/`는 `js/`와 같은 구조로 나눠져 있고, DOM을 직접 그리는 코드
+(`modal.js`, `scene.js` 등)보다는 fetch 응답을 다루는 로직처럼 DOM 없이
+독립적으로 부를 수 있는 함수 위주로 커버함 — 예를 들어
+`records.js`/`store.js`가 서버 에러 응답(`res.ok`가 false인 경우)을
+제대로 걸러내는지, `room.js`가 `localStorage`/URL 쿼리를 올바르게
+읽고 쓰는지 같은 것들.

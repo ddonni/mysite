@@ -2,7 +2,12 @@
 // 서버 주소가 바뀌면(재배포 등) 이 한 줄만 고치면 모든 페이지에 반영됨 —
 // 예전엔 js/app.js, js/library.js 두 군데에 똑같은 값이 따로 적혀 있어서
 // 매번 둘 다 고쳐야 했음. 이제는 이 파일 하나만 import해서 씀.
-export const API_BASE = 'https://sketchbook-api.onrender.com';
+//
+// localhost에서 열었을 때만 로컬 백엔드(uvicorn app.main:app --port 8000)를
+// 자동으로 바라보게 함 — 배포본(GitHub Pages 등)의 hostname은 절대
+// localhost/127.0.0.1이 아니라서 이 분기가 실제 사용자에게는 영향 없음.
+const isLocalDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+export const API_BASE = isLocalDev ? 'http://localhost:8000' : 'https://sketchbook-api.onrender.com';
 
 // "구글 계정으로 내 방 복구" 버튼(js/shared/googleAuth.js)용 OAuth
 // client id. 비밀은 아니지만(브라우저에 그대로 노출됨) 아무 값이나
