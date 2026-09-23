@@ -47,9 +47,9 @@
     <div class="cat-tabs" id="catTabs"></div>
 
     <div class="field">
-      <label>제목</label>
+      <label id="titleLabel">제목</label>
       <div class="title-wrap">
-        <input type="text" id="fTitle" placeholder="제목을 입력하거나 목록에서 골라보세요">
+        <input type="text" id="fTitle">
         <div class="preset-list" id="presetList" style="display:none;"></div>
       </div>
       <div id="titleError" style="display:none; color:var(--accent); font-size:11.5px; margin-top:5px;">제목을 입력하거나 목록에서 골라주세요.</div>
@@ -57,27 +57,33 @@
 
     <div class="field">
       <label id="creatorLabel">작가 / 감독 / 제작</label>
-      <input type="text" id="fCreator" placeholder="예: 미야자키 하야오">
+      <input type="text" id="fCreator">
     </div>
 
     <div class="field">
-      <label>별점</label>
-      <div class="stars" id="starPicker"></div>
-    </div>
-
-    <div class="field">
-      <label>사진 (선택)</label>
+      <label id="photoLabel">사진 (선택)</label>
       <div class="photo-drop" id="photoDrop">
         <span id="photoDropText">드래그하거나 클릭해서 선택</span>
         <input type="file" id="fPhoto" accept="image/*">
       </div>
       <img id="photoPreview">
       <span class="remove-photo" id="removePhoto">사진 지우기</span>
+      <div id="photoError" style="display:none; color:var(--accent); font-size:11.5px; margin-top:5px;">사진을 골라주세요.</div>
+    </div>
+
+    <div class="field" id="dateField" style="display:none;">
+      <label>먹은 날짜</label>
+      <input type="date" id="fDate">
     </div>
 
     <div class="field">
-      <label>한 줄 감상</label>
-      <textarea id="fMemo" placeholder="남기고 싶은 말"></textarea>
+      <label id="ratingLabel">별점</label>
+      <div class="stars" id="starPicker"></div>
+    </div>
+
+    <div class="field">
+      <label id="memoLabel">한 줄 감상</label>
+      <textarea id="fMemo"></textarea>
     </div>
 
     <div class="modal-actions">

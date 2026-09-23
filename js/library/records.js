@@ -12,6 +12,7 @@ export const CATS = [
   { key: 'anime', label: '애니' },
   { key: 'movie', label: '영화' },
   { key: 'music', label: '음악' },
+  { key: 'food', label: '음식' },
 ];
 
 // 제목 입력창에 뭘 타이핑하면 "혹시 이거 아니에요?" 하고 보여주는
@@ -40,7 +41,15 @@ function authHeaders() {
 
 // 전체 기록 목록을 가져옴.
 export function fetchRecords() {
-  return fetch(API_BASE + '/api/rooms/' + roomCode + '/records').then((res) => res.json());
+  return fetch(API_BASE + '/api/rooms/' + roomCode + '/records').then((res) => {
+    // res.ok를 안 보고 바로 res.json()을 하면, 방을 못 찾는 404 같은
+    // 에러 응답의 바디({"detail":"room not found"})를 정상 목록인 척
+    // 그대로 넘겨버림 — list.js가 그걸 배열로 착각하고 .length/.filter를
+    // 부르다가 깨져서 화면에 "undefined"가 찍히는 식으로 터짐(reload()의
+    // catch가 있어도, 여기서 미리 걸러주지 않으면 그 catch까지 못 옴).
+    if (!res.ok) throw new Error('fetch records failed');
+    return res.json();
+  });
 }
 
 // 기록 하나를 삭제.
@@ -48,6 +57,8 @@ export function deleteRecord(id) {
   return fetch(API_BASE + '/api/rooms/' + roomCode + '/records/' + id, {
     method: 'DELETE',
     headers: authHeaders(),
+  }).then((res) => {
+    if (!res.ok) throw new Error('delete failed');
   });
 }
 
@@ -69,7 +80,7 @@ export function uploadPhoto(file) {
     .then((data) => data.url);
 }
 
-// 이 기록을 "이달의 작품"으로 켜거나 끔 — 켜면 서버가 같은 방의
+// 이 기록을 "인생작품"으로 켜거나 끔 — 켜면 서버가 같은 방의
 // 나머지 기록은 자동으로 꺼줌(방마다 최대 하나). rating/memo 등 다른
 // 필드는 안 건드리는 별도 엔드포인트라서, saveRecord처럼 전체를 다시
 // 보낼 필요가 없음.
