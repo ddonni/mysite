@@ -7,7 +7,7 @@
 //
 // 실제 서버 저장은 records.js의 uploadPhoto/saveRecord를 불러 씀.
 import { CATS, PRESETS, uploadPhoto, saveRecord } from './records.js';
-import { CREATOR_FIELD, isFood, todayISO } from './modal/categoryFields.js';
+import { CREATOR_FIELD } from './modal/categoryFields.js';
 import { createStarPicker } from './modal/starPicker.js';
 import { createPhotoPicker } from './modal/photoPicker.js';
 import { createPresetAutocomplete } from './modal/presetAutocomplete.js';
@@ -15,17 +15,10 @@ import { createPresetAutocomplete } from './modal/presetAutocomplete.js';
 export function createModal({ onSaved }) {
   const overlay = document.getElementById('overlay');
   const catTabsEl = document.getElementById('catTabs');
-  const titleLabel = document.getElementById('titleLabel');
   const fTitle = document.getElementById('fTitle');
   const fCreator = document.getElementById('fCreator');
   const creatorLabel = document.getElementById('creatorLabel');
-  const dateField = document.getElementById('dateField');
-  const fDate = document.getElementById('fDate');
-  const ratingLabel = document.getElementById('ratingLabel');
-  const memoLabel = document.getElementById('memoLabel');
   const fMemo = document.getElementById('fMemo');
-  const photoLabel = document.getElementById('photoLabel');
-  const photoError = document.getElementById('photoError');
   const saveBtn = document.getElementById('saveBtn');
   const titleError = document.getElementById('titleError');
   const modalTitle = document.getElementById('modalTitle');
@@ -52,22 +45,7 @@ export function createModal({ onSaved }) {
     creatorLabel.textContent = field.label;
   }
 
-  // 카테고리를 바꿀 때마다 음식 전용 필드(날짜)를 보이거나 숨기고,
-  // 제목/사진/별점/메모 라벨을 그 카테고리에 맞는 말로 바꿔줌 — 음식은
-  // 제목이 "음식 이름(선택)"이 되고 사진이 "사진(필수)"이 됨.
-  function updateFieldsForCat() {
-    const food = isFood(currentCat);
-    dateField.style.display = food ? '' : 'none';
-    if (food && !fDate.value) fDate.value = todayISO(); // 비워두면 헷갈리니 기본값을 오늘로 채워둠
-    titleLabel.textContent = food ? '음식 이름' : '제목';
-    photoLabel.textContent = food ? '사진 (필수)' : '사진 (선택)';
-    ratingLabel.textContent = food ? '맛 평가' : '별점';
-    memoLabel.textContent = food ? '메모' : '한 줄 감상';
-    titleError.style.display = 'none';
-    photoError.style.display = 'none';
-  }
-
-  // ---- 카테고리 탭(책/애니/영화/음악/음식) ----
+  // ---- 카테고리 탭(책/애니/영화/음악) ----
   CATS.forEach((cat) => {
     const btn = document.createElement('button');
     btn.textContent = cat.label;
@@ -77,7 +55,6 @@ export function createModal({ onSaved }) {
       currentCat = cat.key;
       [...catTabsEl.children].forEach((b) => b.classList.toggle('active', b.dataset.key === cat.key));
       updateCreatorField();
-      updateFieldsForCat();
       presetAutocomplete.refresh();
     });
     catTabsEl.appendChild(btn);
@@ -87,15 +64,12 @@ export function createModal({ onSaved }) {
   function resetFormForAdd() {
     editingId = null;
     titleError.style.display = 'none';
-    photoError.style.display = 'none';
     modalTitle.textContent = '새로운 기록';
     currentCat = 'book';
     [...catTabsEl.children].forEach((b) => b.classList.toggle('active', b.dataset.key === currentCat));
     updateCreatorField();
-    updateFieldsForCat();
     fTitle.value = '';
     fCreator.value = '';
-    fDate.value = '';
     fMemo.value = '';
     photoPicker.reset();
     starPicker.setValue(0);
@@ -107,15 +81,9 @@ export function createModal({ onSaved }) {
 
   // ---- 저장 ----
   async function handleSave() {
-    const food = isFood(currentCat);
     const title = fTitle.value.trim();
-    if (!food && !title) { titleError.style.display = 'block'; fTitle.focus(); return; }
+    if (!title) { titleError.style.display = 'block'; fTitle.focus(); return; }
     titleError.style.display = 'none';
-
-    // 음식은 제목 대신 사진이 필수 — 수정 모드에서 이미 올려둔 사진을
-    // 그대로 두는 것도 photoPicker.hasPhoto()가 true로 쳐줌.
-    if (food && !photoPicker.hasPhoto()) { photoError.style.display = 'block'; return; }
-    photoError.style.display = 'none';
 
     saveBtn.disabled = true;
     saveBtn.textContent = '저장 중…';
@@ -126,12 +94,11 @@ export function createModal({ onSaved }) {
       }
       await saveRecord({
         cat: currentCat,
-        title: title || null,
+        title,
         creator: fCreator.value.trim(),
         rating: starPicker.getValue(),
         memo: fMemo.value.trim(),
         photo_url,
-        date: food ? (fDate.value || null) : null,
       }, editingId);
 
       onSaved(); // main.js가 목록을 다시 불러와 화면에 반영함
@@ -156,16 +123,13 @@ export function createModal({ onSaved }) {
     // 넘겨받아서, 모달 폼에 기존 값을 채워 넣음.
     openEdit(item) {
       titleError.style.display = 'none';
-      photoError.style.display = 'none';
       editingId = item.id;
       modalTitle.textContent = '기록 고쳐 쓰기';
       currentCat = item.cat;
       [...catTabsEl.children].forEach((b) => b.classList.toggle('active', b.dataset.key === currentCat));
       updateCreatorField();
-      updateFieldsForCat();
       fTitle.value = item.title || '';
       fCreator.value = item.creator || '';
-      fDate.value = isFood(currentCat) ? (item.date || '') : '';
       fMemo.value = item.memo || '';
       photoPicker.setExisting(item.photo_url || null);
       starPicker.setValue(item.rating || 0);

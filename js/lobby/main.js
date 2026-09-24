@@ -17,12 +17,11 @@ import { webglAvailable } from './webgl.js';
 import { forgetMyRoom } from '../shared/room.js';
 import { watchForSlowWake, WAKE_MESSAGE } from '../shared/wake.js';
 
-const PAGES = { sketchbook: 'sketchbook', library: 'library', music: 'library?cat=music', food: 'library?cat=food' };
+const PAGES = { sketchbook: 'sketchbook', library: 'library', music: 'library?cat=music' };
 const ROOM_INFO = {
   sketchbook: { title: '스케치북', body: '자유롭게 그리는 캔버스 방이에요.' },
   library: { title: '기록 보관소', body: '읽고 본 책·애니·영화를 기록하는 방이에요.' },
   music: { title: '턴테이블', body: '모아둔 노래를 들어보는 공간이에요.' },
-  food: { title: '냉장고', body: '먹은 음식을 사진으로 남겨두는 냉장고예요.' },
 };
 
 roomContext.then(initRoomChrome);

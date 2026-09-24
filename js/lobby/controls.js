@@ -18,7 +18,6 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
     // radius를 키우고 target을 벽 중앙(x=0)으로 맞춰 전체가 들어오게 함.
     library: { theta: 0.1, phi: 1.0, radius: 6.8, target: new THREE.Vector3(0, 1.3, -2.6) },
     music: { theta: 0.6, phi: 1.02, radius: 4.5, target: new THREE.Vector3(-0.9, 0.9, -1.2) },
-    food: { theta: 1.15, phi: 1.05, radius: 4.0, target: new THREE.Vector3(-4.0, 0.9, -1.15) },
   };
   const MIN_R = 4.5, MAX_R = 13, MIN_PHI = 0.55, MAX_PHI = 1.5;
 

@@ -66,7 +66,7 @@ describe('setFeatured', () => {
 describe('saveRecord', () => {
   it('editingId가 없으면 POST로 새로 만듦', async () => {
     global.fetch.mockResolvedValueOnce(jsonResponse({}, true));
-    await saveRecord({ cat: 'food', photo_url: 'https://x/y.jpg' }, null);
+    await saveRecord({ cat: 'book', title: '데미안', photo_url: 'https://x/y.jpg' }, null);
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/rooms/ABC123/records'),
       expect.objectContaining({ method: 'POST' }),
@@ -75,7 +75,7 @@ describe('saveRecord', () => {
 
   it('editingId가 있으면 그 id로 PUT함', async () => {
     global.fetch.mockResolvedValueOnce(jsonResponse({}, true));
-    await saveRecord({ cat: 'food' }, 42);
+    await saveRecord({ cat: 'book', title: '데미안' }, 42);
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/rooms/ABC123/records/42'),
       expect.objectContaining({ method: 'PUT' }),
@@ -84,6 +84,6 @@ describe('saveRecord', () => {
 
   it('실패 응답이면 reject함', async () => {
     global.fetch.mockResolvedValueOnce(jsonResponse({ detail: 'invalid' }, false, 422));
-    await expect(saveRecord({ cat: 'food' }, null)).rejects.toThrow();
+    await expect(saveRecord({ cat: 'book', title: '데미안' }, null)).rejects.toThrow();
   });
 });

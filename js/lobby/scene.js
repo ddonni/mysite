@@ -16,7 +16,6 @@ import { buildEasel } from './scene/furniture/easel.js';
 import { buildBookshelf } from './scene/furniture/bookshelf.js';
 import { buildFrame } from './scene/furniture/frame.js';
 import { buildTurntable } from './scene/furniture/turntable.js';
-import { buildFridge } from './scene/furniture/fridge.js';
 import { buildBall } from './scene/furniture/ball.js';
 import { buildTeddyBear } from './scene/furniture/teddyBear.js';
 
@@ -53,10 +52,9 @@ export function buildScene(theme) {
   const frameLeft = buildFrame(-2.7);
   const frameMid = buildFrame(0);
   const frameRight = buildFrame(2.7);
-  const fridge = buildFridge();
   const ball = buildBall();
   const teddyBear = buildTeddyBear();
-  room.add(easel, shelf, turntable, frameLeft, frameMid, frameRight, fridge, ball, teddyBear);
+  room.add(easel, shelf, turntable, frameLeft, frameMid, frameRight, ball, teddyBear);
   scene.add(room);
 
   addLighting(scene);
@@ -70,7 +68,7 @@ export function buildScene(theme) {
     // 클릭/호버 대상이 되는 가구 그룹들 — controls.js가 레이캐스팅할 때 씀.
     // ball도 여기 포함시켜서 클릭/호버 판정을 받지만, userData.room이
     // 없어서 방 이동으로는 안 이어지고 controls.js가 따로 kickBall로 연결함.
-    interactiveGroups: [easel, shelf, turntable, frameLeft, frameMid, frameRight, fridge, ball],
+    interactiveGroups: [easel, shelf, turntable, frameLeft, frameMid, frameRight, ball],
     // main.js가 내 방의 1페이지 스트로크를 받아오면 이걸 호출해서
     // 이젤 보드에 실제 그림을 채워넣음.
     setSketchbookPreview: easel.userData.setPreview,
@@ -81,9 +79,6 @@ export function buildScene(theme) {
     // 오른쪽] 순서로 각 액자에 채워넣을 때 씀 — 셋보다 적으면 남는
     // 자리는 기본 아이콘 그대로.
     setFeaturedWorks: [frameLeft.userData.setFeaturedWork, frameMid.userData.setFeaturedWork, frameRight.userData.setFeaturedWork],
-    // main.js가 라이브러리의 "음식" 기록 중 인생 음식/가장 최근 걸
-    // 받아오면 이걸 호출해서 냉장고 문에 실제 사진을 채워넣음.
-    setFeaturedFood: fridge.userData.setFeaturedFood,
     // main.js가 라이브러리 전체 기록(책/애니/영화)의 제목 목록을
     // 받아오면 이걸 호출해서 책장에 그 개수만큼 책을 꽂아넣음.
     setLibraryBooks: shelf.userData.setBooks,

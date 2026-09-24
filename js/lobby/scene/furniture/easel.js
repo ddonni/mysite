@@ -65,9 +65,7 @@ export function buildEasel() {
 
   easel.add(aoBlob(1.15));
 
-  // z를 원래(0.6)보다 살짝 앞으로 당겨서, 뒤쪽(책장 방향)에 냉장고가
-  // 들어설 자리를 내줌 — furniture/fridge.js 주석 참고.
-  easel.position.set(-3.7, 0, 0.95);
+  easel.position.set(-3.7, 0, 0.6);
   easel.rotation.y = 0.5;
 
   // main.js가 서버에서 스트로크를 받아온 뒤 이걸 호출해서 보드에 실제

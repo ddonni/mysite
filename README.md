@@ -55,7 +55,7 @@ js/lobby/
   loadRoomIntoScene.js # 씬에 실제 데이터(그림/기록)를 채워넣는 fetch들
   scene.js            # 3D 씬 조립 지점
   scene/              #   roomShell.js, lighting.js, dustMotes.js, aoBlob.js, canvasTexture.js, labelSprite.js, roomDimensions.js
-  scene/furniture/    #   easel.js, bookshelf.js, frame.js, turntable.js, fridge.js, ball.js, teddyBear.js
+  scene/furniture/    #   easel.js, bookshelf.js, frame.js, turntable.js, ball.js, teddyBear.js
   controls.js         # 카메라 조작 + 가구 클릭 시 카드 UI
 ```
 

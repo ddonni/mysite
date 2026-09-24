@@ -3,8 +3,8 @@
 // (수정하면서 사진을 안 건드렸다면 다시 업로드할 필요가 없어서).
 //
 // 방금 고른(아직 업로드 전인) File과 서버에 이미 올라가 있는 URL(수정
-// 모드)을 이 위젯이 직접 들고 있음 — modal.js는 getFile()/getUrl()/
-// hasPhoto()로만 물어보면 됨.
+// 모드)을 이 위젯이 직접 들고 있음 — modal.js는 getFile()/getUrl()로만
+// 물어보면 됨.
 export function createPhotoPicker({ input, preview, removeBtn, dropZone, dropText }) {
   let file = null;
   let url = null;
@@ -54,7 +54,6 @@ export function createPhotoPicker({ input, preview, removeBtn, dropZone, dropTex
   return {
     getFile: () => file,
     getUrl: () => url,
-    hasPhoto: () => !!(file || url),
     // 수정 모드 진입 시 기존 사진 URL을 채워 넣음(없으면 빈 상태로).
     setExisting(existingUrl) {
       file = null;

@@ -1,4 +1,4 @@
-// 화면 위쪽의 탭(전체/책/애니/영화/음식)과 보기모드(목록/그리드) 전환,
+// 화면 위쪽의 탭(전체/책/애니/영화/음악)과 보기모드(목록/그리드) 전환,
 // "지금 뭘 보여줄지" 상태(activeTab/openId/viewMode/currentItems)를
 // 담당하는 모듈. 실제로 어떻게 그리는지는 list/rowsView.js,
 // list/gridView.js, list/lightbox.js에 맡기고, 이 파일은 그것들을
