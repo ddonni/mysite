@@ -16,6 +16,7 @@ import { loadRoomIntoScene } from './loadRoomIntoScene.js';
 import { webglAvailable } from './webgl.js';
 import { initHelpDialog } from './helpDialog.js';
 import { forgetMyRoom } from '../shared/room.js';
+import { initRoomNav } from '../shared/roomNav.js';
 import { watchForSlowWake, WAKE_MESSAGE } from '../shared/wake.js';
 
 const PAGES = {
@@ -36,6 +37,8 @@ const ROOM_INFO = {
 
 // 도움말은 서버 응답을 기다리지 않고 제일 먼저 — 처음 온 사람은 로딩 중에도 읽을 수 있게.
 initHelpDialog();
+// 왼쪽 위 상단 메뉴(캔버스/기록 보관소와 같은 것) — 방 코드·방문 폼도 여기에 붙음.
+initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: './' }).catch(() => {});
 roomContext.then(initRoomChrome);
 
 // three.js(전역 THREE)가 로드되지 않았거나 이 브라우저가 WebGL을 못

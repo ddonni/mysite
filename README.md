@@ -10,20 +10,23 @@
   레코드 콘솔 — LP 보관함)가 있음. 마우스 휠은 커서가 가리키는 곳을 향해 확대됨. 가구를
   클릭하면 카메라가 다가가며 카드가 뜨고, "입장하기"를 누르면 해당
   페이지(기록 보관소는 그 카테고리 탭)로 이동함. 책/애니/영화는 별표로 고른
-  대표작 3개가 가구 위에 액자/큰 스탠드/큰 포스터로 걸리고(애니/영화는 별표
+  인생작 3개가 가구 위에 액자/큰 스탠드/큰 포스터로 걸리고(애니/영화는 별표
   고른 것만 — 나머지는 진열장 칸/포스터 벽에 작게 쌓임), 음악은 첫 번째
-  대표곡이 턴테이블에서 돌아감. WebGL을
+  최애음악이 턴테이블에서 돌아감. ("인생작"은 화면에서 카테고리마다
+  인생책/인생애니/인생영화/최애음악으로 불리고, 코드·API에선 `featured`.) WebGL을
   못 쓰는 환경이면 자동으로 텍스트 링크 폴백으로 전환됨. (예전 네모난 방
   로비는 git 브랜치 `rect-room`에 남아 있음.)
 - `sketchbook.html` — 고정된 한 페이지에 자유롭게 그리는 캔버스. 그림
   저장/실시간 동기화를 백엔드가 담당하지만, 서버가 꺼져 있으면 자동으로
   이 기기 로컬 저장 모드로 폴백함.
-- `library.html` — 읽거나 본 책/애니/영화를 기록하는 목록. 완전히
+- `library.html` — 읽고 보고 들은 책/애니/영화/음악을 표지 카드로 모아두는
+  기록 보관소. 카테고리 탭을 고르면 맨 위에 인생작이 크게 나옴. 완전히
   백엔드 API에 의존함(로컬 폴백 없음) — 서버가 꺼져 있으면 목록이
   안 뜸.
 
-두 방 모두 상단에 로비/스케치북/기록 보관소로 이동하는 네비게이션이
-붙어 있음(`.site-nav`, 각자의 CSS 파일에 정의).
+세 페이지 모두 왼쪽 위에 방/캔버스/기록 보관소로 이동하는 같은 메뉴가
+붙어 있음(`.site-nav` — 모양은 `css/nav.css`, 방 코드·방문 칸은
+`js/shared/roomNav.js`).
 
 ## 파일 구조
 
@@ -34,6 +37,7 @@ library.html         # 기록 보관소 마크업
 css/lobby.css        # 로비 스타일
 css/style.css        # 스케치북 스타일
 css/library.css      # 기록 보관소 스타일
+css/nav.css          # 세 페이지가 같이 쓰는 왼쪽 위 메뉴
 
 js/shared/config.js  # API_BASE 등, 여러 방이 공통으로 쓰는 값
 
@@ -49,8 +53,8 @@ js/sketchbook/
 js/library/
   main.js            # 시작점 — list/modal을 만들고 연결함
   records.js         # 백엔드와 통신 (목록 조회, 저장, 삭제, 사진 업로드)
-  list.js            # 탭/보기모드 상태 — 실제 그리기는 list/*.js에 위임
-  list/              #   itemFormat.js, detailRow.js, gridView.js, rowsView.js, lightbox.js
+  list.js            # 카테고리 탭 + 인생작 줄 + 표지 카드 격자 — 실제 그리기는 list/*.js에 위임
+  list/              #   itemFormat.js(표지/별점), cardsView.js(카드), detail.js(카드를 누르면 뜨는 상세 창)
   modal.js           # 추가/수정 모달 오케스트레이션
   modal/             #   categoryFields.js, starPicker.js, photoPicker.js, presetAutocomplete.js
 
@@ -68,7 +72,7 @@ js/lobby/
   scene/wallLabel.js  #   가구 위 벽의 BOOK / MOVIE / ANIMATION 글씨
   scene/coverImage.js #   기록 사진(없으면 제목 카드)을 액자/포스터/스탠드/LP 텍스처에 그리는 공용 로직
   scene/stick.js      #   두 점을 잇는 막대(이젤 다리, 턴테이블 톤암)
-  showcase.js         # 카테고리별 대표작 3개(별표 우선, 책/음악은 모자라면 최신으로 채움) + 나머지를 고르는 순수 함수
+  showcase.js         # 카테고리별 인생작 3개(별표 우선, 책/음악은 모자라면 최신으로 채움) + 나머지를 고르는 순수 함수
   controls.js         # 카메라 조작 + 가구 클릭 시 카드 UI
 ```
 

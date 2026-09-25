@@ -1,5 +1,4 @@
-// 화면 오른쪽 아래의 "도구 서랍"(색상/굵기/지우개/되돌리기/전체지우기/
-// 이미지로 열기)과, 그 서랍을 여닫는 손잡이 버튼을 담당하는 모듈.
+// 화면 오른쪽 아래의 "도구 서랍"(색상/굵기/지우개/되돌리기/전체지우기)과, 그 서랍을 여닫는 손잡이 버튼을 담당하는 모듈.
 // 실제로 선을 그리거나 지우는 동작은 canvas.js에 있고, 여긴 그
 // 기능들을 누를 수 있는 버튼을 만들고 연결하는 역할만 함.
 
@@ -88,21 +87,5 @@ export function initDock({ canvas, toast }) {
     clearBtn.classList.remove('armed');
     canvas.clearPage();
     toast('지웠어요');
-  });
-
-  // ---- 이미지로 열기: 새 탭에 지금 그림을 PNG로 띄워줌 (저장/공유용) ----
-  document.getElementById('openImgBtn').addEventListener('click', () => {
-    const data = canvas.getDataUrl();
-    if (!data) { toast('이미지를 열지 못했어요'); return; }
-    const win = window.open('', '_blank');
-    if (win) {
-      win.document.write(
-        '<title>내 그림</title><body style="margin:0;background:#1c1c1c;display:flex;' +
-        'align-items:center;justify-content:center;min-height:100vh;">' +
-        '<img src="' + data + '" style="max-width:100%;max-height:100vh;" alt="내 그림" /></body>'
-      );
-    } else {
-      toast('팝업이 막혀 있어요. 브라우저에서 팝업을 허용해 주세요.');
-    }
   });
 }

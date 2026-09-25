@@ -7,9 +7,9 @@ import { copyToClipboard } from '../shared/dom.js';
 
 // 방 코드 표시 + 다른 방 방문 폼(+ 남의 방을 보는 중이면 "내 방으로"),
 // 구글 계정 연동, 방 이름/테마 스위처까지 — 로비 헤더/카드 "주변" UI를
-// 전부 채움. 3D든 폴백 링크 화면이든 둘 다에 있는 .room-info 자리를
-// 똑같이 채움(둘 중 하나만 실제로 보임). main.js가 roomContext가
-// resolve된 뒤 한 번 불러줌.
+// 전부 채움. .room-info(방 코드)는 이제 폴백 링크 화면에만 있음 — 3D
+// 화면에선 상단 메뉴(shared/roomNav.js)가 같은 역할을 함. main.js가
+// roomContext가 resolve된 뒤 한 번 불러줌.
 export function initRoomChrome(ctx) {
   const { mine, viewingCode, readOnly } = ctx;
 

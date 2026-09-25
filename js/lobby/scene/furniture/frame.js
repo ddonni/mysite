@@ -2,7 +2,7 @@ import { FEATURED_Y } from '../roomDimensions.js';
 import { drawCover, drawTitleCard, paintRecordImage } from '../coverImage.js';
 import { canvasToTexture } from '../canvasTexture.js';
 
-// 액자 캔버스에 그릴 기본 이미지 — 이 자리에 걸 대표작이 없을(기록이
+// 액자 캔버스에 그릴 기본 이미지 — 이 자리에 걸 인생작이 없을(기록이
 // 모자랄) 때 대신 보여주는 빈 액자 느낌의 아이콘.
 function drawFrameArtDefault(ctx, w, h) {
   const g = ctx.createLinearGradient(0, 0, w, h);
@@ -26,7 +26,7 @@ function drawFrameArtDefault(ctx, w, h) {
   ctx.stroke();
 }
 
-// 책장 위 벽에 거는 책 대표작 액자 하나(벽 기준 좌표 — x는 벽 가운데에서
+// 책장 위 벽에 거는 책 인생작 액자 하나(벽 기준 좌표 — x는 벽 가운데에서
 // 옆 위치, 셋이 나란히 걸림). setFeaturedWork로 책 기록 하나를 채움: 사진이
 // 있으면 표지로, 없으면 제목 카드로. 기록 자체가 없으면 기본 아이콘.
 export function buildFrame(x) {

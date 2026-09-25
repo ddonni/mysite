@@ -35,7 +35,7 @@ function drawBookSpine(ctx, w, h, colorHex, title) {
   ctx.restore();
 }
 
-// 책 기록을 나타내는 가구: 책 벽면을 채우는 책장(위에는 대표작 액자 3개 —
+// 책 기록을 나타내는 가구: 책 벽면을 채우는 책장(위에는 인생작 액자 3개 —
 // scene.js). 벽 기준 좌표로 지음(roomLayout.js가 벽에 담).
 // 칸에 꽂히는 책은 shelf.userData.setBooks(titles)로
 // 실제 책 기록 제목 목록을 받아 그 개수만큼만 꽂아 넣음 — 기록이

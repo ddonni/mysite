@@ -7,8 +7,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/lobby.css">
+<link rel="stylesheet" href="css/nav.css">
 </head>
 <body>
+
+<nav class="site-nav" aria-label="페이지 이동">
+  <a href="./" data-page="./" class="active">방</a>
+  <a href="sketchbook" data-page="sketchbook">캔버스</a>
+  <a href="library" data-page="library">기록 보관소</a>
+</nav>
 
 <div id="stage">
   <canvas id="canvas3d"></canvas>
@@ -17,11 +24,10 @@
 
 <div id="ui">
   <div id="header">
-    <div class="eyebrow">My Room</div>
+    <div class="eyebrow">Archive Room</div>
     <h1>내 방</h1>
     <div class="room-name" id="roomName"></div>
     <p>읽고, 보고, 들은 것들을 모아두는 방이에요.</p>
-    <div class="room-info"></div>
     <div class="theme-picker" id="themePicker"></div>
     <div class="google-btn"></div>
   </div>

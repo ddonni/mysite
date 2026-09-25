@@ -1,4 +1,4 @@
-// sketchbook.html/library.html/index.html 셋 다 상단 .site-nav에 붙는
+// index.html(방)/sketchbook.html/library.html 셋 다 상단 .site-nav에 붙는
 // "지금 어느 방을 보고 있는가" UI를 여기 한 곳에서 만듦 — 코드 복사,
 // 다른 방 코드로 이동, 읽기 전용일 때 "내 방으로" 돌아가기.
 import { getMyRoom, getViewingRoomCode, roomLink } from './room.js';
@@ -20,9 +20,12 @@ export function initRoomNav({ navEl, currentPage }) {
     box.className = 'room-box';
     if (readOnly) {
       box.innerHTML = `
-        <span class="room-tag readonly">방 <b>${viewingCode}</b> 보는 중 · 읽기 전용</span>
+        <span class="room-tag readonly">방 <b class="viewing-code"></b> 보는 중 · 읽기 전용</span>
         <a class="room-home" href="${roomLink(currentPage, mine.code, mine.code)}">내 방으로</a>
       `;
+      // 주소창의 ?room= 값이라 아무 문자열이나 들어올 수 있음 — innerHTML에
+      // 직접 끼우지 않고 textContent로 넣어서 HTML 주입을 막음.
+      box.querySelector('.viewing-code').textContent = viewingCode;
     } else {
       box.innerHTML = `
         <span class="room-tag mine">내 방 코드 <b>${mine.code}</b></span>

@@ -35,7 +35,8 @@ body{
 
 #header{
   position:absolute;top:0;left:0;right:0;
-  padding:max(22px, env(safe-area-inset-top)) max(22px, env(safe-area-inset-left));
+  /* 위쪽은 왼쪽 위에 떠 있는 상단 메뉴(nav.css) 아래로 내림. */
+  padding:max(72px, calc(env(safe-area-inset-top) + 58px)) max(22px, env(safe-area-inset-left)) 22px;
   display:flex;flex-direction:column;gap:6px;
   max-width:min(86vw,420px);
 }

@@ -4,6 +4,7 @@ import { fetchRecords, deleteRecord, setFeatured, setRoom } from './records.js';
 import { createList } from './list.js';
 import { createModal } from './modal.js';
 import { initRoomNav } from '../shared/roomNav.js';
+import { featureLabel, withEunNeun, withEulReul } from './list/itemFormat.js';
 import { watchForSlowWake, WAKE_MESSAGE } from '../shared/wake.js';
 
 // 서버에서 기록을 다시 불러와 목록을 새로 그림. 추가/수정/삭제가 성공한
@@ -44,8 +45,9 @@ initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: 'library'
     onEdit: (item) => modal.openEdit(item),
     onDelete: (id) => deleteRecord(id).then(reload).catch(() => alert('삭제에 실패했어요. 잠시 후 다시 시도해주세요.')),
     onFeature: (item) => setFeatured(item.id, !item.featured).then(reload).catch((err) => {
+      const label = featureLabel(item.cat);
       alert(err && err.code === 'featured_limit'
-        ? '대표작은 카테고리마다 3개까지예요. 다른 대표작을 먼저 빼 주세요.'
+        ? `${withEunNeun(label)} 3개까지예요. 다른 ${withEulReul(label)} 먼저 빼 주세요.`
         : '저장에 실패했어요. 잠시 후 다시 시도해주세요.');
     }),
   });

@@ -1,6 +1,6 @@
-// 노래에 앨범 이미지가 없을 때 대신 쓰는 기본 이미지. 실제 이미지 파일을
-// 두는 대신, 다른 곳(로비 3D 장면 등)처럼 캔버스로 그려서 씀 — 에셋 없이
-// 어디서든 (라이브러리 목록의 <img>든, 턴테이블의 텍스처든) 재사용 가능.
+// 노래에 앨범 이미지가 없을 때 대신 쓰는 기본 이미지(로비의 턴테이블 LP
+// 라벨·LP 슬리브용). 실제 이미지 파일을 두는 대신 캔버스로 그려서 씀.
+// 기록 보관소는 사진이 없으면 카테고리 색 제목 카드를 따로 그림.
 
 // ctx에 정사각형(w x h, 보통 w===h) 기본 앨범 아트를 그림: 어두운 배경
 // 위에 동그란 음표 아이콘 하나.
@@ -28,16 +28,4 @@ export function drawDefaultAlbumArt(ctx, w, h) {
   ctx.fillRect(cx + noteR * 0.85, cy - h * 0.34, w * 0.018, h * 0.34);
   ctx.fillRect(cx + w * 0.22 + noteR * 0.85, cy - h * 0.06 - h * 0.34, w * 0.018, h * 0.34);
   ctx.fillRect(cx + noteR * 0.85, cy - h * 0.34, w * 0.22 - noteR * 0.85, h * 0.05);
-}
-
-// 위 그림을 오프스크린 캔버스에 그려서, <img src>로 바로 쓸 수 있는
-// data URL로 돌려줌 (라이브러리 목록/모달 미리보기용).
-let cachedDataUrl = null;
-export function defaultAlbumDataUrl() {
-  if (cachedDataUrl) return cachedDataUrl;
-  const c = document.createElement('canvas');
-  c.width = 200; c.height = 200;
-  drawDefaultAlbumArt(c.getContext('2d'), 200, 200);
-  cachedDataUrl = c.toDataURL('image/png');
-  return cachedDataUrl;
 }

@@ -1,0 +1,81 @@
+/* 캔버스/기록 보관소가 같이 쓰는 상단 메뉴(.site-nav) — 두 페이지가 각자
+   스타일을 따로 갖고 있어서 페이지를 옮길 때마다 메뉴 모양이 바뀌던 걸
+   여기 한 곳으로 모음. 왼쪽 위에 떠 있는 알약 모양이고, 방 코드 UI
+   (roomNav.js가 메뉴 안에 붙임)도 같이 담당함. 색은 페이지 변수에 기대지
+   않고 여기서 따로 정의함 — 두 페이지의 색 토큰 이름/값이 서로 달라서. */
+.site-nav {
+  --nav-bg-rgb: 232, 226, 214;
+  --nav-ink: #2b2b2e;
+  --nav-dim: #57534e;
+  --nav-paper: #fffdfa;
+  --nav-hover: rgba(40, 38, 34, 0.1);
+  --nav-line: rgba(40, 38, 34, 0.14);
+  --nav-accent: #d9793a;
+
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top));
+  left: max(14px, env(safe-area-inset-left));
+  width: max-content;
+  max-width: calc(100% - 28px);
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  /* 한 줄이면 알약 모양, 좁은 화면에서 두 줄로 접혀도 둥근 사각형으로 자연스럽게. */
+  border-radius: 20px;
+  border: 1px solid var(--nav-line);
+  /* 배경에 방 사진이 깔려 있어서, 배경만 반투명하게 하고 글자는 항상
+     또렷하게 유지함. */
+  background: rgba(var(--nav-bg-rgb), 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  font-family: 'Manrope', system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.2;
+  text-shadow: none;
+  transition: background 0.18s ease;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .site-nav {
+    --nav-bg-rgb: 32, 29, 26;
+    --nav-ink: #fffdfa;
+    --nav-dim: #cbc6bd;
+    --nav-paper: #2b2b2e;
+    --nav-hover: rgba(255, 253, 250, 0.14);
+    --nav-line: rgba(255, 253, 250, 0.16);
+    --nav-accent: #e08a42;
+  }
+}
+.site-nav:hover, .site-nav:focus-within { background: rgba(var(--nav-bg-rgb), 0.88); }
+.site-nav a {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  text-decoration: none;
+  color: var(--nav-dim);
+  white-space: nowrap;
+}
+.site-nav a:hover { background: var(--nav-hover); color: var(--nav-ink); }
+.site-nav a.active { background: var(--nav-ink); color: var(--nav-paper); }
+
+/* --- 방 코드 UI --- */
+.site-nav .room-box { display: flex; align-items: center; gap: 4px; padding: 2px 4px 2px 10px; }
+.site-nav .room-tag { font-size: 11px; color: var(--nav-dim); white-space: nowrap; }
+.site-nav .room-tag b { color: var(--nav-ink); }
+.site-nav .room-tag.readonly { color: var(--nav-accent); }
+.site-nav .room-copy, .site-nav .room-home {
+  font-size: 11px; padding: 4px 10px; border-radius: 999px; border: none;
+  background: none; cursor: pointer; color: var(--nav-dim); font-family: inherit;
+}
+.site-nav .room-copy:hover, .site-nav .room-home:hover { background: var(--nav-hover); color: var(--nav-ink); }
+.site-nav .room-visit { display: flex; gap: 4px; padding: 2px 4px; }
+.site-nav .room-visit input {
+  width: 100px; padding: 4px 8px; border-radius: 999px; border: 1px solid var(--nav-line);
+  font-size: 11px; font-family: inherit; background: var(--nav-paper); color: var(--nav-ink); text-transform: uppercase;
+}
+.site-nav .room-visit button {
+  font-size: 11px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--nav-line);
+  background: none; cursor: pointer; color: var(--nav-dim); font-family: inherit;
+}
+.site-nav .room-visit button:hover { background: var(--nav-hover); color: var(--nav-ink); }

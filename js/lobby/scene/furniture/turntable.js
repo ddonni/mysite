@@ -17,7 +17,7 @@ import { stick } from '../stick.js';
 
 export const DECK_W = 0.9, DECK_D = 0.72;
 const FEET = 0.03, PH = 0.1;
-export const DECK_TOP = FEET + PH; // 플린스 윗면 높이
+const DECK_TOP = FEET + PH; // 플린스 윗면 높이
 const RECORD_R = 0.3;
 const PLATTER_C = new THREE.Vector3(-0.08, 0, 0.02); // 플래터 중심(윗면 기준 x/z)
 const TEX = 512;
@@ -168,7 +168,7 @@ export function buildTurntable() {
 
   let label = null; // 곡이 있을 때만 제목/가수를 띄움 — 곡이 없으면 아무 글자도 없음
 
-  // 로비가 음악 기록(대표곡 첫 번째, 없으면 가장 최근 곡)을 받아온 뒤 이걸
+  // 로비가 음악 기록(최애음악 첫 번째, 없으면 가장 최근 곡)을 받아온 뒤 이걸
   // 호출해서 LP 라벨과 이름표를 실제 곡 정보로 채워넣음. song이 없으면(음악
   // 기록이 하나도 없으면) 이름표 없이 기본 LP 그대로 둠.
   group.userData.setFeaturedSong = (song) => {

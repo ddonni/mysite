@@ -38,7 +38,7 @@ export function arrangeRoom(p) {
   p.ball.position.set(2.0, p.ball.position.y, 3.2);
 
   // 포인트 조명 [색, 세기, x, y, z]:
-  //  - 벽마다 따뜻한 흰빛 하나씩(wash) — 멀리서도 벽 가구와 대표작이 어둡게
+  //  - 벽마다 따뜻한 흰빛 하나씩(wash) — 멀리서도 벽 가구와 인생작이 어둡게
   //    묻히지 않게 벽을 고르게 밝힘.
   //  - 벽마다 그 기록의 색을 띤 은은한 빛(accent) — "무슨 기록인지"만 살짝.
   const colors = { anime: 0xd97aa0, book: 0xc79a4b, movie: 0xc9564a };
@@ -55,7 +55,7 @@ export function arrangeRoom(p) {
   });
 
   // 벽 가구는 전부 같은 거리·높이에서, 방 가운데 쪽에서 그 벽을 정면으로 봄 —
-  // 가구 + 그 위 대표작 + 벽 글씨가 한 화면에 들어옴.
+  // 가구 + 그 위 인생작 + 벽 글씨가 한 화면에 들어옴.
   const wallFocus = (phi) => ({ theta: -phi, phi: 1.1, radius: 7.6, target: wallPoint(phi, 0, 0.5, 2.35) });
   const cameraPresets = {
     // 책 벽이 정면 가운데에 오고 세 벽이 좌우 대칭으로 보이게, 거의 정면에서.

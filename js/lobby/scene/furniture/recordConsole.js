@@ -164,7 +164,7 @@ export function buildRecordConsole() {
     nowPlaying.holder.visible = !!song;
     if (song) nowPlaying.paint(song);
   };
-  // 나머지 곡(대표곡 먼저·최신순): 앞 두 장은 오른쪽 칸에 표지가 보이게,
+  // 나머지 곡(최애음악 먼저·최신순): 앞 두 장은 오른쪽 칸에 표지가 보이게,
   // 그다음부터 왼쪽 칸에 세로로 꽂힘(칸이 차면 거기까지).
   group.userData.setAlbums = (records) => {
     const list = records || [];

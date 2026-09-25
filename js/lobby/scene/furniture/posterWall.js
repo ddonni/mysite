@@ -7,19 +7,18 @@ import { canvasToTexture } from '../canvasTexture.js';
 //   아래: 책장과 같은 크기(GRID_W × GRID_H) 영역을 보이지 않는 칸으로 나눠,
 //         칸마다 나머지 영화가 작은 포스터로 한 장씩 가지런히 붙음(칸을
 //         그린 선은 없음 — 시선을 뺏어서 뺐음).
-//   위:   책장 위 액자와 같은 크기·높이의 대표작 포스터 3장(가운데가 첫 번째).
+//   위:   책장 위 액자와 같은 크기·높이의 인생작 포스터 3장(가운데가 첫 번째).
 // 사진이 없는 영화는 제목 카드로 붙음.
 
-export const GRID_W = 5.6, GRID_H = 2.4; // bookshelf.js의 BOOKSHELF_W/높이와 맞춤
+const GRID_W = 5.6, GRID_H = 2.4; // bookshelf.js의 BOOKSHELF_W/높이와 맞춤
 const COLS = 7, ROWS = 3;
-export const SMALL_POSTER_SLOTS = COLS * ROWS;
 const GRID_BOTTOM = 0.2;
 const CELL_W = GRID_W / COLS, CELL_H = GRID_H / ROWS;
 
 const BIG = { w: 0.85, h: 1.18, texW: 220, texH: 306 }; // frame.js의 액자(0.85×1.05)와 비슷한 크기
 const SMALL = { w: 0.54, h: 0.7, texW: 128, texH: 166 };
 
-// 아직 붙일 영화가 없는 대표작 자리 — 비어 있는 게 아니라 "여기 포스터
+// 아직 붙일 영화가 없는 인생작 자리 — 비어 있는 게 아니라 "여기 포스터
 // 붙을 자리"로 읽히게, 필름 구멍 무늬만 있는 흐린 빈 포스터를 둠.
 function drawEmptyPoster(ctx, w, h) {
   ctx.fillStyle = '#2a2320';
@@ -85,7 +84,7 @@ export function buildPosterWall() {
   // 이 모듈을 import하는 것만으로는 깨지지 않아야 main.js의 no-3d 폴백이 뜸.
   const tapeMat = new THREE.MeshStandardMaterial({ color: 0xe9dcc0, roughness: 0.9, transparent: true, opacity: 0.85 });
 
-  // 대표작 포스터 — 책장 위 액자(frame.js)와 같은 x 간격·높이.
+  // 인생작 포스터 — 책장 위 액자(frame.js)와 같은 x 간격·높이.
   const bigs = [-1, 0, 1].map((i, k) => {
     const p = makePoster(BIG, k + 1, tapeMat, 0.03);
     p.mesh.position.set(i * FEATURED_GAP, FEATURED_Y, 0.012);
@@ -108,7 +107,7 @@ export function buildPosterWall() {
 
   group.position.set(0, 0, 0.07); // 벽에 바짝 붙임
 
-  // loadRoomIntoScene.js가 영화 기록을 골라서 넘겨줌: top은 대표작 최대 3개
+  // loadRoomIntoScene.js가 영화 기록을 골라서 넘겨줌: top은 인생작 최대 3개
   // (첫 번째가 가운데), rest는 나머지(최신순) — 칸 수만큼만 붙음.
   group.userData.setMovies = ({ top, rest }) => {
     [top[1], top[0], top[2]].forEach((rec, i) => bigs[i].paint(rec || null));

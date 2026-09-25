@@ -7,15 +7,14 @@ import { canvasToTexture } from '../canvasTexture.js';
 // 좌표로 지음 — roomLayout.js가 벽에 담) — 책장과 같은 크기(CW × CH)·같은
 // 나무색으로, 짜임새도 책장과 맞춤:
 //   안:  세 칸에 나머지 애니가 작은 아크릴 스탠드로 칸당 PER_SHELF개씩 섬.
-//   위:  진열장 천판 위에 책장 위 액자만 한 큰 스탠드 3개(대표작 — 가운데가
-//        첫 번째). 대표작이 없는 자리엔 빈 아크릴판만 서 있음.
+//   위:  진열장 천판 위에 책장 위 액자만 한 큰 스탠드 3개(인생작 — 가운데가
+//        첫 번째). 인생작이 없는 자리엔 빈 아크릴판만 서 있음.
 // 스탠드 = 기록의 사진이 투명 아크릴판에 인쇄된 모양(사진이 없으면 제목 카드).
 
-export const CASE_W = 5.6; // bookshelf.js의 BOOKSHELF_W와 맞춤
+const CASE_W = 5.6; // bookshelf.js의 BOOKSHELF_W와 맞춤
 const CW = CASE_W, CH = 2.5, CD = 0.5;
 const SHELF_YS = [0.1, 0.9, 1.7]; // 아래칸/가운데칸/윗칸 바닥 높이
 const PER_SHELF = 12;
-export const SMALL_STAND_SLOTS = PER_SHELF * SHELF_YS.length;
 const DOORS = 4; // 앞 유리문 칸 수(문틀 세로선 DOORS-1개)
 
 const BIG = { w: 0.8, h: 1.02, texW: 208, texH: 266 }; // frame.js의 액자(0.85×1.05)와 비슷한 크기
@@ -56,7 +55,7 @@ function makeStand(size, acrylicMat) {
   base.position.y = 0.0125;
   group.add(base);
 
-  // 빈 자리(대표작 없음) — 인쇄 없이 점선 테두리만 있는 빈 아크릴판.
+  // 빈 자리(인생작 없음) — 인쇄 없이 점선 테두리만 있는 빈 아크릴판.
   function paintEmpty() {
     ctx.clearRect(0, 0, size.texW, size.texH);
     ctx.save();
@@ -153,7 +152,7 @@ export function buildDisplayCase() {
   glass.position.set(0, CH / 2, CD / 2 - 0.005);
   cabinet.add(glass);
 
-  // 천판 위 대표작 스탠드 — 책장 위 액자와 같은 간격.
+  // 천판 위 인생작 스탠드 — 책장 위 액자와 같은 간격.
   const bigs = [-1, 0, 1].map((i) => {
     const s = makeStand(BIG, acrylicMat);
     s.group.position.set(i * FEATURED_GAP, CH, 0);
@@ -183,7 +182,7 @@ export function buildDisplayCase() {
 
   cabinet.position.set(0, 0, CD / 2 + 0.08); // 벽에 바짝 붙임
 
-  // loadRoomIntoScene.js가 애니 기록을 골라서 넘겨줌: top은 대표작 최대
+  // loadRoomIntoScene.js가 애니 기록을 골라서 넘겨줌: top은 인생작 최대
   // 3개(첫 번째가 가운데), rest는 나머지(최신순) — 안쪽 칸 수만큼만 섬.
   cabinet.userData.setAnime = ({ top, rest }) => {
     [top[1], top[0], top[2]].forEach((rec, i) => bigs[i].paint(rec || null));

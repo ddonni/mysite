@@ -7,7 +7,7 @@ import { roomApi } from './roomContext.js';
 export function renderRoomName(ctx, name) {
   const h1 = document.querySelector('#header h1');
   const eyebrow = document.querySelector('#header .eyebrow');
-  if (eyebrow) eyebrow.textContent = ctx.readOnly ? "Friend's Room" : 'My Room';
+  if (eyebrow) eyebrow.textContent = ctx.readOnly ? "Friend's Room" : 'Archive Room';
   const fallback = ctx.readOnly ? '친구의 방' : '내 방';
   const showName = (n) => {
     if (h1) h1.textContent = n || fallback;

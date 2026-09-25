@@ -1,4 +1,4 @@
-// pickShowcase는 로비 가구의 대표작 자리(카테고리마다 3개)를 고르는 순수
+// pickShowcase는 로비 가구의 인생작 자리(카테고리마다 3개)를 고르는 순수
 // 함수 — 별표가 우선이고, 모자라면 최신 기록으로 채우고, 나머지는 rest로.
 import { describe, expect, it } from 'vitest';
 import { pickShowcase } from '../../js/lobby/showcase.js';

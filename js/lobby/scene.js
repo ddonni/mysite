@@ -8,7 +8,7 @@
 // 둘지는 scene/roomLayout.js에 있음.
 //
 // 방은 둥근(다각형) 방: 벽 세 면에 왼쪽부터 애니 → 책 → 영화 가구가 하나씩
-// (벽 가구마다 위에 대표작 3개와 벽 글씨), 가운데 러그 위에 캔버스 이젤,
+// (벽 가구마다 위에 인생작 3개와 벽 글씨), 가운데 러그 위에 캔버스 이젤,
 // 오른쪽 앞에 음악 코너(턴테이블을 얹은 LP 보관함).
 // (예전 네모난 방은 git 브랜치 rect-room에 있음.)
 //
@@ -86,7 +86,7 @@ export function buildScene(theme) {
 
   // 벽 가구들 — 전부 "자기 벽 기준" 좌표로 지어지고 roomLayout.js가 벽에 담.
   const shelf = buildBookshelf();
-  // 책장 위 벽에 나란히 거는 책 대표작 액자 3개 [왼쪽, 가운데, 오른쪽].
+  // 책장 위 벽에 나란히 거는 책 인생작 액자 3개 [왼쪽, 가운데, 오른쪽].
   const bookFrames = [-1, 0, 1].map((i) => buildFrame(i * FEATURED_GAP));
   const displayCase = buildDisplayCase();
   const posterWall = buildPosterWall();
@@ -132,10 +132,10 @@ export function buildScene(theme) {
     cameraPresets,
     // 아래 set* 함수들은 loadRoomIntoScene.js가 서버에서 받아온 데이터로
     // 각 가구를 채울 때 씀. 카테고리별 인자 { top, rest }는 showcase.js의
-    // pickShowcase 결과(top = 대표작 최대 3개, rest = 나머지).
+    // pickShowcase 결과(top = 인생작 최대 3개, rest = 나머지).
     // 이젤 캔버스에 1페이지 그림을 채워넣음.
     setSketchbookPreview: easel.userData.setPreview,
-    // 책 대표작(top, 첫 번째가 가운데)을 [왼쪽, 가운데, 오른쪽] 액자에 채움 —
+    // 책 인생작(top, 첫 번째가 가운데)을 [왼쪽, 가운데, 오른쪽] 액자에 채움 —
     // 셋보다 적으면 남는 자리는 기본 아이콘 그대로.
     setBookFrames: ({ top }) => {
       [top[1], top[0], top[2]].forEach((work, i) => bookFrames[i].userData.setFeaturedWork(work || null));
@@ -144,8 +144,8 @@ export function buildScene(theme) {
     setLibraryBooks: shelf.userData.setBooks,
     setMovies: posterWall.userData.setMovies,
     setAnime: displayCase.userData.setAnime,
-    // 음악: 첫 번째 대표곡(없으면 가장 최근 곡)이 턴테이블에서 돌아가고(옆
-    // 받침에 그 앨범 재킷), 나머지 곡은 LP 보관함에(대표곡 먼저 — 앞 두 장은
+    // 음악: 첫 번째 최애음악(없으면 가장 최근 곡)이 턴테이블에서 돌아가고(옆
+    // 받침에 그 앨범 재킷), 나머지 곡은 LP 보관함에(최애음악 먼저 — 앞 두 장은
     // 표지가 보이게).
     setMusic: ({ top, rest }) => {
       recordConsole.userData.setNowPlaying(top[0] || null);

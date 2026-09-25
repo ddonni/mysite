@@ -1,6 +1,6 @@
 import { makeCanvasTexture } from './canvasTexture.js';
 
-// 턴테이블 위에 떠서 대표곡의 제목/가수를 보여주는 두 줄짜리 라벨 —
+// 턴테이블 위에 떠서 최애음악의 제목/가수를 보여주는 두 줄짜리 라벨 —
 // 배경/테두리 없이 글자만. Sprite라서 카메라가 어느 각도에 있든 항상
 // 정면으로 보임. 그림자를 살짝 넣어 배경 없이도 글자가 눈에 띄게 함.
 export function twoLineLabelSprite(line1, line2) {

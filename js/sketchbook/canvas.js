@@ -189,10 +189,6 @@ export function createCanvas({ toast }) {
     },
     setSize(px) { tool.size = px; },
 
-    getDataUrl() {
-      try { return canvasEl.toDataURL('image/png'); } catch (e) { return null; }
-    },
-
     palette: PALETTE,
     sizes: SIZES,
     defaultColor: tool.color,
