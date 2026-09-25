@@ -7,19 +7,27 @@
 // 긴밀하게 붙어 있는 동작(같은 클릭 한 번으로 둘 다 바뀜)이라 일부러
 // 한 파일에 같이 둠 — 억지로 나누면 오히려 두 파일이 서로를 계속
 // 호출하며 복잡해지기만 함.
-export function createRoomInteraction({ canvas, camera, interactiveGroups, roomInfo, dom, onConfirm, kickBall }) {
+export function createRoomInteraction({ canvas, camera, interactiveGroups, roomInfo, dom, onConfirm, kickBall, cameraPresets }) {
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const HOME = { theta: 0.62, phi: 1.12, radius: 9.2, target: new THREE.Vector3(-0.3, 1.0, -0.9) };
-  // 각 방을 클릭했을 때 카메라가 다가갈 목표 지점 (방마다 다르게 잡아둠).
-  const FOCUS = {
-    sketchbook: { theta: 0.95, phi: 1.05, radius: 4.6, target: new THREE.Vector3(-3.7, 1.1, 0.6) },
-    // 책장이 뒷벽 전체로 넓어져서, 좁게 당겨찍으면 일부만 보임 —
-    // radius를 키우고 target을 벽 중앙(x=0)으로 맞춰 전체가 들어오게 함.
-    library: { theta: 0.1, phi: 1.0, radius: 6.8, target: new THREE.Vector3(0, 1.3, -2.6) },
-    music: { theta: 0.6, phi: 1.02, radius: 4.5, target: new THREE.Vector3(-0.9, 0.9, -1.2) },
+  // 벽 위쪽의 가구 이름 글씨(y≈4.6)까지 화면 안쪽에 들어오되 왼쪽 위 헤더/
+  // 가운데 위 안내 문구에 안 가리게, 목표 지점을 높이고 조금 더 뒤로 물러남.
+  // (cameraPresets가 넘어오면 — 둥근 방 시안처럼 배치가 다를 때 — 그 값을 씀.)
+  const HOME = (cameraPresets && cameraPresets.home) || { theta: 0.5, phi: 1.12, radius: 14.8, target: new THREE.Vector3(-1.4, 2.7, -1.2) };
+  // 각 방을 클릭했을 때 카메라가 다가갈 목표 지점 (방마다 다르게 잡아둠) —
+  // target은 scene.js의 가구 배치(BOOK_X/MOVIE_X/ANIME_Z, easel.js,
+  // turntable.js)와 맞춰둬야 함.
+  const FOCUS = (cameraPresets && cameraPresets.focus) || {
+    sketchbook: { theta: 0.55, phi: 1.05, radius: 4.6, target: new THREE.Vector3(-1.0, 1.1, 1.2) },
+    // 책장/포스터 벽/진열장은 셋 다 같은 크기 + 그 위 대표작 + 벽 글씨라, 전부
+    // 같은 거리·높이로 잡아 한 화면에 가구부터 글씨까지 같이 들어오게 함.
+    book: { theta: 0.12, phi: 1.1, radius: 7.6, target: new THREE.Vector3(-2.9, 2.35, -4.0) },
+    movie: { theta: -0.12, phi: 1.1, radius: 7.6, target: new THREE.Vector3(3.3, 2.35, -4.0) },
+    // 왼쪽 벽에 붙은 진열장은 +x 방향에서 봐야 정면이라 theta를 π/2 가까이.
+    anime: { theta: 1.45, phi: 1.1, radius: 7.6, target: new THREE.Vector3(-5.9, 2.35, -0.4) },
+    music: { theta: 0.5, phi: 1.02, radius: 4.5, target: new THREE.Vector3(0, 0.9, -2.2) },
   };
-  const MIN_R = 4.5, MAX_R = 13, MIN_PHI = 0.55, MAX_PHI = 1.5;
+  const MIN_R = 4.5, MAX_R = 17, MIN_PHI = 0.55, MAX_PHI = 1.5;
 
   // 카메라 위치는 "구면 좌표"(target을 중심으로 반지름·수평각·수직각)로
   // 다룸 — 마우스로 드래그하면 각도만 바뀌고, updateCameraFromSpherical
@@ -132,6 +140,7 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
 
     const info = roomInfo[room];
     dom.card.setAttribute('data-room', room);
+    if (dom.cardTag) dom.cardTag.textContent = info.tag || '';
     dom.cardTitle.textContent = info.title;
     dom.cardBody.textContent = info.body;
     dom.card.classList.add('show');

@@ -31,15 +31,17 @@
   <div id="googleUnlink" class="google-unlink-slot"></div>
 
   <div id="cta">
-    <button class="room-btn" data-room="sketchbook" aria-pressed="false"><span class="dot"></span>스케치북</button>
-    <button class="room-btn" data-room="library" aria-pressed="false"><span class="dot"></span>기록 보관소</button>
+    <button class="room-btn" data-room="sketchbook" aria-pressed="false"><span class="dot"></span>캔버스</button>
+    <button class="room-btn" data-room="book" aria-pressed="false"><span class="dot"></span>책장</button>
+    <button class="room-btn" data-room="anime" aria-pressed="false"><span class="dot"></span>애니</button>
+    <button class="room-btn" data-room="movie" aria-pressed="false"><span class="dot"></span>영화</button>
     <button class="room-btn" data-room="music" aria-pressed="false"><span class="dot"></span>턴테이블</button>
   </div>
 
   <div id="card" data-room="sketchbook">
-    <div class="room-tag">Room</div>
-    <h2 id="cardTitle">스케치북</h2>
-    <p id="cardBody">자유롭게 그리는 캔버스 방이에요.</p>
+    <div class="room-tag" id="cardTag"></div>
+    <h2 id="cardTitle">캔버스</h2>
+    <p id="cardBody">이젤에 걸린 캔버스에 자유롭게 그림을 그려보세요.</p>
     <div class="card-actions">
       <button id="cardBack">돌아가기</button>
       <button id="cardEnter">입장하기</button>
@@ -49,11 +51,23 @@
 
 <div id="fallbackLinks">
   <p id="fallbackMessage">이 브라우저에서는 3D 로비를 표시할 수 없어요. 바로 이동해 주세요.</p>
-  <a href="sketchbook">스케치북</a>
-  <a href="library">기록 보관소</a>
+  <a href="sketchbook">캔버스</a>
+  <a href="library?cat=book">책장</a>
+  <a href="library?cat=anime">애니</a>
+  <a href="library?cat=movie">영화</a>
   <a href="library?cat=music">턴테이블</a>
   <div class="room-info"></div>
   <div class="google-btn"></div>
+</div>
+
+<!-- 3D 화면(#ui) 바깥에 둬서, 3D를 못 쓰는 폴백 화면에서도 똑같이 뜸 -->
+<button type="button" id="helpBtn" class="help-btn" aria-label="도움말 보기" title="도움말">?</button>
+<div id="helpDialog" class="help-dialog" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
+  <div class="help-card">
+    <div id="helpBody"></div>
+    <button type="button" id="helpClose" class="help-close">시작하기</button>
+    <p class="help-foot">오른쪽 위 <b>?</b> 버튼으로 언제든 다시 볼 수 있어요.</p>
+  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.152.2/three.min.js"></script>

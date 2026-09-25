@@ -61,6 +61,11 @@ describe('setFeatured', () => {
     global.fetch.mockResolvedValueOnce(jsonResponse({}, false, 403));
     await expect(setFeatured(1, true)).rejects.toThrow();
   });
+
+  it('카테고리당 3개를 넘기면 서버의 "featured_limit"를 err.code로 넘겨줌', async () => {
+    global.fetch.mockResolvedValueOnce(jsonResponse({ detail: 'featured_limit' }, false, 400));
+    await expect(setFeatured(1, true)).rejects.toMatchObject({ code: 'featured_limit' });
+  });
 });
 
 describe('saveRecord', () => {

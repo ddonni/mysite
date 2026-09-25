@@ -43,7 +43,11 @@ initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: 'library'
     initialTab,
     onEdit: (item) => modal.openEdit(item),
     onDelete: (id) => deleteRecord(id).then(reload).catch(() => alert('삭제에 실패했어요. 잠시 후 다시 시도해주세요.')),
-    onFeature: (item) => setFeatured(item.id, !item.featured).then(reload).catch(() => alert('저장에 실패했어요. 잠시 후 다시 시도해주세요.')),
+    onFeature: (item) => setFeatured(item.id, !item.featured).then(reload).catch((err) => {
+      alert(err && err.code === 'featured_limit'
+        ? '대표작은 카테고리마다 3개까지예요. 다른 대표작을 먼저 해제해주세요.'
+        : '저장에 실패했어요. 잠시 후 다시 시도해주세요.');
+    }),
   });
 
   document.getElementById('addTabBtn').addEventListener('click', () => modal.openAdd());

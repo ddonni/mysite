@@ -5,11 +5,10 @@ export function ratingText(r) {
   return '★' + r.toFixed(1);
 }
 
-// 음악은 로비 액자 후보가 아니라 턴테이블 전용이라 "인생작품" 토글이
-// 없음.
+// 음악은 대표작 자리가 없고(턴테이블은 항상 최신곡) "대표작" 토글도 없음.
 export function featureButtonLabel(cat, featured) {
   if (cat === 'music') return null;
-  return featured ? '인생작품 해제' : '인생작품으로';
+  return featured ? '대표작 해제' : '대표작으로';
 }
 
 // 음악은 항상 앨범 이미지 자리를 보여줌 — 없으면 기본 이미지로 채움

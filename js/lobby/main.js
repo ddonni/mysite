@@ -14,16 +14,28 @@ import { roomContext, roomInfo, pageUrl, lobbyUrl } from './roomContext.js';
 import { initRoomChrome } from './roomChrome.js';
 import { loadRoomIntoScene } from './loadRoomIntoScene.js';
 import { webglAvailable } from './webgl.js';
+import { initHelpDialog } from './helpDialog.js';
 import { forgetMyRoom } from '../shared/room.js';
 import { watchForSlowWake, WAKE_MESSAGE } from '../shared/wake.js';
 
-const PAGES = { sketchbook: 'sketchbook', library: 'library', music: 'library?cat=music' };
+const PAGES = {
+  sketchbook: 'sketchbook',
+  book: 'library?cat=book',
+  anime: 'library?cat=anime',
+  movie: 'library?cat=movie',
+  music: 'library?cat=music',
+};
+// tag: 카드 맨 위 작은 영문 라벨(가구 위 벽 글씨와 같은 말).
 const ROOM_INFO = {
-  sketchbook: { title: '스케치북', body: '자유롭게 그리는 캔버스 방이에요.' },
-  library: { title: '기록 보관소', body: '읽고 본 책·애니·영화를 기록하는 방이에요.' },
-  music: { title: '턴테이블', body: '모아둔 노래를 들어보는 공간이에요.' },
+  sketchbook: { tag: 'Canvas', title: '캔버스', body: '이젤에 걸린 캔버스에 자유롭게 그림을 그려보세요.' },
+  book: { tag: 'Book', title: '책장', body: '읽은 책을 꽂아두는 책장이에요. 위에 걸린 액자는 대표작이에요.' },
+  anime: { tag: 'Animation', title: '애니 진열장', body: '본 애니를 아크릴 스탠드로 모아둔 진열장이에요. 진열장 위의 큰 스탠드가 대표작이에요.' },
+  movie: { tag: 'Movie', title: '영화 포스터', body: '본 영화의 포스터를 붙여둔 벽이에요. 위에 따로 붙은 포스터가 대표작이에요.' },
+  music: { tag: 'Music', title: '턴테이블', body: '모아둔 노래를 들어보는 공간이에요.' },
 };
 
+// 도움말은 서버 응답을 기다리지 않고 제일 먼저 — 처음 온 사람은 로딩 중에도 읽을 수 있게.
+initHelpDialog();
 roomContext.then(initRoomChrome);
 
 // three.js(전역 THREE)가 로드되지 않았거나 이 브라우저가 WebGL을 못
@@ -84,10 +96,17 @@ function bootWithTheme(theme, ctx) {
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // 영화 같은 색 보정 — 밝은 곳(램프 주변)이 하얗게 날아가지 않고 부드럽게
+  // 눌리고, 방 전체가 한 가지 색으로 쏠리지 않음. scene/lighting.js의
+  // 조명 세기는 이 톤매핑/노출값에 맞춰 잡은 것.
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.25;
 
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 60);
 
-  const { scene, interactiveGroups, updateMotes, updateTurntable, updateBall, kickBall, ...sceneSetters } = buildScene(theme);
+  // [시안] 주소에 ?layout=round를 붙이면 둥근 방 배치로 띄움(scene/roundLayout.js).
+  const layout = new URLSearchParams(location.search).get('layout');
+  const { scene, interactiveGroups, cameraPresets, updateMotes, updateTurntable, updateBall, kickBall, ...sceneSetters } = buildScene(theme, layout);
   loadRoomIntoScene(ctx, sceneSetters);
 
   // 카드에서 "입장하기"를 누르면 실제로 페이지를 옮기는 함수. 화면을
@@ -107,10 +126,12 @@ function bootWithTheme(theme, ctx) {
     interactiveGroups,
     roomInfo: ROOM_INFO,
     onConfirm: goToRoom,
+    cameraPresets,
     kickBall,
     dom: {
       hint: document.getElementById('hint'),
       card: document.getElementById('card'),
+      cardTag: document.getElementById('cardTag'),
       cardTitle: document.getElementById('cardTitle'),
       cardBody: document.getElementById('cardBody'),
       cardBack: document.getElementById('cardBack'),

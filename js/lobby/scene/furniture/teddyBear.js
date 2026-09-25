@@ -122,17 +122,17 @@ export function buildTeddyBear() {
   // — 원래 크기(귀 끝, 가장 높은 점까지 y≈0.65) 기준으로 배율을 계산함.
   // group의 로컬 원점이 바닥(y=0) 기준이라, 이렇게 키워도 발은 그대로
   // 바닥에 붙어있고 위로만 커짐.
+  // 앉은키 1.1 정도의 큰 인형 크기 — 예전엔 책장 높이(2.5)까지 키워서
+  // 화면 오른쪽 앞을 통째로 가리고 가구들과 비율이 안 맞았음.
   const BEAR_HEIGHT = 0.65;
-  const BOOKSHELF_HEIGHT = 2.5;
-  group.scale.setScalar(BOOKSHELF_HEIGHT / BEAR_HEIGHT);
+  const TARGET_HEIGHT = 1.1;
+  group.scale.setScalar(TARGET_HEIGHT / BEAR_HEIGHT);
 
   // 로비엔 실제 오른쪽 벽이 없음(카메라 쪽이 트여있게 뒷벽+왼쪽 벽만
-  // 있는 구조, roomShell.js 참고) — 대신 바닥 오른쪽 가장자리
-  // (x=FLOOR_W/2=4.5)에 바짝 붙임. 지금 덩치(반지름 약 1.35)가 커서
-  // 중심을 가장자리에 그대로 두면 바닥 밖으로 삐져나가므로, 그만큼
-  // 안쪽으로 뺌. 방 안쪽(-x 방향)을 보게 90도 돌림.
-  group.position.set(FLOOR_W / 2 - 1.6, 0, 0.8);
-  group.rotation.y = -Math.PI / 2;
+  // 있는 구조, roomShell.js 참고) — 바닥 오른쪽 앞 구석에 앉혀서, 방에
+  // 들어서는 사람(첫 화면 카메라) 쪽을 보되 살짝 방 안쪽으로 고개를 돌림.
+  group.position.set(FLOOR_W / 2 - 2.0, 0, 1.3);
+  group.rotation.y = -0.6;
 
   return group;
 }

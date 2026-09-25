@@ -2,7 +2,7 @@ import { escapeHtml } from '../../shared/dom.js';
 import { ratingText, featureButtonLabel, thumbSrcOf } from './itemFormat.js';
 
 // 기록 하나의 상세 내용 — 목록 아코디언과 그리드의 사진 팝업(lightbox.js)
-// 둘 다 이 함수를 그대로 재사용해서, "고쳐 쓰기/삭제/인생작품" 같은
+// 둘 다 이 함수를 그대로 재사용해서, "고쳐 쓰기/삭제/대표작" 같은
 // 동작이 두 화면에서 다르게 굴러가지 않게 함. 콜백/readOnly는 호출하는
 // 쪽이 전부 명시적으로 넘겨줌 — 이 모듈은 목록의 다른 상태(activeTab,
 // openId 등)를 전혀 몰라도 됨.

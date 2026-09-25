@@ -1,4 +1,4 @@
-import { FLOOR_D } from '../roomDimensions.js';
+import { BACK_WALL_Z } from '../roomDimensions.js';
 import { makeCanvasTexture } from '../canvasTexture.js';
 import { aoBlob } from '../aoBlob.js';
 
@@ -36,17 +36,19 @@ function drawBookSpine(ctx, w, h, colorHex, title) {
   ctx.restore();
 }
 
-// 기록 보관소 방을 나타내는 가구: 뒷벽을 꽉 채우는 책장. 칸에 꽂히는
-// 책은 shelf.userData.setBooks(titles)로 실제 기록 제목 목록을 받아
-// 그 개수만큼만 꽂아 넣음 — 기록이 늘어나면 책장도 자연스럽게 채워짐.
-// 기록이 0개면 빈 책장 그대로이고, 아직 못 받아왔을 때(로드 전/실패)도
-// 빈 채로 시작함 — 예전엔 무작위 책으로 채워뒀다가 기록이 없는 방도 꽉 차
-// 보이는 문제가 있었음.
-export function buildBookshelf() {
+// 책 기록을 나타내는 가구: 뒷벽 왼쪽 절반을 채우는 책장(오른쪽 절반은
+// 영화 포스터 벽). 칸에 꽂히는 책은 shelf.userData.setBooks(titles)로
+// 실제 책 기록 제목 목록을 받아 그 개수만큼만 꽂아 넣음 — 기록이
+// 늘어나면 책장도 자연스럽게 채워짐. 기록이 0개면 빈 책장 그대로이고,
+// 아직 못 받아왔을 때(로드 전/실패)도 빈 채로 시작함 — 예전엔 무작위 책으로
+// 채워뒀다가 기록이 없는 방도 꽉 차 보이는 문제가 있었음.
+// SW: 책장 폭, x: 책장 중심의 x 위치(scene.js가 뒷벽 배치를 정함).
+export const BOOKSHELF_W = 5.6;
+export function buildBookshelf(x) {
   const shelf = new THREE.Group();
-  shelf.userData.room = 'library';
+  shelf.userData.room = 'book';
   const caseMat = new THREE.MeshStandardMaterial({ color: 0x3a2c1f, roughness: 0.75 });
-  const SW = 8.2, SH = 2.5, SD = 0.36; // SW: 뒷벽(FLOOR_W=9) 양쪽에 0.4씩만 남기고 꽉 채움
+  const SW = BOOKSHELF_W, SH = 2.5, SD = 0.36;
 
   const back = new THREE.Mesh(new THREE.BoxGeometry(SW, SH, 0.04), caseMat);
   back.position.set(0, SH / 2, -SD / 2);
@@ -64,7 +66,7 @@ export function buildBookshelf() {
     shelf.add(board);
   });
 
-  // 뒷벽 폭 전체에 걸쳐 세워둔 칸막이 — 아무것도 안 채워진 넓은 벽처럼
+  // 책장 폭 전체에 걸쳐 세워둔 칸막이 — 아무것도 안 채워진 넓은 벽처럼
   // 보이지 않게, 시각적으로 여러 개의 작은 책장이 이어붙은 느낌을 줌.
   const BAY_W = 2.1;
   const bayCount = Math.round(SW / BAY_W);
@@ -142,12 +144,16 @@ export function buildBookshelf() {
     }
   }
 
-  shelf.add(aoBlob(4.0));
+  // 그림자 원을 앞뒤로 눌러서, 길쭉한 책장 앞 바닥에만 얇게 깔리게 함
+  // (aoBlob은 -90° 눕혀져 있어 로컬 y가 앞뒤 방향).
+  const blob = aoBlob(SW / 2);
+  blob.scale.y = 0.25;
+  shelf.add(blob);
 
-  shelf.position.set(0, 0, -FLOOR_D / 2 + SD / 2 + 0.06);
+  shelf.position.set(x, 0, BACK_WALL_Z + SD / 2 + 0.06);
 
-  // main.js가 라이브러리 전체 기록(책/애니/영화)의 제목 목록을 받아온
-  // 뒤 이걸 호출해서, 그 개수만큼만 책을 다시 꽂아 넣음.
+  // loadRoomIntoScene.js가 책 기록의 제목 목록을 받아온 뒤 이걸 호출해서,
+  // 그 개수만큼만 책을 다시 꽂아 넣음.
   shelf.userData.setBooks = (titles) => {
     if (!titles) return; // 못 받아왔으면 빈 책장 그대로
     fillAll(titles); // 빈 배열이면 책 없이 비움 — 기록이 0개인 걸 그대로 보여줌

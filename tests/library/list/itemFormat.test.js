@@ -10,9 +10,9 @@ describe('featureButtonLabel', () => {
     expect(featureButtonLabel('music', true)).toBeNull();
   });
 
-  it('책/애니/영화는 "인생작품" 문구', () => {
-    expect(featureButtonLabel('book', false)).toBe('인생작품으로');
-    expect(featureButtonLabel('book', true)).toBe('인생작품 해제');
-    expect(featureButtonLabel('movie', false)).toBe('인생작품으로');
+  it('책/애니/영화는 "대표작" 문구', () => {
+    expect(featureButtonLabel('book', false)).toBe('대표작으로');
+    expect(featureButtonLabel('book', true)).toBe('대표작 해제');
+    expect(featureButtonLabel('movie', false)).toBe('대표작으로');
   });
 });

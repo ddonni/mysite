@@ -7,7 +7,7 @@ import { FLOOR_W, FLOOR_D, WALL_H } from './roomDimensions.js';
 export function buildRoomShell(palette) {
   const room = new THREE.Group();
 
-  const plankCount = 16, plankW = FLOOR_W / plankCount;
+  const plankCount = 22, plankW = FLOOR_W / plankCount;
   for (let i = 0; i < plankCount; i++) {
     const shade = (i % 2 === 0) ? palette.floorA : palette.floorB;
     const plank = new THREE.Mesh(
@@ -39,10 +39,10 @@ export function buildRoomShell(palette) {
   room.add(baseLeft);
 
   const rug = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.7, 1.7, 0.03, 40),
+    new THREE.CylinderGeometry(2.3, 2.3, 0.03, 48),
     new THREE.MeshStandardMaterial({ color: palette.rug, roughness: 0.95 })
   );
-  rug.position.set(-0.4, 0.015, 1.3);
+  rug.position.set(-0.6, 0.015, 1.4);
   rug.receiveShadow = true;
   room.add(rug);
 

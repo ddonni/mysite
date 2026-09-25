@@ -79,17 +79,23 @@ export function uploadPhoto(file) {
     .then((data) => data.url);
 }
 
-// 이 기록을 "인생작품"으로 켜거나 끔 — 켜면 서버가 같은 방의
-// 나머지 기록은 자동으로 꺼줌(방마다 최대 하나). rating/memo 등 다른
-// 필드는 안 건드리는 별도 엔드포인트라서, saveRecord처럼 전체를 다시
-// 보낼 필요가 없음.
+// 이 기록을 "대표작"으로 켜거나 끔 — 카테고리마다 최대 3개까지(로비의
+// 대표작 자리 수). 이미 3개인데 더 켜려고 하면 서버가 400
+// "featured_limit"로 거절하고, 그 문자열을 err.code에 담아 던짐 —
+// main.js가 일반 실패와 구분해서 안내함. rating/memo 등 다른 필드는 안
+// 건드리는 별도 엔드포인트라서, saveRecord처럼 전체를 다시 보낼 필요가 없음.
 export function setFeatured(id, featured) {
   return fetch(API_BASE + '/api/rooms/' + roomCode + '/records/' + id + '/feature', {
     method: 'PUT',
     headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
     body: JSON.stringify({ featured }),
   }).then((res) => {
-    if (!res.ok) throw new Error('feature toggle failed');
+    if (res.ok) return;
+    return res.json().catch(() => ({})).then((body) => {
+      const err = new Error('feature toggle failed');
+      err.code = body && body.detail;
+      throw err;
+    });
   });
 }
 

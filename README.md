@@ -4,9 +4,11 @@
 로비이고, 방 두 개(스케치북/기록 보관소)는 백엔드 API 서버
 ([mysite-backend](https://github.com/<사용자명>/mysite-backend))를 씀.
 
-- `index.html` — Three.js로 만든 로비. 이젤(스케치북)과 책장(기록
-  보관소)을 클릭하면 카메라가 다가가며 카드가 뜨고, "입장하기"를 누르면
-  해당 페이지로 이동함. WebGL을 못 쓰는 환경이면 자동으로 텍스트 링크
+- `index.html` — Three.js로 만든 로비. 이젤(스케치북), 책장(책), 애니
+  진열장(아크릴 스탠드), 영화 포스터 벽, 턴테이블(음악)을 클릭하면
+  카메라가 다가가며 카드가 뜨고, "입장하기"를 누르면 해당 페이지(기록
+  보관소는 그 카테고리 탭)로 이동함. 책/애니/영화는 카테고리마다 별표로
+  고른 대표작 3개가 액자/큰 스탠드/큰 포스터로 걸림. WebGL을 못 쓰는 환경이면 자동으로 텍스트 링크
   폴백으로 전환됨.
 - `sketchbook.html` — 고정된 한 페이지에 자유롭게 그리는 캔버스. 그림
   저장/실시간 동기화를 백엔드가 담당하지만, 서버가 꺼져 있으면 자동으로
@@ -55,7 +57,11 @@ js/lobby/
   loadRoomIntoScene.js # 씬에 실제 데이터(그림/기록)를 채워넣는 fetch들
   scene.js            # 3D 씬 조립 지점
   scene/              #   roomShell.js, lighting.js, dustMotes.js, aoBlob.js, canvasTexture.js, labelSprite.js, roomDimensions.js
-  scene/furniture/    #   easel.js, bookshelf.js, frame.js, turntable.js, ball.js, teddyBear.js
+  helpDialog.js       # 처음 온 사람에게 한 번 뜨는 도움말(오른쪽 위 ? 버튼으로 다시 열기)
+  scene/furniture/    #   easel.js, bookshelf.js, frame.js, posterWall.js, displayCase.js, turntable.js, lamps.js, ball.js, teddyBear.js
+  scene/wallLabel.js  #   가구 위 벽의 BOOK / MOVIE / ANIMATION 글씨
+  scene/coverImage.js #   기록 사진(없으면 제목 카드)을 액자/포스터/스탠드 텍스처에 그리는 공용 로직
+  showcase.js         # 카테고리별 대표작 3개(별표 우선, 모자라면 최신) + 나머지를 고르는 순수 함수
   controls.js         # 카메라 조작 + 가구 클릭 시 카드 UI
 ```
 

@@ -26,8 +26,8 @@ export function buildBall() {
     new THREE.SphereGeometry(BALL_RADIUS, 24, 16),
     new THREE.MeshStandardMaterial({ map: tex, roughness: 0.45 })
   );
-  // 러그(중심 -0.4,1.3 반지름 1.7)와 다른 가구를 피한 트인 바닥 자리.
-  mesh.position.set(2.0, BALL_RADIUS, 1.6);
+  // 러그(중심 -0.6,1.4 반지름 2.3)와 다른 가구를 피한 트인 바닥 자리.
+  mesh.position.set(2.5, BALL_RADIUS, 2.4);
   mesh.castShadow = true; mesh.receiveShadow = true;
   mesh.userData.isBall = true;
 

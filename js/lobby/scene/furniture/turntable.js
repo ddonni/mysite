@@ -1,5 +1,6 @@
 import { drawDefaultAlbumArt } from '../../../shared/album.js';
 import { aoBlob } from '../aoBlob.js';
+import { canvasToTexture } from '../canvasTexture.js';
 import { twoLineLabelSprite } from '../labelSprite.js';
 
 const PLATTER_TEX_SIZE = 256;
@@ -44,7 +45,7 @@ export function buildTurntable() {
   platterCanvas.width = PLATTER_TEX_SIZE; platterCanvas.height = PLATTER_TEX_SIZE;
   const platterCtx = platterCanvas.getContext('2d');
   drawPlatterDefault(platterCtx);
-  const platterTex = new THREE.CanvasTexture(platterCanvas);
+  const platterTex = canvasToTexture(platterCanvas);
   platterTex.needsUpdate = true;
   const platter = new THREE.Mesh(
     new THREE.CylinderGeometry(0.36, 0.36, 0.015, 48),
@@ -72,11 +73,10 @@ export function buildTurntable() {
   group.add(aoBlob(0.85));
   let label = null; // 곡이 있을 때만 제목/가수를 띄움 — 곡이 없으면 아무 글자도 없음
 
-  // 뒷벽을 꽉 채운 책장 앞으로 살짝 나와 서 있는 자리 — 책장이 뒷벽에
-  // 바짝 붙어 있어서(z ≈ -3.06), 턴테이블은 그 앞으로 충분히 빼둬야
-  // 책장을 가리지 않고 독립된 가구로 보임.
-  group.position.set(-0.9, 0, -1.6);
-  group.rotation.y = 0.2;
+  // 뒷벽의 책장(왼쪽)과 영화 포스터(오른쪽)가 갈리는 가운데 앞 — 둘 다
+  // 가리지 않게 벽에서 충분히 빼서, 방 한가운데의 독립된 가구로 보이게 함.
+  group.position.set(0, 0, -2.2);
+  group.rotation.y = 0.1;
 
   // main.js가 라이브러리의 최근 음악 기록을 받아온 뒤 이걸 호출해서
   // LP와 이름표를 실제 곡 정보로 채워넣음. song이 없으면(음악 기록이
