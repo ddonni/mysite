@@ -35,8 +35,9 @@ body{
 
 #header{
   position:absolute;top:0;left:0;right:0;
-  /* 위쪽은 왼쪽 위에 떠 있는 상단 메뉴(nav.css) 아래로 내림. */
-  padding:max(72px, calc(env(safe-area-inset-top) + 58px)) max(22px, env(safe-area-inset-left)) 22px;
+  /* 위쪽은 왼쪽 위에 떠 있는 상단 메뉴(nav.css) 아래로 내림 — 메뉴가 두 줄로
+     접히면 더 내려감(--nav-h는 roomNav.js가 실제 메뉴 높이로 채움). */
+  padding:calc(max(14px, env(safe-area-inset-top)) + var(--nav-h, 38px) + 20px) max(22px, env(safe-area-inset-left)) 22px;
   display:flex;flex-direction:column;gap:6px;
   max-width:min(86vw,420px);
 }
@@ -247,10 +248,23 @@ body{
 .help-close:hover{filter:brightness(1.08);}
 .help-foot{margin:10px 0 0;text-align:center;font-size:11px;color:var(--paper-dim);}
 
+/* 방 화면엔 오른쪽 위에 ? 버튼이 있어서, 상단 메뉴가 그 자리까지 늘어나 겹치지
+   않게 폭을 버튼만큼 줄임(좁으면 메뉴가 두 줄로 접힘). */
+body .site-nav{max-width:calc(100% - 28px - 52px);}
+
 @media (max-width:560px){
   #header{max-width:70vw;}
   #header p{display:none;}
   #cta{flex-direction:column;align-items:flex-end;}
+}
+/* 높이가 낮은 화면(폰 가로 등) — 헤더가 3D 방을 덜 가리게 작게. 넓은 구글
+   버튼은 방을 가려서 숨김(세로 화면/컴퓨터에선 그대로 보임). */
+@media (max-height:500px){
+  #header{gap:2px;}
+  #header h1{font-size:22px;}
+  #header p{display:none;}
+  .theme-picker{margin-top:4px;}
+  #header .google-btn{display:none;}
 }
 
 @media (prefers-reduced-motion: reduce){

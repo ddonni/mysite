@@ -2,10 +2,10 @@
 // 피드백에서 나옴 — 이 브라우저에서 로비를 처음 열 때 한 번 자동으로 띄우고,
 // 이후엔 오른쪽 위 "?" 버튼으로 언제든 다시 열 수 있음.
 //
-// 서버 응답(roomContext)을 기다리지 않고 바로 띄움 — 서버가 잠들어 있으면
-// 로딩이 1분 가까이 걸리는데, 그동안 로딩 화면 위에서 읽고 있으라는 뜻도 있음.
-// 그래서 "남의 방인지"도 서버 없이 주소(?room=)와 이 브라우저에 저장된 내 방
-// 코드만으로 판단함.
+// 처음 온 사람에게 자동으로 띄우는 건 방이 다 그려진 뒤(main.js가
+// showHelpIfFirstVisit을 부름) — 로딩 화면 위에 설명이 먼저 뜨면 설명하는
+// 방이 안 보여서 어색함. "남의 방인지"는 서버 없이 주소(?room=)와 이
+// 브라우저에 저장된 내 방 코드만으로 판단함.
 import { getStoredRoom } from '../shared/room.js';
 
 const SEEN_KEY = 'untitled-canvas.lobby-help-seen';
@@ -64,12 +64,14 @@ function visitorContent() {
     </ul>`;
 }
 
+// ? 버튼과 닫기를 연결하고, 처음 온 사람이면 띄우는 함수를 돌려줌 —
+// 언제 띄울지는 부르는 쪽(main.js)이 정함.
 export function initHelpDialog() {
   const dialog = document.getElementById('helpDialog');
   const body = document.getElementById('helpBody');
   const closeBtn = document.getElementById('helpClose');
   const openBtn = document.getElementById('helpBtn');
-  if (!dialog || !body || !closeBtn) return;
+  if (!dialog || !body || !closeBtn) return { showIfFirstVisit() {} };
 
   body.innerHTML = isVisitingSomeoneElse() ? visitorContent() : ownerContent();
 
@@ -92,5 +94,7 @@ export function initHelpDialog() {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
   if (openBtn) openBtn.addEventListener('click', open);
 
-  if (!hasSeen()) open();
+  return {
+    showIfFirstVisit() { if (!hasSeen() && dialog.hidden) open(); },
+  };
 }

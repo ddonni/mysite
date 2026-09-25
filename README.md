@@ -7,11 +7,11 @@
 - `index.html` — Three.js로 만든 로비. 둥근(다각형) 방의 벽 세 면에
   왼쪽부터 애니 진열장(아크릴 스탠드), 책장, 영화 포스터 벽이 하나씩 있고,
   가운데 러그 위에 캔버스 이젤, 오른쪽 앞에 음악 코너(턴테이블을 얹은
-  레코드 콘솔 — LP 보관함)가 있음. 마우스 휠은 커서가 가리키는 곳을 향해 확대됨. 가구를
+  레코드 콘솔 — LP 보관함), 왼쪽 앞에 장식용 침대(스탠드 조명, 곰인형)가 있음. 마우스 휠은 커서가 가리키는 곳을 향해 확대됨. 가구를
   클릭하면 카메라가 다가가며 카드가 뜨고, "입장하기"를 누르면 해당
   페이지(기록 보관소는 그 카테고리 탭)로 이동함. 책/애니/영화는 별표로 고른
-  인생작 3개가 가구 위에 액자/큰 스탠드/큰 포스터로 걸리고(애니/영화는 별표
-  고른 것만 — 나머지는 진열장 칸/포스터 벽에 작게 쌓임), 음악은 최애음악만
+  인생작(최대 3개)만 가구 위에 액자/큰 스탠드/큰 포스터로 걸리고(빈자리는 빈
+  채로 — 나머지는 책장/진열장 칸/포스터 벽에 쌓임), 음악은 최애음악만
   레코드 콘솔 위에 올라감(첫 번째는 턴테이블에서 돌고 — 최애음악이 없으면
   가장 최근 곡 — 나머지는 옆 받침에, 그 밖의 곡은 콘솔 칸 안). 기록 보관소는
   턴테이블에서 도는 곡에 "재생 중" 표시를 붙임. ("인생작"은 화면에서 카테고리마다
@@ -70,11 +70,11 @@ js/lobby/
   scene/              #   roomShell.js, lighting.js, dustMotes.js, aoBlob.js, canvasTexture.js, labelSprite.js, roomDimensions.js
   scene/roomLayout.js #   가구를 어느 벽/자리에 둘지 + 조명 위치 + 카메라 프리셋(가구 모듈은 "자기 벽 기준" 좌표로만 지어짐)
   helpDialog.js       # 처음 온 사람에게 한 번 뜨는 도움말(오른쪽 위 ? 버튼으로 다시 열기)
-  scene/furniture/    #   easel.js, bookshelf.js, frame.js, posterWall.js, displayCase.js, recordConsole.js(LP 보관함), turntable.js, lamps.js, ball.js, teddyBear.js
+  scene/furniture/    #   easel.js, bookshelf.js, frame.js, posterWall.js, displayCase.js, recordConsole.js(LP 보관함), turntable.js, lamps.js, ball.js, teddyBear.js, bed.js(장식)
   scene/wallLabel.js  #   가구 위 벽의 BOOK / MOVIE / ANIMATION 글씨
   scene/coverImage.js #   기록 사진(없으면 제목 카드)을 액자/포스터/스탠드/LP 텍스처에 그리는 공용 로직
   scene/stick.js      #   두 점을 잇는 막대(이젤 다리, 턴테이블 톤암)
-  showcase.js         # 카테고리별 인생작 3개(별표 우선, 책은 모자라면 최신으로 채움) + 나머지, 음악 콘솔 배치(pickMusic)를 고르는 순수 함수
+  showcase.js         # 카테고리별 인생작(별표로 고른 것만, 최대 3개) + 나머지, 음악 콘솔 배치(pickMusic)를 고르는 순수 함수
   controls.js         # 카메라 조작 + 가구 클릭 시 카드 UI
 ```
 

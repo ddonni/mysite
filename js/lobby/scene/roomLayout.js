@@ -25,7 +25,7 @@ function mount(obj, phi) {
 export function arrangeRoom(p) {
   p.walls.forEach(({ face, items }) => items.forEach((o) => mount(o, FACES[face])));
 
-  // 가운데 — 러그(roomShell.js) 위 이젤, 앞쪽 양 구석의 스탠드/음악 코너,
+  // 가운데 — 러그(roomShell.js) 위 이젤, 앞쪽 양 구석의 침대+스탠드/음악 코너,
   // 곰인형과 공. 음악은 벽 없이 오른쪽 앞에 턴테이블을 얹은 LP 보관함(레코드
   // 콘솔) — 방 가운데 쪽을 보게 비스듬히.
   p.easel.position.set(0, 0, 0.8);
@@ -34,7 +34,12 @@ export function arrangeRoom(p) {
   p.recordConsole.rotation.y = -0.85;
   p.teddyBear.position.set(-3.3, 0, 3.1);
   p.teddyBear.rotation.y = 0.5;
-  p.floorLamp.position.set(-4.9, 0, 2.2);
+  // 왼쪽 앞 구석 침대 — 머리를 방 바깥쪽(왼쪽)으로, 발치가 방 가운데를 향하게.
+  // 스탠드는 머리맡 안쪽 옆(카메라에서 먼 쪽)에 둬서 침대 옆 조명처럼
+  // 보이면서 헤드보드를 가리지 않게 함.
+  p.bed.position.set(-5.7, 0, 0.9);
+  p.bed.rotation.y = 0.15;
+  p.floorLamp.position.set(-6.4, 0, -0.1);
   p.ball.position.set(2.0, p.ball.position.y, 3.2);
 
   // 포인트 조명 [색, 세기, x, y, z]:

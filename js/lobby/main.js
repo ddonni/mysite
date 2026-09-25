@@ -35,8 +35,9 @@ const ROOM_INFO = {
   music: { tag: 'Music', title: '음악', body: '들은 노래가 LP로 꽂혀요.' },
 };
 
-// 도움말은 서버 응답을 기다리지 않고 제일 먼저 — 처음 온 사람은 로딩 중에도 읽을 수 있게.
-initHelpDialog();
+// 도움말(? 버튼)은 바로 연결하지만, 처음 온 사람에게 자동으로 띄우는 건 방이
+// 다 그려진 뒤(bootWithTheme 끝) — 3D를 못 쓰는 브라우저면 링크 화면이 뜬 직후.
+const help = initHelpDialog();
 // 왼쪽 위 상단 메뉴(캔버스/기록 보관소와 같은 것) — 방 코드·방문 폼도 여기에 붙음.
 initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: './' }).catch(() => {});
 roomContext.then(initRoomChrome);
@@ -46,6 +47,7 @@ roomContext.then(initRoomChrome);
 // 화면으로 대신함 (css의 .no-3d 규칙이 이 전환을 처리함).
 if (typeof THREE === 'undefined' || !webglAvailable()) {
   document.body.classList.add('no-3d');
+  help.showIfFirstVisit();
 } else {
   boot().catch((e) => {
     // 이 경로로 오는 건 브라우저가 3D를 못 그려서가 아니라(그건 위
@@ -140,11 +142,26 @@ function bootWithTheme(theme, ctx) {
     },
   });
 
+  // 화면이 기준(16:10)보다 세로로 길면 가로로 보이는 폭이 좁아져 양옆 벽이
+  // 잘림 — 먼저 시야각을 넓히고(왜곡이 심해지지 않게 75°까지), 그래도
+  // 모자라면 카메라를 그만큼 뒤로 물림(fit). 멀어진 만큼 안개/먼 평면도 밀어냄.
+  const BASE_FOV = 42, MAX_FOV = 75, REF_ASPECT = 1.6;
+  const baseFog = { near: scene.fog.near, far: scene.fog.far };
+  const tanHalf = (deg) => Math.tan((deg * Math.PI) / 360);
   function resize() {
     const w = window.innerWidth, h = window.innerHeight;
+    const aspect = w / h;
     renderer.setSize(w, h);
-    camera.aspect = w / h;
+    camera.aspect = aspect;
+    // 기준 화면과 같은 가로 폭을 담으려면 필요한 세로 시야각의 절반의 tan.
+    const needTan = tanHalf(BASE_FOV) * Math.max(1, REF_ASPECT / aspect);
+    camera.fov = Math.min(MAX_FOV, (Math.atan(needTan) * 360) / Math.PI);
+    const fit = needTan / tanHalf(camera.fov);
+    camera.far = 60 * fit;
+    scene.fog.near = baseFog.near * fit;
+    scene.fog.far = baseFog.far * fit;
     camera.updateProjectionMatrix();
+    interaction.setFit(fit);
   }
   window.addEventListener('resize', resize);
   resize();
@@ -162,5 +179,9 @@ function bootWithTheme(theme, ctx) {
     renderer.render(scene, camera);
   }
   requestAnimationFrame(tick);
-  requestAnimationFrame(() => loading.classList.add('hide'));
+  requestAnimationFrame(() => {
+    loading.classList.add('hide');
+    // 로딩 화면이 걷히고(0.5초 페이드) 방이 보인 다음에 도움말을 띄움.
+    setTimeout(() => help.showIfFirstVisit(), 700);
+  });
 }

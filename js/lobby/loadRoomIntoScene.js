@@ -18,9 +18,9 @@ export function loadRoomIntoScene(ctx, sceneSetters) {
     .catch(() => {}); // 실패해도 이젤은 그냥 빈 종이로 남아있을 뿐, 로비 자체는 멀쩡히 작동함
 
   // 기록은 한 번에 받아서 카테고리별로 나눠 각 가구에 줌(목록은 이미 최신순):
-  //  - 책: 인생작 3개는 책장 위 액자, 책장엔 책 전체의 제목.
-  //  - 영화/애니: 기본은 전부 작은 포스터/작은 스탠드로 쌓이고, 별표로
-  //    직접 고른 인생작(최대 3개)만 위에 큰 포스터/큰 스탠드로 올라감.
+  //  - 책/영화/애니: 별표로 직접 고른 인생작(최대 3개)만 위에 액자/큰
+  //    포스터/큰 스탠드로 걸림(빈자리는 빈 채로). 책장엔 책 전체의 제목이
+  //    꽂히고, 영화/애니 나머지는 작은 포스터/작은 스탠드로 쌓임.
   //  - 음악: 최애음악은 콘솔 위(첫 번째는 턴테이블, 나머지는 옆 받침),
   //    나머지 곡은 콘솔 칸 안. 최애음악이 없으면 가장 최근 곡이 턴테이블에서 돎.
   fetch(`${roomApi(ctx)}/records`)
@@ -30,8 +30,8 @@ export function loadRoomIntoScene(ctx, sceneSetters) {
       setMusic(pickMusic(list));
       setBookFrames(pickShowcase(list, 'book'));
       setLibraryBooks(list.filter((r) => r.cat === 'book').map((r) => r.title));
-      setMovies(pickShowcase(list, 'movie', { fill: false }));
-      setAnime(pickShowcase(list, 'anime', { fill: false }));
+      setMovies(pickShowcase(list, 'movie'));
+      setAnime(pickShowcase(list, 'anime'));
     })
     .catch(() => {}); // 실패해도 가구들은 기본(빈) 상태로 남을 뿐, 로비 자체는 멀쩡히 작동함
 }

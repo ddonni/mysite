@@ -4,6 +4,15 @@
 import { getMyRoom, getViewingRoomCode, roomLink } from './room.js';
 import { copyToClipboard } from './dom.js';
 
+// 메뉴는 좁은 화면에서 두 줄로 접혀 높이가 달라짐 — 실제 높이를 CSS 변수
+// --nav-h로 알려줘서, 각 페이지가 그 아래로 본문/헤더를 내릴 수 있게 함.
+function trackNavHeight(navEl) {
+  const set = () => document.documentElement.style.setProperty('--nav-h', navEl.offsetHeight + 'px');
+  set();
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(set).observe(navEl);
+  else window.addEventListener('resize', set);
+}
+
 // currentPage: 지금 페이지 자신의 파일명(예: 'sketchbook.html') — 코드
 // 입력창에서 "이동"을 누르면 같은 페이지를 그 방 코드로 다시 여는 데 씀.
 export function initRoomNav({ navEl, currentPage }) {
@@ -55,6 +64,7 @@ export function initRoomNav({ navEl, currentPage }) {
       if (code) window.location.href = roomLink(currentPage, code, mine.code);
     });
     navEl.appendChild(visitForm);
+    trackNavHeight(navEl);
 
     return { mine, viewingCode, readOnly };
   });

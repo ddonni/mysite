@@ -17,6 +17,11 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
   const LIMIT = cameraPresets.targetLimit;
   // MAX_R는 첫 화면 거리(HOME.radius)보다 넉넉해야 휠로 줌 아웃할 때 안 튐.
   const MIN_R = 3, MAX_R = 22, MIN_PHI = 0.55, MAX_PHI = 1.5;
+  // 세로로 긴 화면(폰 세로 등)에선 가로로 보이는 폭이 좁아서, 프리셋 거리에
+  // 이 배율을 곱해 카메라를 뒤로 물림 — main.js가 화면 비율에 맞춰 setFit으로 정함.
+  let fit = 1;
+  const homeR = () => HOME.radius * fit;
+  const maxR = () => Math.max(MAX_R, homeR() + 2);
 
   // 카메라 위치는 "구면 좌표"(target을 중심으로 반지름·수평각·수직각)로
   // 다룸 — 마우스로 드래그하면 각도만 바뀌고, updateCameraFromSpherical
@@ -81,12 +86,12 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
     const oldR = want.radius;
-    const newR = Math.min(MAX_R, Math.max(MIN_R, oldR + e.deltaY * 0.012));
+    const newR = Math.min(maxR(), Math.max(MIN_R, oldR + e.deltaY * 0.012 * fit));
     if (newR < oldR) {
       const p = pointUnderCursor(e);
       if (p) wantTarget.lerp(p, 1 - newR / oldR);
     } else if (newR > oldR) {
-      const back = oldR < HOME.radius ? Math.min(1, (newR - oldR) / (HOME.radius - oldR)) : 1;
+      const back = oldR < homeR() ? Math.min(1, (newR - oldR) / (homeR() - oldR)) : 1;
       wantTarget.lerp(HOME.target, back);
     }
     want.radius = newR;
@@ -154,7 +159,7 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
   function enterRoom(room) {
     entered = room;
     const f = FOCUS[room];
-    want.theta = f.theta; want.phi = f.phi; want.radius = f.radius;
+    want.theta = f.theta; want.phi = f.phi; want.radius = f.radius * fit;
     wantTarget.copy(f.target);
 
     const info = roomInfo[room];
@@ -167,7 +172,7 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
   }
   function leaveRoom() {
     entered = null;
-    want.theta = HOME.theta; want.phi = HOME.phi; want.radius = HOME.radius;
+    want.theta = HOME.theta; want.phi = HOME.phi; want.radius = homeR();
     wantTarget.copy(HOME.target);
     dom.card.classList.remove('show');
     setCTAState(null);
@@ -187,6 +192,15 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
   updateCameraFromSpherical();
 
   return {
+    // 화면 비율이 바뀔 때 main.js가 불러줌 — 지금 거리도 같은 비율로 늘이거나
+    // 줄여서, 창 크기를 바꿔도 보던 구도가 그대로 유지되게 함.
+    setFit(f) {
+      const k = f / fit;
+      fit = f;
+      want.radius *= k;
+      spherical.radius *= k;
+      updateCameraFromSpherical();
+    },
     // main.js의 렌더 루프가 매 프레임 불러줌: 목표 각도/거리(want)와 목표
     // 지점(wantTarget)을 향해 부드럽게 따라감(자동 회전은 하지 않음).
     update(dt) {

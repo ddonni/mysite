@@ -4,16 +4,14 @@
 export const TOP_SLOTS = 3;
 
 // records(서버가 준 전체 목록, 이미 최신순)에서 cat 카테고리만 골라,
-//   top:  인생작 자리 3개 — 별표(featured) 켜진 것 먼저(서버가 카테고리당
-//         3개까지만 허용하지만, 혹시 더 와도 3개에서 자름). fill이 true면
-//         모자란 자리를 별표 없는 최신 기록으로 채우고, false면 별표 고른
-//         것만 올라감(빈자리는 가구가 빈 포스터/빈 스탠드로 둠).
+//   top:  인생작 자리 3개 — 별표(featured)로 직접 고른 것만(서버가 카테고리당
+//         3개까지만 허용하지만, 혹시 더 와도 3개에서 자름). 모자란 자리는
+//         가구가 빈 액자/빈 포스터/빈 스탠드로 둠 — 기록 보관소의 인생작 줄과
+//         늘 같은 것만 걸리게.
 //   rest: top에 안 들어간 나머지 전부(최신순 유지).
-export function pickShowcase(records, cat, { slots = TOP_SLOTS, fill = true } = {}) {
+export function pickShowcase(records, cat) {
   const mine = (records || []).filter((r) => r.cat === cat);
-  const featured = mine.filter((r) => r.featured).slice(0, slots);
-  const fillers = fill ? mine.filter((r) => !r.featured).slice(0, slots - featured.length) : [];
-  const top = featured.concat(fillers);
+  const top = mine.filter((r) => r.featured).slice(0, TOP_SLOTS);
   const rest = mine.filter((r) => !top.includes(r));
   return { top, rest };
 }

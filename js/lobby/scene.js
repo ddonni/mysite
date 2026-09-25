@@ -9,7 +9,7 @@
 //
 // 방은 둥근(다각형) 방: 벽 세 면에 왼쪽부터 애니 → 책 → 영화 가구가 하나씩
 // (벽 가구마다 위에 인생작 3개와 벽 글씨), 가운데 러그 위에 캔버스 이젤,
-// 오른쪽 앞에 음악 코너(턴테이블을 얹은 LP 보관함).
+// 오른쪽 앞에 음악 코너(턴테이블을 얹은 LP 보관함), 왼쪽 앞에 장식용 침대.
 // (예전 네모난 방은 git 브랜치 rect-room에 있음.)
 //
 // THREE는 index.html에서 <script>로 먼저 불러온 전역 변수라서 따로
@@ -30,6 +30,7 @@ import { buildDisplayCase } from './scene/furniture/displayCase.js';
 import { buildFloorLamp } from './scene/furniture/lamps.js';
 import { buildBall } from './scene/furniture/ball.js';
 import { buildTeddyBear } from './scene/furniture/teddyBear.js';
+import { buildBed } from './scene/furniture/bed.js';
 
 // 방 테마 프리셋 — 바닥/벽/러그/배경 색만 바꿔서 분위기를 갈아끼움. 가구
 // 자체의 나무색이나 각 가구(캔버스/책/애니/영화/음악)의 포인트 조명 색은
@@ -91,9 +92,9 @@ export function buildScene(theme) {
   const displayCase = buildDisplayCase();
   const posterWall = buildPosterWall();
   const labels = {
-    book: wallLabel('BOOK', '#8a5d22', 'book'),
-    anime: wallLabel('ANIMATION', '#a8466f', 'anime'),
-    movie: wallLabel('MOVIE', '#9c342b', 'movie'),
+    book: wallLabel('BOOK', '#74490f', 'book'),
+    anime: wallLabel('ANIMATION', '#963a61', 'anime'),
+    movie: wallLabel('MOVIE', '#8c2a22', 'movie'),
   };
 
   // 가운데 소품들.
@@ -102,6 +103,7 @@ export function buildScene(theme) {
   const ball = buildBall();
   const teddyBear = buildTeddyBear();
   const floorLamp = buildFloorLamp(); // 빛의 출처가 보이는 장식(클릭 대상 아님)
+  const bed = buildBed(); // 사는 방처럼 보이게 하는 장식(클릭 대상 아님)
 
   const { lights, cameraPresets } = arrangeRoom({
     walls: [
@@ -109,11 +111,11 @@ export function buildScene(theme) {
       { face: 'book', items: [shelf, ...bookFrames, labels.book] },
       { face: 'movie', items: [posterWall, labels.movie] },
     ],
-    easel, recordConsole, ball, teddyBear, floorLamp,
+    easel, recordConsole, ball, teddyBear, floorLamp, bed,
   });
 
   room.add(shelf, ...bookFrames, displayCase, posterWall, ...Object.values(labels),
-    easel, recordConsole, ball, teddyBear, floorLamp);
+    easel, recordConsole, ball, teddyBear, floorLamp, bed);
   scene.add(room);
 
   addLighting(scene, lights);
