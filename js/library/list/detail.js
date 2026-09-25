@@ -20,14 +20,16 @@ export function createDetail(dialogEl, { onEdit, onDelete, onFeature, readOnly }
       </div>`;
   }
 
-  function open(it) {
+  // playing: 이 곡이 지금 방의 턴테이블에서 도는 곡인지.
+  function open(it, { playing = false } = {}) {
     if (dialogEl.hidden) returnFocus = document.activeElement;
     inner.dataset.cat = it.cat;
     inner.innerHTML = `
       <button type="button" class="detail-close" aria-label="닫기">×</button>
-      <div class="detail-cover">${coverHtml(it)}</div>
+      <div class="detail-cover">${coverHtml(it, { playing })}</div>
       <div class="detail-body">
         <div class="detail-cat"><i class="dot"></i>${catLabel(it.cat)}${it.date ? ` · ${it.date.replace(/-/g, '.')}` : ''}</div>
+        ${playing ? '<div class="detail-playing">▶ 지금 방의 턴테이블에서 돌고 있어요</div>' : ''}
         <h2 class="detail-title">${escapeHtml(it.title)}</h2>
         ${it.creator ? `<div class="detail-creator">${escapeHtml(it.creator)}</div>` : ''}
         ${it.rating ? `<div class="detail-rating">${ratingStars(it.rating)}<span>${it.rating.toFixed(1)}</span></div>` : ''}
@@ -36,12 +38,12 @@ export function createDetail(dialogEl, { onEdit, onDelete, onFeature, readOnly }
       </div>
     `;
     inner.querySelector('.detail-close').addEventListener('click', close);
-    wireActions(it);
+    wireActions(it, { playing });
     dialogEl.hidden = false;
     inner.querySelector('.detail-close').focus();
   }
 
-  function wireActions(it) {
+  function wireActions(it, opts) {
     if (readOnly) return;
     const actions = inner.querySelector('.detail-actions');
     actions.querySelector('[data-act="edit"]').addEventListener('click', () => { close(); onEdit(it); });
@@ -54,7 +56,7 @@ export function createDetail(dialogEl, { onEdit, onDelete, onFeature, readOnly }
         <button type="button" class="act" data-act="cancel-delete">아니오</button>
       `;
       actions.querySelector('[data-act="confirm-delete"]').addEventListener('click', () => { close(); onDelete(it.id); });
-      actions.querySelector('[data-act="cancel-delete"]').addEventListener('click', () => open(it));
+      actions.querySelector('[data-act="cancel-delete"]').addEventListener('click', () => open(it, opts));
     });
   }
 

@@ -11,7 +11,7 @@ import { CATS } from './records.js';
 import { renderCards } from './list/cardsView.js';
 import { createDetail } from './list/detail.js';
 import { featureLabel, withEuro } from './list/itemFormat.js';
-import { TOP_SLOTS } from '../lobby/showcase.js';
+import { TOP_SLOTS, pickMusic } from '../lobby/showcase.js';
 
 const EMPTY_ALL = '아직 기록이 없어요. 오른쪽 위 + 기록하기로 첫 기록을 남겨보세요.';
 const EMPTY_CAT = '아직 이 카테고리엔 기록이 없어요. 오른쪽 위 + 기록하기로 남겨보세요.';
@@ -28,6 +28,8 @@ export function createList({ onEdit, onDelete, onFeature, readOnly, initialTab }
 
   let activeTab = CATS.some((c) => c.key === initialTab) ? initialTab : 'all';
   let currentItems = [];
+  let playingId = null; // 방의 턴테이블에서 도는 곡 — 그 카드에 "재생 중" 표시
+  const openDetail = (it) => detail.open(it, { playing: it.id === playingId });
 
   function renderTabs() {
     const all = [{ key: 'all', label: '전체' }, ...CATS];
@@ -63,7 +65,7 @@ export function createList({ onEdit, onDelete, onFeature, readOnly, initialTab }
     if (featured.length === 0 && readOnly) { featuredEl.hidden = true; return; }
     featuredEl.hidden = false;
     featuredTitle.textContent = featureLabel(activeTab);
-    renderCards(featuredGrid, featured, { onOpen: detail.open, showCat: false, emptyText: '' });
+    renderCards(featuredGrid, featured, { onOpen: openDetail, showCat: false, emptyText: '', playingId });
     if (readOnly) return;
     for (let i = featured.length; i < TOP_SLOTS; i++) {
       const slot = document.createElement('div');
@@ -83,17 +85,22 @@ export function createList({ onEdit, onDelete, onFeature, readOnly, initialTab }
     allTitle.textContent = cat ? `모든 ${cat.label}` : '';
     allTitle.hidden = featuredEl.hidden;
     renderCards(listEl, list, {
-      onOpen: detail.open,
+      onOpen: openDetail,
+      playingId,
       showCat: activeTab === 'all',
       emptyText: readOnly ? EMPTY_READONLY : activeTab === 'all' ? EMPTY_ALL : EMPTY_CAT,
     });
   }
 
   return {
+    // 지금 보고 있는 탭('all' 또는 카테고리) — "+ 기록하기"의 기본 카테고리로 씀.
+    activeTab: () => activeTab,
     // 새로 받아온 items 배열로 탭+목록을 다시 그림. 서버에서 기록을
     // 새로 불러올 때마다(로드/추가/수정/삭제 후) main.js가 이 함수를 부름.
     render(items) {
       currentItems = items;
+      const { playing } = pickMusic(items);
+      playingId = playing ? playing.id : null;
       renderTabs();
       renderBody();
     },

@@ -61,11 +61,12 @@ export function createModal({ onSaved }) {
   });
 
   // ---- 모달 열기/닫기 ----
-  function resetFormForAdd() {
+  // cat: 처음 골라둘 카테고리 — 보고 있던 탭(음악 탭이면 음악). 전체 탭이면 책.
+  function resetFormForAdd(cat) {
     editingId = null;
     titleError.style.display = 'none';
     modalTitle.textContent = '새 기록';
-    currentCat = 'book';
+    currentCat = CATS.some((c) => c.key === cat) ? cat : 'book';
     [...catTabsEl.children].forEach((b) => b.classList.toggle('active', b.dataset.key === currentCat));
     updateCreatorField();
     fTitle.value = '';
@@ -114,8 +115,8 @@ export function createModal({ onSaved }) {
   saveBtn.addEventListener('click', handleSave);
 
   return {
-    openAdd() {
-      resetFormForAdd();
+    openAdd(cat) {
+      resetFormForAdd(cat);
       overlay.classList.add('open');
     },
 

@@ -52,7 +52,8 @@ initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: 'library'
     }),
   });
 
-  document.getElementById('addTabBtn').addEventListener('click', () => modal.openAdd());
+  // 보고 있던 탭의 카테고리로 추가 창을 엶(전체 탭이면 책).
+  document.getElementById('addTabBtn').addEventListener('click', () => modal.openAdd(list.activeTab()));
 
   reload();
 });

@@ -58,7 +58,8 @@ export function buildRoomShell(palette) {
   );
   fade.rotation.x = -Math.PI / 2;
   fade.position.y = -0.02;
-  fade.receiveShadow = true;
+  // 방 바깥이라 그림자를 안 받음 — 받으면 벽 뒤 허공에 가구/벽 그림자가 찍힘.
+  fade.receiveShadow = false;
   room.add(fade);
 
   const wallMat = new THREE.MeshStandardMaterial({ color: palette.wall, roughness: 0.95 });
@@ -70,6 +71,9 @@ export function buildRoomShell(palette) {
     wall.position.copy(wallPoint(phi, 0, -WALL_T / 2, WALL_H / 2));
     wall.rotation.y = -phi;
     wall.receiveShadow = true;
+    // 벽이 그림자를 막아야 앞쪽 위 스포트라이트가 만든 가구 그림자가 벽을
+    // 뚫고 벽 뒤 바닥에 찍히지 않음.
+    wall.castShadow = true;
     room.add(wall);
     const base = new THREE.Mesh(new THREE.BoxGeometry(FACE_W + OVER, 0.16, 0.14), baseMat);
     base.position.copy(wallPoint(phi, 0, 0.05, 0.08));

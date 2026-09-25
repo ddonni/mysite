@@ -17,3 +17,19 @@ export function pickShowcase(records, cat, { slots = TOP_SLOTS, fill = true } = 
   const rest = mine.filter((r) => !top.includes(r));
   return { top, rest };
 }
+
+// 음악 코너(레코드 콘솔)에 곡을 나눠 놓는 규칙 — 다른 카테고리처럼 "콘솔
+// 위 = 최애음악, 칸 안 = 나머지":
+//   playing: 턴테이블에서 도는 곡 — 최애음악 중 첫 번째(가장 최근에 기록한 것),
+//            최애음악이 없으면 가장 최근 곡(턴테이블이 비어 보이지 않게).
+//   picks:   턴테이블 옆 받침에 세우는 나머지 최애음악(최대 2장).
+//   rest:    그 밖의 곡 전부(최신순) — 콘솔 칸 안에 들어감.
+// 기록 보관소도 이걸로 "재생 중" 표시를 붙여서 방과 같은 곡을 가리킴.
+export function pickMusic(records) {
+  const mine = (records || []).filter((r) => r.cat === 'music');
+  const featured = mine.filter((r) => r.featured).slice(0, TOP_SLOTS);
+  const playing = featured[0] || mine[0] || null;
+  const picks = featured.slice(1);
+  const rest = mine.filter((r) => r !== playing && !picks.includes(r));
+  return { playing, picks, rest };
+}

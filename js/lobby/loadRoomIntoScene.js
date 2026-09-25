@@ -1,5 +1,5 @@
 import { roomApi } from './roomContext.js';
-import { pickShowcase } from './showcase.js';
+import { pickShowcase, pickMusic } from './showcase.js';
 
 // 지금 보는 방의 실제 데이터(스트로크/기록)를 서버에서 받아와 3D 씬의
 // 각 가구를 채움 — 이젤 캔버스, 책장과 그 위 액자, 영화 포스터 벽, 애니
@@ -21,12 +21,13 @@ export function loadRoomIntoScene(ctx, sceneSetters) {
   //  - 책: 인생작 3개는 책장 위 액자, 책장엔 책 전체의 제목.
   //  - 영화/애니: 기본은 전부 작은 포스터/작은 스탠드로 쌓이고, 별표로
   //    직접 고른 인생작(최대 3개)만 위에 큰 포스터/큰 스탠드로 올라감.
-  //  - 음악: 첫 번째 최애음악(없으면 가장 최근 곡)이 턴테이블에서 돎.
+  //  - 음악: 최애음악은 콘솔 위(첫 번째는 턴테이블, 나머지는 옆 받침),
+  //    나머지 곡은 콘솔 칸 안. 최애음악이 없으면 가장 최근 곡이 턴테이블에서 돎.
   fetch(`${roomApi(ctx)}/records`)
     .then((res) => (res.ok ? res.json() : []))
     .then((records) => {
       const list = records || [];
-      setMusic(pickShowcase(list, 'music'));
+      setMusic(pickMusic(list));
       setBookFrames(pickShowcase(list, 'book'));
       setLibraryBooks(list.filter((r) => r.cat === 'book').map((r) => r.title));
       setMovies(pickShowcase(list, 'movie', { fill: false }));

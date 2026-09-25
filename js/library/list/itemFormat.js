@@ -58,8 +58,13 @@ export function featureButtonLabel(cat, featured) {
 // 기록의 표지. 사진이 있으면 그 사진 — 음악은 정사각형 앨범 아트라서
 // 세로로 긴 카드에 잘리지 않게, 흐리게 늘인 같은 사진 위에 가운데 정사각형으로
 // 올림. 사진이 없으면 방의 제목 카드처럼 카테고리 색 표지에 제목을 씀.
-export function coverHtml(it) {
-  const badge = it.featured ? `<span class="badge">${featureLabel(it.cat)}</span>` : '';
+// playing: 이 곡이 지금 방의 턴테이블에서 도는 곡인지(showcase.js의 pickMusic).
+export function coverHtml(it, { playing = false } = {}) {
+  const tags = [
+    it.featured ? `<span class="badge">${featureLabel(it.cat)}</span>` : '',
+    playing ? '<span class="badge playing">▶ 재생 중</span>' : '',
+  ].join('');
+  const badge = tags ? `<span class="badges">${tags}</span>` : '';
   if (it.photo_url) {
     const src = escapeAttr(it.photo_url);
     if (it.cat === 'music') {

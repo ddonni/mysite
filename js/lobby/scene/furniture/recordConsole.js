@@ -5,10 +5,11 @@ import { drawCover, paintRecordImage } from '../coverImage.js';
 import { buildTurntable, DECK_W } from './turntable.js';
 
 // 음악 기록을 나타내는 가구: 다리 달린 미드센추리 레코드 콘솔(LP 보관함) —
-//   - 위: 턴테이블(turntable.js)과, 그 옆 작은 받침에 세운 "지금 재생 중"
-//         앨범 재킷(LP 가진 사람들이 흔히 하는 진열).
-//   - 왼쪽 칸: LP가 세로로 빽빽이 꽂혀 옆면(책등처럼)이 보임.
-//   - 오른쪽 칸: LP 두 장이 앞을 보고 서 있어 표지가 보임.
+//   - 위(최애음악 자리): 턴테이블(turntable.js)에서 첫 번째 최애음악이 돌고,
+//         그 옆 황동 받침 둘에 나머지 최애음악 재킷이 세워짐(LP 가진
+//         사람들이 흔히 하는 진열).
+//   - 칸 안(왼쪽 → 오른쪽): 그 밖의 곡이 LP처럼 세로로 빽빽이 꽂혀 옆면만
+//         보임 — 표지·제목 없이 곡이 쌓이는 것만 보여줌.
 // 칸 안쪽 높이는 LP 슬리브(SLEEVE)가 딱 들어가는 크기. 클릭하면 음악으로
 // 감. 자리는 roomLayout.js가 잡음.
 
@@ -98,59 +99,50 @@ export function buildRecordConsole() {
   });
 
   const floorY = LEG + T; // 칸 바닥 높이
-  const leftX0 = -W / 2 + T; // 왼쪽 칸 안쪽 왼쪽 끝
-  const rightCx = T / 2 + COMP_W / 2; // 오른쪽 칸 가운데
+  const compX0 = [-W / 2 + T, T / 2]; // 왼쪽/오른쪽 칸 안쪽 왼쪽 끝
 
-  // 왼쪽 칸 — 세로로 꽂힌 LP들(옆면이 앞을 봄). 맨 끝 장은 살짝 기대게.
+  // 칸 안 — 곡마다 LP 한 장이 세로로 꽂혀 옆면만 보임(표지·제목 없이 "쌓이는"
+  // 것만). 왼쪽 칸부터 채우고, 차면 오른쪽 칸으로. 전부 반듯하게 섬.
   let spines = [];
   function fillSpines(records) {
     spines.forEach((m) => group.remove(m));
     spines = [];
-    records.slice(0, SPINE_SLOTS).forEach((rec, i) => {
+    records.slice(0, SPINE_SLOTS * compX0.length).forEach((rec, i) => {
+      const comp = Math.floor(i / SPINE_SLOTS), k = i % SPINE_SLOTS;
       const col = SPINE_COLORS[hash(rec.title || String(i)) % SPINE_COLORS.length];
       const lp = new THREE.Mesh(new THREE.BoxGeometry(SPINE_T, SLEEVE, SLEEVE), new THREE.MeshStandardMaterial({ color: col, roughness: 0.7 }));
-      lp.position.set(leftX0 + 0.02 + i * (SPINE_T + 0.003) + SPINE_T / 2, floorY + SLEEVE / 2, 0.02);
+      lp.position.set(compX0[comp] + 0.02 + k * (SPINE_T + 0.003) + SPINE_T / 2, floorY + SLEEVE / 2, 0.02);
       lp.castShadow = true;
       group.add(lp);
       spines.push(lp);
     });
-    const last = spines[spines.length - 1];
-    if (last && spines.length < SPINE_SLOTS) {
-      last.rotation.z = -0.12;
-      last.position.x += 0.035;
-      last.position.y -= 0.01;
-    }
   }
 
-  // 오른쪽 칸 — 표지가 보이게 앞을 보고 선 두 장(뒤 장은 왼쪽으로 비껴서
-  // 앞 장 옆으로 표지 한쪽이 보이게).
-  const faceOut = [[-0.07, -0.1, -0.12], [0.07, 0.12, 0.04]].map(([x, z, yaw]) => {
-    const s = makeCoverSleeve(paper);
-    s.holder.position.set(rightCx + x, floorY, z);
-    s.holder.rotation.set(-0.06, yaw, 0, 'YXZ');
-    group.add(s.holder);
-    return s;
-  }).reverse(); // 채울 땐 앞 장부터
-
-  // 위 — 턴테이블(왼쪽) + 지금 재생 중인 앨범 재킷을 세운 받침(오른쪽).
+  // 위 — 턴테이블(왼쪽) + 나머지 최애음악 재킷 2장을 세운 황동 받침(오른쪽).
+  // 받침 둘은 앞뒤로 엇갈려 서서, 앞 재킷 뒤로 뒤 재킷이 반쯤 보임. 최애음악이
+  // 모자라면 재킷 없이 빈 받침만 남음("여기 더 올릴 수 있다"는 표시).
   const deck = buildTurntable();
   deck.position.set(-W / 2 + DECK_W / 2 + 0.12, TOP_Y, 0.0);
   group.add(deck);
-  const stand = new THREE.Group();
-  const standBase = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.02, 0.14), brass);
-  standBase.position.y = 0.01;
-  stand.add(standBase);
-  const standBack = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.28, 0.02), brass);
-  standBack.position.set(0, 0.14, -0.06);
-  standBack.rotation.x = -0.22;
-  stand.add(standBack);
-  const nowPlaying = makeCoverSleeve(paper);
-  nowPlaying.holder.position.set(0, 0.02, 0.02);
-  nowPlaying.holder.rotation.x = -0.22;
-  nowPlaying.holder.scale.setScalar(0.82);
-  stand.add(nowPlaying.holder);
-  stand.position.set(W / 2 - 0.38, TOP_Y, 0.02);
-  group.add(stand);
+  const JACKET = 0.7; // 받침 위 재킷 크기(칸 속 슬리브 대비)
+  const picks = [[W / 2 - 0.23, -0.14, -0.18], [W / 2 - 0.43, 0.13, -0.26]].map(([x, z, lean]) => {
+    const stand = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.02, 0.12), brass);
+    base.position.y = 0.01;
+    stand.add(base);
+    const back = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.24, 0.02), brass);
+    back.position.set(0, 0.12, -0.05);
+    back.rotation.x = lean;
+    stand.add(back);
+    const s = makeCoverSleeve(paper);
+    s.holder.position.set(0, 0.02, 0.02);
+    s.holder.rotation.x = lean;
+    s.holder.scale.setScalar(JACKET);
+    stand.add(s.holder);
+    stand.position.set(x, TOP_Y, z);
+    group.add(stand);
+    return s;
+  }).reverse(); // 채울 땐 앞 받침부터
 
   const blob = aoBlob(W / 2 + 0.1);
   blob.scale.y = 0.45;
@@ -158,23 +150,20 @@ export function buildRecordConsole() {
 
   group.userData.turntable = deck;
   group.userData.spin = deck.userData.spin;
-  // 지금 재생할 곡: 턴테이블의 LP 라벨/이름표 + 받침의 앨범 재킷.
+  // 턴테이블에서 돌 곡: LP 라벨(앨범 이미지) + 위에 뜨는 제목/가수 이름표.
   group.userData.setNowPlaying = (song) => {
     deck.userData.setFeaturedSong(song || null);
-    nowPlaying.holder.visible = !!song;
-    if (song) nowPlaying.paint(song);
   };
-  // 나머지 곡(최애음악 먼저·최신순): 앞 두 장은 오른쪽 칸에 표지가 보이게,
-  // 그다음부터 왼쪽 칸에 세로로 꽂힘(칸이 차면 거기까지).
-  group.userData.setAlbums = (records) => {
-    const list = records || [];
-    faceOut.forEach((s, i) => {
-      const rec = list[i];
-      s.holder.visible = !!rec;
-      if (rec) s.paint(rec);
+  // 턴테이블 옆 받침에 세울 나머지 최애음악(최대 2장).
+  group.userData.setPicks = (songs) => {
+    picks.forEach((s, i) => {
+      const song = (songs || [])[i];
+      s.holder.visible = !!song;
+      if (song) s.paint(song);
     });
-    fillSpines(list.slice(faceOut.length));
   };
+  // 콘솔 칸 안에 넣을 그 밖의 곡(최신순) — 두 칸이 차면 거기까지.
+  group.userData.setAlbums = (records) => fillSpines(records || []);
 
   return group;
 }

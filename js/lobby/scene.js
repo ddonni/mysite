@@ -144,12 +144,12 @@ export function buildScene(theme) {
     setLibraryBooks: shelf.userData.setBooks,
     setMovies: posterWall.userData.setMovies,
     setAnime: displayCase.userData.setAnime,
-    // 음악: 첫 번째 최애음악(없으면 가장 최근 곡)이 턴테이블에서 돌아가고(옆
-    // 받침에 그 앨범 재킷), 나머지 곡은 LP 보관함에(최애음악 먼저 — 앞 두 장은
-    // 표지가 보이게).
-    setMusic: ({ top, rest }) => {
-      recordConsole.userData.setNowPlaying(top[0] || null);
-      recordConsole.userData.setAlbums([...top.slice(1), ...rest]);
+    // 음악(showcase.js의 pickMusic 결과): 턴테이블에 playing, 그 옆 받침에
+    // 나머지 최애음악(picks), 콘솔 칸 안에 그 밖의 곡(rest — LP 옆면만).
+    setMusic: ({ playing, picks, rest }) => {
+      recordConsole.userData.setNowPlaying(playing);
+      recordConsole.userData.setPicks(picks);
+      recordConsole.userData.setAlbums(rest);
     },
     // 매 프레임 먼지를 살짝 위로 움직이고, 천장 높이를 넘으면 바닥으로
     // 되돌려서 계속 떠다니는 것처럼 보이게 함.

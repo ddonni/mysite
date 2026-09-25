@@ -28,7 +28,7 @@ const PAGES = {
 };
 // tag: 카드 맨 위 작은 영문 라벨(가구 위 벽 글씨와 같은 말).
 const ROOM_INFO = {
-  sketchbook: { tag: 'Canvas', title: '캔버스', body: '마음 가는 대로 그려보세요. 이젤에는 첫 장이 걸려 있어요.' },
+  sketchbook: { tag: 'Canvas', title: '캔버스', body: '마음 가는 대로 그려보세요.' },
   book: { tag: 'Book', title: '책', body: '읽은 책이 한 권씩 꽂혀요.' },
   anime: { tag: 'Animation', title: '애니', body: '본 애니가 아크릴 스탠드로 진열돼요.' },
   movie: { tag: 'Movie', title: '영화', body: '본 영화가 포스터로 한 장씩 붙어요.' },
