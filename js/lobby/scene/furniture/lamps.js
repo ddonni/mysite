@@ -12,7 +12,8 @@ const WARM = 0xffd49a;
 
 // 구석에 세우는 플로어 스탠드 — 천 전등갓이 은은하게 비쳐 보이고, 주변
 // 벽과 바닥을 따뜻하게 물들임.
-export function buildFloorLamp(x, z) {
+// 자리(방 앞쪽 구석)는 roomLayout.js가 잡음.
+export function buildFloorLamp() {
   const group = new THREE.Group();
   const metal = new THREE.MeshStandardMaterial({ color: 0x2a2420, roughness: 0.5, metalness: 0.4 });
 
@@ -38,6 +39,5 @@ export function buildFloorLamp(x, z) {
   group.add(light);
 
   group.add(aoBlob(0.35));
-  group.position.set(x, 0, z);
   return group;
 }

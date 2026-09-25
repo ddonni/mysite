@@ -1,4 +1,3 @@
-import { BACK_WALL_Z } from '../roomDimensions.js';
 import { makeCanvasTexture } from '../canvasTexture.js';
 import { aoBlob } from '../aoBlob.js';
 
@@ -36,15 +35,15 @@ function drawBookSpine(ctx, w, h, colorHex, title) {
   ctx.restore();
 }
 
-// 책 기록을 나타내는 가구: 뒷벽 왼쪽 절반을 채우는 책장(오른쪽 절반은
-// 영화 포스터 벽). 칸에 꽂히는 책은 shelf.userData.setBooks(titles)로
+// 책 기록을 나타내는 가구: 책 벽면을 채우는 책장(위에는 대표작 액자 3개 —
+// scene.js). 벽 기준 좌표로 지음(roomLayout.js가 벽에 담).
+// 칸에 꽂히는 책은 shelf.userData.setBooks(titles)로
 // 실제 책 기록 제목 목록을 받아 그 개수만큼만 꽂아 넣음 — 기록이
 // 늘어나면 책장도 자연스럽게 채워짐. 기록이 0개면 빈 책장 그대로이고,
 // 아직 못 받아왔을 때(로드 전/실패)도 빈 채로 시작함 — 예전엔 무작위 책으로
 // 채워뒀다가 기록이 없는 방도 꽉 차 보이는 문제가 있었음.
-// SW: 책장 폭, x: 책장 중심의 x 위치(scene.js가 뒷벽 배치를 정함).
 export const BOOKSHELF_W = 5.6;
-export function buildBookshelf(x) {
+export function buildBookshelf() {
   const shelf = new THREE.Group();
   shelf.userData.room = 'book';
   const caseMat = new THREE.MeshStandardMaterial({ color: 0x3a2c1f, roughness: 0.75 });
@@ -150,7 +149,7 @@ export function buildBookshelf(x) {
   blob.scale.y = 0.25;
   shelf.add(blob);
 
-  shelf.position.set(x, 0, BACK_WALL_Z + SD / 2 + 0.06);
+  shelf.position.set(0, 0, SD / 2 + 0.06); // 벽에 바짝 붙임
 
   // loadRoomIntoScene.js가 책 기록의 제목 목록을 받아온 뒤 이걸 호출해서,
   // 그 개수만큼만 책을 다시 꽂아 넣음.

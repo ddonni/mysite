@@ -10,31 +10,21 @@
 export function createRoomInteraction({ canvas, camera, interactiveGroups, roomInfo, dom, onConfirm, kickBall, cameraPresets }) {
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // 벽 위쪽의 가구 이름 글씨(y≈4.6)까지 화면 안쪽에 들어오되 왼쪽 위 헤더/
-  // 가운데 위 안내 문구에 안 가리게, 목표 지점을 높이고 조금 더 뒤로 물러남.
-  // (cameraPresets가 넘어오면 — 둥근 방 시안처럼 배치가 다를 때 — 그 값을 씀.)
-  const HOME = (cameraPresets && cameraPresets.home) || { theta: 0.5, phi: 1.12, radius: 14.8, target: new THREE.Vector3(-1.4, 2.7, -1.2) };
-  // 각 방을 클릭했을 때 카메라가 다가갈 목표 지점 (방마다 다르게 잡아둠) —
-  // target은 scene.js의 가구 배치(BOOK_X/MOVIE_X/ANIME_Z, easel.js,
-  // turntable.js)와 맞춰둬야 함.
-  const FOCUS = (cameraPresets && cameraPresets.focus) || {
-    sketchbook: { theta: 0.55, phi: 1.05, radius: 4.6, target: new THREE.Vector3(-1.0, 1.1, 1.2) },
-    // 책장/포스터 벽/진열장은 셋 다 같은 크기 + 그 위 대표작 + 벽 글씨라, 전부
-    // 같은 거리·높이로 잡아 한 화면에 가구부터 글씨까지 같이 들어오게 함.
-    book: { theta: 0.12, phi: 1.1, radius: 7.6, target: new THREE.Vector3(-2.9, 2.35, -4.0) },
-    movie: { theta: -0.12, phi: 1.1, radius: 7.6, target: new THREE.Vector3(3.3, 2.35, -4.0) },
-    // 왼쪽 벽에 붙은 진열장은 +x 방향에서 봐야 정면이라 theta를 π/2 가까이.
-    anime: { theta: 1.45, phi: 1.1, radius: 7.6, target: new THREE.Vector3(-5.9, 2.35, -0.4) },
-    music: { theta: 0.5, phi: 1.02, radius: 4.5, target: new THREE.Vector3(0, 0.9, -2.2) },
-  };
-  const MIN_R = 4.5, MAX_R = 17, MIN_PHI = 0.55, MAX_PHI = 1.5;
+  // 첫 화면(HOME)과 가구를 클릭했을 때 카메라가 다가갈 자리(FOCUS) — 가구
+  // 배치에 따라 정해지는 값이라 scene/roomLayout.js가 만들어 scene.js를 거쳐 넘겨줌.
+  const HOME = cameraPresets.home;
+  const FOCUS = cameraPresets.focus;
+  const LIMIT = cameraPresets.targetLimit;
+  // MAX_R는 첫 화면 거리(HOME.radius)보다 넉넉해야 휠로 줌 아웃할 때 안 튐.
+  const MIN_R = 3, MAX_R = 22, MIN_PHI = 0.55, MAX_PHI = 1.5;
 
   // 카메라 위치는 "구면 좌표"(target을 중심으로 반지름·수평각·수직각)로
   // 다룸 — 마우스로 드래그하면 각도만 바뀌고, updateCameraFromSpherical
-  // 에서 이걸 실제 x/y/z 위치로 환산함. want* 값은 "가려는 목표"이고,
-  // 실제 spherical 값은 그 목표를 향해 매 프레임 조금씩(감쇠하며)
-  // 따라가서 — 뚝뚝 끊기지 않고 부드럽게 움직이는 느낌을 줌.
+  // 에서 이걸 실제 x/y/z 위치로 환산함. want*/wantTarget은 "가려는 목표"이고,
+  // 실제 값은 그 목표를 향해 매 프레임 조금씩(감쇠하며) 따라가서 — 뚝뚝
+  // 끊기지 않고 부드럽게 움직이는 느낌을 줌.
   const target = HOME.target.clone();
+  const wantTarget = HOME.target.clone();
   const spherical = { radius: HOME.radius, theta: HOME.theta, phi: HOME.phi };
   const want = { radius: spherical.radius, theta: spherical.theta, phi: spherical.phi };
 
@@ -66,7 +56,6 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
       lastX = e.clientX; lastY = e.clientY;
       want.theta -= dx * 0.0055;
       want.phi = Math.min(MAX_PHI, Math.max(MIN_PHI, want.phi - dy * 0.004));
-      hideHint();
     } else if (!entered) {
       checkHover(e);
     }
@@ -86,9 +75,22 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
     canvas.classList.remove('dragging');
     if (tapped) handleClick(e);
   });
+  // 휠 줌은 "커서가 가리키는 곳"을 향해 — 가까이 갈 땐 목표 지점을 커서 아래
+  // 지점 쪽으로 끌어오고(가장자리의 턴테이블/곰인형도 확대해서 볼 수 있게),
+  // 멀어질 땐 첫 화면 목표 지점으로 조금씩 되돌려서 끝까지 빼면 원래 시점이 됨.
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
-    want.radius = Math.min(MAX_R, Math.max(MIN_R, want.radius + e.deltaY * 0.012));
+    const oldR = want.radius;
+    const newR = Math.min(MAX_R, Math.max(MIN_R, oldR + e.deltaY * 0.012));
+    if (newR < oldR) {
+      const p = pointUnderCursor(e);
+      if (p) wantTarget.lerp(p, 1 - newR / oldR);
+    } else if (newR > oldR) {
+      const back = oldR < HOME.radius ? Math.min(1, (newR - oldR) / (HOME.radius - oldR)) : 1;
+      wantTarget.lerp(HOME.target, back);
+    }
+    want.radius = newR;
+    clampTarget(wantTarget);
   }, { passive: false });
 
   // ---- 가구 위에 마우스를 올리면 커서 변경, 클릭하면 입장 ----
@@ -112,6 +114,23 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
     while (o) { if (o.userData && o.userData.isBall) return true; o = o.parent; }
     return false;
   }
+  // 커서 아래의 3D 지점 — 가구에 닿으면 그 지점, 아니면(곰인형·바닥 등)
+  // 가구 높이쯤의 수평면과 만나는 지점. 둘 다 없으면(허공) null.
+  const cursorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.8);
+  function pointUnderCursor(e) {
+    setNDC(e);
+    raycaster.setFromCamera(mouseNDC, camera);
+    const hits = raycaster.intersectObjects(interactiveGroups, true);
+    if (hits.length) return hits[0].point.clone();
+    return raycaster.ray.intersectPlane(cursorPlane, new THREE.Vector3());
+  }
+  // 목표 지점이 방 밖(벽 너머/바닥 아래/너무 높이)으로 나가지 않게 가둠.
+  function clampTarget(t) {
+    const r = Math.hypot(t.x, t.z);
+    if (r > LIMIT.radius) { t.x *= LIMIT.radius / r; t.z *= LIMIT.radius / r; }
+    t.y = Math.min(LIMIT.maxY, Math.max(LIMIT.minY, t.y));
+  }
+
   function checkHover(e) {
     setNDC(e);
     raycaster.setFromCamera(mouseNDC, camera);
@@ -136,7 +155,7 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
     entered = room;
     const f = FOCUS[room];
     want.theta = f.theta; want.phi = f.phi; want.radius = f.radius;
-    target.copy(f.target);
+    wantTarget.copy(f.target);
 
     const info = roomInfo[room];
     dom.card.setAttribute('data-room', room);
@@ -145,12 +164,11 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
     dom.cardBody.textContent = info.body;
     dom.card.classList.add('show');
     setCTAState(room);
-    hideHint();
   }
   function leaveRoom() {
     entered = null;
     want.theta = HOME.theta; want.phi = HOME.phi; want.radius = HOME.radius;
-    target.copy(HOME.target);
+    wantTarget.copy(HOME.target);
     dom.card.classList.remove('show');
     setCTAState(null);
   }
@@ -164,25 +182,19 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
     });
   });
 
-  let hintHidden = false;
-  function hideHint() {
-    if (hintHidden) return;
-    hintHidden = true;
-    dom.hint.classList.add('gone');
-  }
-
   // 처음 만들어질 때 카메라를 HOME 위치로 한 번 맞춰둠 (첫 렌더 프레임이
   // 뜨기 전부터 카메라 위치가 올바르게 잡혀 있도록).
   updateCameraFromSpherical();
 
   return {
-    // main.js의 렌더 루프가 매 프레임 불러줌: 목표 각도(want)를 향해
-    // 부드럽게 따라감(자동 회전은 하지 않음).
+    // main.js의 렌더 루프가 매 프레임 불러줌: 목표 각도/거리(want)와 목표
+    // 지점(wantTarget)을 향해 부드럽게 따라감(자동 회전은 하지 않음).
     update(dt) {
       const damp = REDUCED ? 1 : 0.09;
       spherical.theta += (want.theta - spherical.theta) * damp;
       spherical.phi += (want.phi - spherical.phi) * damp;
       spherical.radius += (want.radius - spherical.radius) * damp;
+      target.lerp(wantTarget, damp);
       updateCameraFromSpherical();
     },
   };

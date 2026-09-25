@@ -141,7 +141,7 @@ export function createCanvas({ toast }) {
 
     saveFailed(err) {
       if (err && err.code === 'page not found') {
-        toast('저장에 실패했어요 — 페이지를 새로고침해 보세요');
+        toast('저장하지 못했어요. 새로고침해 보세요.');
       }
       // 그 외의 네트워크 에러는 조용히 넘어감 — 다음 획을 그릴 때 다시
       // save()가 불리면서 지금 상태를 그대로 이어서 저장하기 때문에,
@@ -175,7 +175,7 @@ export function createCanvas({ toast }) {
         renderer.renderAll();
         save();
       } else {
-        toast('되돌릴 내 획이 없어요');
+        toast('되돌릴 획이 없어요');
       }
     },
 

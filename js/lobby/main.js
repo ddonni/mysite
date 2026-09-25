@@ -27,11 +27,11 @@ const PAGES = {
 };
 // tag: 카드 맨 위 작은 영문 라벨(가구 위 벽 글씨와 같은 말).
 const ROOM_INFO = {
-  sketchbook: { tag: 'Canvas', title: '캔버스', body: '이젤에 걸린 캔버스에 자유롭게 그림을 그려보세요.' },
-  book: { tag: 'Book', title: '책장', body: '읽은 책을 꽂아두는 책장이에요. 위에 걸린 액자는 대표작이에요.' },
-  anime: { tag: 'Animation', title: '애니 진열장', body: '본 애니를 아크릴 스탠드로 모아둔 진열장이에요. 진열장 위의 큰 스탠드가 대표작이에요.' },
-  movie: { tag: 'Movie', title: '영화 포스터', body: '본 영화의 포스터를 붙여둔 벽이에요. 위에 따로 붙은 포스터가 대표작이에요.' },
-  music: { tag: 'Music', title: '턴테이블', body: '모아둔 노래를 들어보는 공간이에요.' },
+  sketchbook: { tag: 'Canvas', title: '캔버스', body: '마음 가는 대로 그려보세요. 이젤에는 첫 장이 걸려 있어요.' },
+  book: { tag: 'Book', title: '책', body: '읽은 책이 한 권씩 꽂혀요.' },
+  anime: { tag: 'Animation', title: '애니', body: '본 애니가 아크릴 스탠드로 진열돼요.' },
+  movie: { tag: 'Movie', title: '영화', body: '본 영화가 포스터로 한 장씩 붙어요.' },
+  music: { tag: 'Music', title: '음악', body: '들은 노래가 LP로 꽂혀요.' },
 };
 
 // 도움말은 서버 응답을 기다리지 않고 제일 먼저 — 처음 온 사람은 로딩 중에도 읽을 수 있게.
@@ -72,7 +72,7 @@ function boot() {
     .then(([ctx, info]) => {
       if (info && info.missing) {
         if (info.own) {
-          alert('내 방을 이 서버에서 찾을 수 없어요. 새 방을 만들게요.');
+          alert('내 방을 찾지 못했어요. 새 방을 하나 만들게요.');
           forgetMyRoom();
           window.location.reload();
           return;
@@ -100,13 +100,11 @@ function bootWithTheme(theme, ctx) {
   // 눌리고, 방 전체가 한 가지 색으로 쏠리지 않음. scene/lighting.js의
   // 조명 세기는 이 톤매핑/노출값에 맞춰 잡은 것.
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.25;
+  renderer.toneMappingExposure = 1.4;
 
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 60);
 
-  // [시안] 주소에 ?layout=round를 붙이면 둥근 방 배치로 띄움(scene/roundLayout.js).
-  const layout = new URLSearchParams(location.search).get('layout');
-  const { scene, interactiveGroups, cameraPresets, updateMotes, updateTurntable, updateBall, kickBall, ...sceneSetters } = buildScene(theme, layout);
+  const { scene, interactiveGroups, cameraPresets, updateMotes, updateTurntable, updateBall, kickBall, ...sceneSetters } = buildScene(theme);
   loadRoomIntoScene(ctx, sceneSetters);
 
   // 카드에서 "입장하기"를 누르면 실제로 페이지를 옮기는 함수. 화면을
@@ -129,7 +127,6 @@ function bootWithTheme(theme, ctx) {
     cameraPresets,
     kickBall,
     dom: {
-      hint: document.getElementById('hint'),
       card: document.getElementById('card'),
       cardTag: document.getElementById('cardTag'),
       cardTitle: document.getElementById('cardTitle'),

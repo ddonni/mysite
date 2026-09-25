@@ -53,14 +53,6 @@ body{
   max-width:38ch;
 }
 
-#hint{
-  position:absolute;left:50%;top:max(22px, env(safe-area-inset-top));transform:translateX(-50%);
-  font-size:11.5px;color:var(--paper-dim);background:rgba(18,15,12,0.55);
-  border:1px solid var(--void-border);padding:6px 12px;border-radius:999px;
-  transition:opacity .6s ease;white-space:nowrap;
-}
-#hint.gone{opacity:0;}
-@media (max-width:560px){ #hint{ display:none; } }
 
 #cta{
   position:absolute;right:max(22px, env(safe-area-inset-right));bottom:max(20px, env(safe-area-inset-bottom));
@@ -261,5 +253,5 @@ body{
 }
 
 @media (prefers-reduced-motion: reduce){
-  #loading, #hint, #ui, #card{ transition:none; }
+  #loading, #ui, #card{ transition:none; }
 }

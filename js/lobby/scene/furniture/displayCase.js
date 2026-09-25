@@ -1,17 +1,15 @@
-import { LEFT_WALL_X } from '../roomDimensions.js';
+import { FEATURED_GAP } from '../roomDimensions.js';
 import { aoBlob } from '../aoBlob.js';
 import { drawCover, drawTitleCard, paintRecordImage } from '../coverImage.js';
 import { canvasToTexture } from '../canvasTexture.js';
 
-// 애니 기록을 나타내는 가구: 왼쪽 벽에 붙인 나무 유리 진열장 — 뒷벽 책장과
-// 같은 크기(CW × CH)·같은 나무색으로, 짜임새도 책장과 맞춤:
+// 애니 기록을 나타내는 가구: 애니 벽면에 붙인 나무 유리 진열장(벽 기준
+// 좌표로 지음 — roomLayout.js가 벽에 담) — 책장과 같은 크기(CW × CH)·같은
+// 나무색으로, 짜임새도 책장과 맞춤:
 //   안:  세 칸에 나머지 애니가 작은 아크릴 스탠드로 칸당 PER_SHELF개씩 섬.
 //   위:  진열장 천판 위에 책장 위 액자만 한 큰 스탠드 3개(대표작 — 가운데가
 //        첫 번째). 대표작이 없는 자리엔 빈 아크릴판만 서 있음.
 // 스탠드 = 기록의 사진이 투명 아크릴판에 인쇄된 모양(사진이 없으면 제목 카드).
-//
-// 다른 가구처럼 로컬 +z를 "정면"으로 짓고, 왼쪽 벽은 +x쪽으로 열려
-// 있으므로 그룹 전체를 90도 돌려 정면이 방 안쪽(+x)을 보게 함.
 
 export const CASE_W = 5.6; // bookshelf.js의 BOOKSHELF_W와 맞춤
 const CW = CASE_W, CH = 2.5, CD = 0.5;
@@ -93,8 +91,7 @@ function makeStand(size, acrylicMat) {
   return { group, paint };
 }
 
-// z: 진열장 가운데가 왼쪽 벽 위 어디에 올지(scene.js가 정함).
-export function buildDisplayCase(z) {
+export function buildDisplayCase() {
   const cabinet = new THREE.Group();
   cabinet.userData.room = 'anime';
 
@@ -156,10 +153,10 @@ export function buildDisplayCase(z) {
   glass.position.set(0, CH / 2, CD / 2 - 0.005);
   cabinet.add(glass);
 
-  // 천판 위 대표작 스탠드 — 책장 위 액자(scene.js의 frame 간격 1.8)와 같은 간격.
+  // 천판 위 대표작 스탠드 — 책장 위 액자와 같은 간격.
   const bigs = [-1, 0, 1].map((i) => {
     const s = makeStand(BIG, acrylicMat);
-    s.group.position.set(i * 1.8, CH, 0);
+    s.group.position.set(i * FEATURED_GAP, CH, 0);
     s.paint(null);
     cabinet.add(s.group);
     return s;
@@ -184,8 +181,7 @@ export function buildDisplayCase(z) {
   blob.scale.y = 0.25;
   cabinet.add(blob);
 
-  cabinet.position.set(LEFT_WALL_X + CD / 2 + 0.08, 0, z);
-  cabinet.rotation.y = Math.PI / 2;
+  cabinet.position.set(0, 0, CD / 2 + 0.08); // 벽에 바짝 붙임
 
   // loadRoomIntoScene.js가 애니 기록을 골라서 넘겨줌: top은 대표작 최대
   // 3개(첫 번째가 가운데), rest는 나머지(최신순) — 안쪽 칸 수만큼만 섬.

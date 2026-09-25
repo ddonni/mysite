@@ -10,7 +10,7 @@ import { renderDetailRow } from './detailRow.js';
 export function renderRows(listEl, list, { activeTab, openId, onToggleOpen, onEdit, onDelete, onFeature, readOnly, rerender }) {
   listEl.innerHTML = '';
   if (list.length === 0) {
-    listEl.innerHTML = `<div class="empty">${activeTab === 'all' ? '아직 기록이 없어요.' : '이 항목엔 아직 기록이 없어요.'} 오른쪽 위 + 기록으로 추가해보세요.</div>`;
+    listEl.innerHTML = `<div class="empty">${activeTab === 'all' ? '아직 기록이 없어요. 오른쪽 위 + 기록하기로 첫 기록을 남겨보세요.' : '아직 이 카테고리엔 기록이 없어요. 오른쪽 위 + 기록하기로 남겨보세요.'}</div>`;
     return;
   }
   list.forEach((it) => {

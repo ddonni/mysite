@@ -1,6 +1,7 @@
 import { PAGE_BG, drawStroke } from '../../../shared/strokes.js';
 import { aoBlob } from '../aoBlob.js';
 import { canvasToTexture } from '../canvasTexture.js';
+import { stick } from '../stick.js';
 
 const BOARD_TEX_W = 260, BOARD_TEX_H = 200; // 캔버스 페이지 비율(가로가 긴 쪽)과 맞춤
 
@@ -12,18 +13,6 @@ function drawBoardPreview(ctx, strokes) {
   ctx.fillStyle = PAGE_BG;
   ctx.fillRect(0, 0, BOARD_TEX_W, BOARD_TEX_H);
   (strokes || []).forEach((st) => drawStroke(ctx, st, BOARD_TEX_W, BOARD_TEX_H));
-}
-
-// 두 점 a→b를 잇는 둥근 나무 막대 — 벌어진 다리나 비스듬한 뒷다리처럼
-// 축에 안 맞는 부재를 좌표 두 개만으로 세우려고 씀.
-function stick(a, b, radius, mat) {
-  const dir = new THREE.Vector3().subVectors(b, a);
-  const len = dir.length();
-  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius * 1.1, len, 8), mat);
-  mesh.position.copy(a).add(b).multiplyScalar(0.5);
-  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
-  mesh.castShadow = true;
-  return mesh;
 }
 
 // 캔버스(그림판) 방을 나타내는 가구: 화실에 있는 A자 이젤 + 걸린 캔버스 +
@@ -127,10 +116,7 @@ export function buildEasel() {
   easel.add(stool);
 
   easel.add(aoBlob(1.15));
-
-  // 방 가운데 러그 위 — 로비 첫 화면(controls.js의 HOME) 쪽을 보게 살짝 돌림.
-  easel.position.set(-1.0, 0, 1.2);
-  easel.rotation.y = 0.55;
+  // 자리(방 가운데 러그 위)는 roomLayout.js가 잡음.
 
   // 로비가 서버에서 스트로크를 받아온 뒤 이걸 호출해서 캔버스에 실제
   // 1페이지 그림을 채워넣음.

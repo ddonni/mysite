@@ -42,7 +42,7 @@ async function main() {
   // (내 기기엔 그 사람 데이터가 없으니) — 그래도 store는 만들어두고
   // 에러 토스트로 상황만 알려줌.
   const store = (!reachable && !readOnly) ? makeLocalStore() : makeApiStore(viewingCode, ownerToken);
-  if (!reachable) toast(readOnly ? '이 방을 지금 불러올 수 없어요' : '서버에 연결할 수 없어 이 기기에만 저장돼요');
+  if (!reachable) toast(readOnly ? '지금은 이 방의 그림을 불러올 수 없어요' : '지금은 서버에 연결되지 않아 이 기기에만 저장돼요');
 
   const canvas = createCanvas({ toast });
   const pager = createPager({ store, canvas });

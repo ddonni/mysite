@@ -21,6 +21,16 @@ describe('pickShowcase', () => {
     expect(rest.map((r) => r.id)).toEqual([3]);
   });
 
+  it('fill: false면 별표 고른 것만 top, 나머지는 전부 rest', () => {
+    const list = [rec(1, 'movie'), rec(2, 'movie', true), rec(3, 'movie')];
+    const { top, rest } = pickShowcase(list, 'movie', { fill: false });
+    expect(top.map((r) => r.id)).toEqual([2]);
+    expect(rest.map((r) => r.id)).toEqual([1, 3]);
+    const noStar = pickShowcase([rec(1, 'anime')], 'anime', { fill: false });
+    expect(noStar.top).toEqual([]);
+    expect(noStar.rest.map((r) => r.id)).toEqual([1]);
+  });
+
   it('다른 카테고리 기록은 섞이지 않음', () => {
     const list = [rec(1, 'anime'), rec(2, 'movie', true), rec(3, 'anime')];
     const { top, rest } = pickShowcase(list, 'anime');

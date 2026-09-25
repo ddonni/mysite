@@ -33,8 +33,15 @@ export function initRoomChrome(ctx) {
         <span class="room-tag">내 방 코드 <b>${mine.code}</b></span>
         <button class="room-copy" type="button">복사</button>
       ` + visitForm;
-      el.querySelector('.room-copy').addEventListener('click', () => {
-        copyToClipboard(mine.code).catch(() => {});
+      // 복사됐는지 알 수 있게 버튼 글자를 잠깐 "복사됨"으로 바꿈.
+      const copyBtn = el.querySelector('.room-copy');
+      copyBtn.addEventListener('click', () => {
+        copyToClipboard(mine.code)
+          .then(() => {
+            copyBtn.textContent = '복사됨';
+            setTimeout(() => { copyBtn.textContent = '복사'; }, 1200);
+          })
+          .catch(() => {});
       });
     }
     el.querySelector('.room-visit').addEventListener('submit', (e) => {

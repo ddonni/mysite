@@ -11,7 +11,7 @@
 <body>
 
 <nav class="site-nav" aria-label="페이지 이동">
-  <a href="./" data-page="./">로비</a>
+  <a href="./" data-page="./">방</a>
   <a href="sketchbook" data-page="sketchbook">캔버스</a>
   <a href="library" data-page="library" class="active">기록 보관소</a>
 </nav>
@@ -20,8 +20,8 @@
   <div class="top">
     <h1>기록 보관소</h1>
     <div class="top-right">
-      <div class="meta"><span id="totalCount">0</span>건</div>
-      <button class="add-link" id="addTabBtn">+ 기록</button>
+      <div class="meta"><span id="totalCount">0</span>개</div>
+      <button class="add-link" id="addTabBtn">+ 기록하기</button>
     </div>
   </div>
 
@@ -42,7 +42,7 @@
 <!-- Add/Edit Modal -->
 <div class="overlay" id="overlay">
   <div class="modal">
-    <h2 id="modalTitle">새로운 기록</h2>
+    <h2 id="modalTitle">새 기록</h2>
 
     <div class="cat-tabs" id="catTabs"></div>
 
@@ -52,12 +52,12 @@
         <input type="text" id="fTitle" placeholder="제목을 입력하거나 목록에서 골라보세요">
         <div class="preset-list" id="presetList" style="display:none;"></div>
       </div>
-      <div id="titleError" style="display:none; color:var(--accent); font-size:11.5px; margin-top:5px;">제목을 입력하거나 목록에서 골라주세요.</div>
+      <div id="titleError" style="display:none; color:var(--accent); font-size:11.5px; margin-top:5px;">제목을 적어 주세요.</div>
     </div>
 
     <div class="field">
       <label id="creatorLabel">작가 / 감독 / 제작</label>
-      <input type="text" id="fCreator" placeholder="예: 미야자키 하야오">
+      <input type="text" id="fCreator">
     </div>
 
     <div class="field">
@@ -77,7 +77,7 @@
 
     <div class="field">
       <label>한 줄 감상</label>
-      <textarea id="fMemo" placeholder="남기고 싶은 말"></textarea>
+      <textarea id="fMemo" placeholder="어땠는지 한 줄로 남겨보세요"></textarea>
     </div>
 
     <div class="modal-actions">

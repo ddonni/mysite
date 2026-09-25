@@ -1,9 +1,9 @@
-import { BACK_WALL_Z } from '../roomDimensions.js';
+import { FEATURED_Y, FEATURED_GAP } from '../roomDimensions.js';
 import { drawCover, drawTitleCard, paintRecordImage } from '../coverImage.js';
 import { canvasToTexture } from '../canvasTexture.js';
 
-// 영화 기록을 나타내는 가구: 뒷벽 오른쪽 절반의 포스터 벽. 옆의 책장과
-// 같은 짜임새로 —
+// 영화 기록을 나타내는 가구: 영화 벽면의 포스터들(벽 기준 좌표로 지음 —
+// roomLayout.js가 벽에 담). 옆 벽의 책장과 같은 짜임새로 —
 //   아래: 책장과 같은 크기(GRID_W × GRID_H) 영역을 보이지 않는 칸으로 나눠,
 //         칸마다 나머지 영화가 작은 포스터로 한 장씩 가지런히 붙음(칸을
 //         그린 선은 없음 — 시선을 뺏어서 뺐음).
@@ -78,8 +78,7 @@ function makePoster(size, seed, tapeMat, tilt) {
   return { mesh, paint };
 }
 
-// x: 포스터 벽 가운데의 x 위치(scene.js가 뒷벽 배치를 정함).
-export function buildPosterWall(x) {
+export function buildPosterWall() {
   const group = new THREE.Group();
   group.userData.room = 'movie';
   // 재질은 모듈 최상단이 아니라 여기서 만듦 — THREE가 없는 브라우저에서도
@@ -89,7 +88,7 @@ export function buildPosterWall(x) {
   // 대표작 포스터 — 책장 위 액자(frame.js)와 같은 x 간격·높이.
   const bigs = [-1, 0, 1].map((i, k) => {
     const p = makePoster(BIG, k + 1, tapeMat, 0.03);
-    p.mesh.position.set(i * 1.8, 3.35, 0.012);
+    p.mesh.position.set(i * FEATURED_GAP, FEATURED_Y, 0.012);
     group.add(p.mesh);
     p.paint(null);
     return p;
@@ -107,7 +106,7 @@ export function buildPosterWall(x) {
     }
   }
 
-  group.position.set(x, 0, BACK_WALL_Z + 0.07);
+  group.position.set(0, 0, 0.07); // 벽에 바짝 붙임
 
   // loadRoomIntoScene.js가 영화 기록을 골라서 넘겨줌: top은 대표작 최대 3개
   // (첫 번째가 가운데), rest는 나머지(최신순) — 칸 수만큼만 붙음.

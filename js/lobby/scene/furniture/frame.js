@@ -1,10 +1,8 @@
-import { BACK_WALL_Z } from '../roomDimensions.js';
+import { FEATURED_Y } from '../roomDimensions.js';
 import { drawCover, drawTitleCard, paintRecordImage } from '../coverImage.js';
 import { canvasToTexture } from '../canvasTexture.js';
 
-const FRAME_TEX_W = 220, FRAME_TEX_H = 280; // 책 표지에 흔한 세로형 비율
-
-// 액자 캔버스에 그릴 기본 이미지 — 이 자리에 걸 대표작이 없을(책 기록이
+// 액자 캔버스에 그릴 기본 이미지 — 이 자리에 걸 대표작이 없을(기록이
 // 모자랄) 때 대신 보여주는 빈 액자 느낌의 아이콘.
 function drawFrameArtDefault(ctx, w, h) {
   const g = ctx.createLinearGradient(0, 0, w, h);
@@ -28,23 +26,25 @@ function drawFrameArtDefault(ctx, w, h) {
   ctx.stroke();
 }
 
-// 뒷벽에 거는 액자 하나 — 책장 위에 셋이 나란히 걸려 책 대표작을 보여줌.
-// main.js가 setFeaturedWork로 책 기록 하나를 채워줌: 사진이 있으면 표지로,
-// 없으면 제목 카드로. 기록 자체가 없으면 기본 아이콘 그대로 둠.
+// 책장 위 벽에 거는 책 대표작 액자 하나(벽 기준 좌표 — x는 벽 가운데에서
+// 옆 위치, 셋이 나란히 걸림). setFeaturedWork로 책 기록 하나를 채움: 사진이
+// 있으면 표지로, 없으면 제목 카드로. 기록 자체가 없으면 기본 아이콘.
 export function buildFrame(x) {
   const group = new THREE.Group();
   group.userData.room = 'book';
 
   const FRAME_W = 0.85, FRAME_H = 1.05, FRAME_D = 0.05;
+  const TEX_W = 220, TEX_H = 280; // 책 표지에 흔한 세로형 비율
+
   const frameMat = new THREE.MeshStandardMaterial({ color: 0x2a2016, roughness: 0.7 });
   const frame = new THREE.Mesh(new THREE.BoxGeometry(FRAME_W, FRAME_H, FRAME_D), frameMat);
   frame.castShadow = true;
   group.add(frame);
 
   const artCanvas = document.createElement('canvas');
-  artCanvas.width = FRAME_TEX_W; artCanvas.height = FRAME_TEX_H;
+  artCanvas.width = TEX_W; artCanvas.height = TEX_H;
   const artCtx = artCanvas.getContext('2d');
-  drawFrameArtDefault(artCtx, FRAME_TEX_W, FRAME_TEX_H);
+  drawFrameArtDefault(artCtx, TEX_W, TEX_H);
   const artTex = canvasToTexture(artCanvas);
   artTex.needsUpdate = true;
   const art = new THREE.Mesh(
@@ -54,20 +54,20 @@ export function buildFrame(x) {
   art.position.z = FRAME_D / 2 + 0.002;
   group.add(art);
 
-  group.position.set(x, 3.35, BACK_WALL_Z + FRAME_D / 2 + 0.09);
+  group.position.set(x, FEATURED_Y, FRAME_D / 2 + 0.09);
 
   group.userData.setFeaturedWork = (work) => {
     if (!work) {
-      drawFrameArtDefault(artCtx, FRAME_TEX_W, FRAME_TEX_H);
+      drawFrameArtDefault(artCtx, TEX_W, TEX_H);
       artTex.needsUpdate = true;
       return;
     }
     paintRecordImage(artCtx, work, {
       drawImage: (img) => {
-        artCtx.clearRect(0, 0, FRAME_TEX_W, FRAME_TEX_H);
-        drawCover(artCtx, img, 0, 0, FRAME_TEX_W, FRAME_TEX_H);
+        artCtx.clearRect(0, 0, TEX_W, TEX_H);
+        drawCover(artCtx, img, 0, 0, TEX_W, TEX_H);
       },
-      drawFallback: () => drawTitleCard(artCtx, 0, 0, FRAME_TEX_W, FRAME_TEX_H, work.title),
+      drawFallback: () => drawTitleCard(artCtx, 0, 0, TEX_W, TEX_H, work.title),
       onDone: () => { artTex.needsUpdate = true; },
     });
   };

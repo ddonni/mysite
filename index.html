@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>로비</title>
+<title>내 방</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/lobby.css">
@@ -12,36 +12,35 @@
 
 <div id="stage">
   <canvas id="canvas3d"></canvas>
-  <div id="loading">로비 불러오는 중…</div>
+  <div id="loading">방을 꾸미는 중…</div>
 </div>
 
 <div id="ui">
   <div id="header">
-    <div class="eyebrow">Lobby</div>
-    <h1>로비</h1>
+    <div class="eyebrow">My Room</div>
+    <h1>내 방</h1>
     <div class="room-name" id="roomName"></div>
-    <p>기록을 남기는 방이에요.</p>
+    <p>읽고, 보고, 들은 것들을 모아두는 방이에요.</p>
     <div class="room-info"></div>
     <div class="theme-picker" id="themePicker"></div>
     <div class="google-btn"></div>
   </div>
 
-  <div id="hint">드래그해서 둘러보기 · 가구를 클릭해서 입장</div>
 
   <div id="googleUnlink" class="google-unlink-slot"></div>
 
   <div id="cta">
     <button class="room-btn" data-room="sketchbook" aria-pressed="false"><span class="dot"></span>캔버스</button>
-    <button class="room-btn" data-room="book" aria-pressed="false"><span class="dot"></span>책장</button>
+    <button class="room-btn" data-room="book" aria-pressed="false"><span class="dot"></span>책</button>
     <button class="room-btn" data-room="anime" aria-pressed="false"><span class="dot"></span>애니</button>
     <button class="room-btn" data-room="movie" aria-pressed="false"><span class="dot"></span>영화</button>
-    <button class="room-btn" data-room="music" aria-pressed="false"><span class="dot"></span>턴테이블</button>
+    <button class="room-btn" data-room="music" aria-pressed="false"><span class="dot"></span>음악</button>
   </div>
 
   <div id="card" data-room="sketchbook">
     <div class="room-tag" id="cardTag"></div>
     <h2 id="cardTitle">캔버스</h2>
-    <p id="cardBody">이젤에 걸린 캔버스에 자유롭게 그림을 그려보세요.</p>
+    <p id="cardBody">마음 가는 대로 그려보세요. 이젤에는 첫 장이 걸려 있어요.</p>
     <div class="card-actions">
       <button id="cardBack">돌아가기</button>
       <button id="cardEnter">입장하기</button>
@@ -50,12 +49,12 @@
 </div>
 
 <div id="fallbackLinks">
-  <p id="fallbackMessage">이 브라우저에서는 3D 로비를 표시할 수 없어요. 바로 이동해 주세요.</p>
+  <p id="fallbackMessage">이 브라우저에서는 3D 방을 표시할 수 없어요. 바로 이동해 주세요.</p>
   <a href="sketchbook">캔버스</a>
-  <a href="library?cat=book">책장</a>
+  <a href="library?cat=book">책</a>
   <a href="library?cat=anime">애니</a>
   <a href="library?cat=movie">영화</a>
-  <a href="library?cat=music">턴테이블</a>
+  <a href="library?cat=music">음악</a>
   <div class="room-info"></div>
   <div class="google-btn"></div>
 </div>

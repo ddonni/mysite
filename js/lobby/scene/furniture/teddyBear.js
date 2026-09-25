@@ -1,4 +1,3 @@
-import { FLOOR_W } from '../roomDimensions.js';
 import { makeCanvasTexture } from '../canvasTexture.js';
 import { aoBlob } from '../aoBlob.js';
 
@@ -128,11 +127,7 @@ export function buildTeddyBear() {
   const TARGET_HEIGHT = 1.1;
   group.scale.setScalar(TARGET_HEIGHT / BEAR_HEIGHT);
 
-  // 로비엔 실제 오른쪽 벽이 없음(카메라 쪽이 트여있게 뒷벽+왼쪽 벽만
-  // 있는 구조, roomShell.js 참고) — 바닥 오른쪽 앞 구석에 앉혀서, 방에
-  // 들어서는 사람(첫 화면 카메라) 쪽을 보되 살짝 방 안쪽으로 고개를 돌림.
-  group.position.set(FLOOR_W / 2 - 2.0, 0, 1.3);
-  group.rotation.y = -0.6;
+  // 자리(방 오른쪽 앞 구석)는 roomLayout.js가 잡음.
 
   return group;
 }

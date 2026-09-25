@@ -1,127 +1,195 @@
 import { drawDefaultAlbumArt } from '../../../shared/album.js';
-import { aoBlob } from '../aoBlob.js';
 import { canvasToTexture } from '../canvasTexture.js';
+import { drawCover, paintRecordImage } from '../coverImage.js';
 import { twoLineLabelSprite } from '../labelSprite.js';
+import { stick } from '../stick.js';
 
-const PLATTER_TEX_SIZE = 256;
+// 턴테이블 본체(데크) — 레코드 콘솔(recordConsole.js) 위에 올라감. 원점은
+// 데크 바닥(다리 밑면). 실제 턴테이블처럼:
+//   - 나무 받침(플린스) + 짙은 윗판 + 작은 다리 넷
+//   - 은색 금속 플래터 위에 홈이 파인 까만 LP, 가운데 라벨에 앨범 이미지
+//     (없으면 기본 앨범 그림) + 가운데 축 — LP는 매 프레임 천천히 돎
+//   - 톤암: 회전 받침, 뒤쪽 무게추, 판 위에 내려앉은 헤드셸, 암 받침대
+//   - 시작/정지·33/45 버튼, 피치 슬라이더, 빨간 전원 불빛
+//   - 뒤로 열어둔 투명 먼지 덮개
+// 위에는 지금 걸린 곡의 제목/가수 이름표가 뜸. 크기는 옆에 놓이는 LP
+// 슬리브(0.62)보다 판이 살짝 작게 — 실제 LP(31cm)와 플래터(30cm) 비율.
 
-// 판(platter) 텍스처에 기본 앨범 이미지를 원형으로 잘라 그려넣음 — 실제
-// 곡의 앨범 이미지가 없거나 아직 안 왔을 때 쓰는 상태.
-function drawPlatterDefault(ctx) {
-  ctx.clearRect(0, 0, PLATTER_TEX_SIZE, PLATTER_TEX_SIZE);
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(PLATTER_TEX_SIZE / 2, PLATTER_TEX_SIZE / 2, PLATTER_TEX_SIZE / 2, 0, Math.PI * 2);
-  ctx.clip();
-  drawDefaultAlbumArt(ctx, PLATTER_TEX_SIZE, PLATTER_TEX_SIZE);
-  ctx.restore();
-  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.arc(PLATTER_TEX_SIZE / 2, PLATTER_TEX_SIZE / 2, PLATTER_TEX_SIZE / 2 - 2, 0, Math.PI * 2);
-  ctx.stroke();
+export const DECK_W = 0.9, DECK_D = 0.72;
+const FEET = 0.03, PH = 0.1;
+export const DECK_TOP = FEET + PH; // 플린스 윗면 높이
+const RECORD_R = 0.3;
+const PLATTER_C = new THREE.Vector3(-0.08, 0, 0.02); // 플래터 중심(윗면 기준 x/z)
+const TEX = 512;
+
+// 앨범 이미지가 없을 때 라벨에 쓸 기본 앨범 그림 — 한 번만 따로 그려둠.
+let defaultLabel = null;
+function defaultLabelImage() {
+  if (!defaultLabel) {
+    defaultLabel = document.createElement('canvas');
+    defaultLabel.width = 256; defaultLabel.height = 256;
+    drawDefaultAlbumArt(defaultLabel.getContext('2d'), 256, 256);
+  }
+  return defaultLabel;
 }
 
-// 음악 방을 나타내는 가구: 사이드 테이블 위의 턴테이블(계속 도는 LP +
-// 톤암) + 대표곡 제목/가수 이름표. LP 위에 실제 앨범 이미지를 원형으로
-// 감싸서 보여줌 — 없으면 기본 이미지로.
+// LP 윗면 텍스처: 까만 판에 촘촘한 홈(동심원), 곡 사이 빈 트랙, 가운데
+// 라벨(앨범 이미지를 원형으로 — 없으면 기본 앨범 그림) + 축 구멍.
+function drawRecord(ctx, img) {
+  const c = TEX / 2;
+  ctx.clearRect(0, 0, TEX, TEX);
+  ctx.fillStyle = '#111';
+  ctx.beginPath(); ctx.arc(c, c, c, 0, Math.PI * 2); ctx.fill();
+  for (let r = c * 0.36; r < c * 0.97; r += 2.2) {
+    ctx.strokeStyle = `rgba(255,255,255,${0.03 + ((r * 7) % 5) * 0.008})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(c, c, r, 0, Math.PI * 2); ctx.stroke();
+  }
+  // 곡 사이 빈 트랙(조금 더 매끈해 보이는 띠) 두 줄.
+  [0.55, 0.75].forEach((f) => {
+    ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(c, c, c * f, 0, Math.PI * 2); ctx.stroke();
+  });
+  // 가운데 라벨.
+  const lr = c * 0.33;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(c, c, lr, 0, Math.PI * 2); ctx.clip();
+  drawCover(ctx, img || defaultLabelImage(), c - lr, c - lr, lr * 2, lr * 2);
+  ctx.restore();
+  ctx.fillStyle = '#d8d2c8';
+  ctx.beginPath(); ctx.arc(c, c, c * 0.025, 0, Math.PI * 2); ctx.fill();
+}
+
 export function buildTurntable() {
   const group = new THREE.Group();
   group.userData.room = 'music';
 
-  const woodMat = new THREE.MeshStandardMaterial({ color: 0x3a2c1f, roughness: 0.75 });
-  const table = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.55, 0.7), woodMat);
-  table.position.set(0, 0.275, 0);
-  table.castShadow = true; table.receiveShadow = true;
-  group.add(table);
+  const walnut = new THREE.MeshStandardMaterial({ color: 0x6b4a2e, roughness: 0.6 });
+  const black = new THREE.MeshStandardMaterial({ color: 0x1a1816, roughness: 0.5 });
+  const silver = new THREE.MeshStandardMaterial({ color: 0xc9c6c0, roughness: 0.3, metalness: 0.7 });
 
-  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x171310, roughness: 0.55 });
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.06, 32), bodyMat);
-  body.position.set(0, 0.585, 0);
-  body.castShadow = true;
-  group.add(body);
+  // 받침 + 윗판 + 다리.
+  const plinth = new THREE.Mesh(new THREE.BoxGeometry(DECK_W, PH, DECK_D), walnut);
+  plinth.position.y = FEET + PH / 2;
+  plinth.castShadow = true; plinth.receiveShadow = true;
+  group.add(plinth);
+  const topPlate = new THREE.Mesh(new THREE.BoxGeometry(DECK_W - 0.02, 0.006, DECK_D - 0.02), black);
+  topPlate.position.y = DECK_TOP + 0.003;
+  topPlate.receiveShadow = true;
+  group.add(topPlate);
+  [[-1, -1], [-1, 1], [1, -1], [1, 1]].forEach(([sx, sz]) => {
+    const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.04, FEET, 12), black);
+    foot.position.set(sx * (DECK_W / 2 - 0.07), FEET / 2, sz * (DECK_D / 2 - 0.07));
+    group.add(foot);
+  });
 
-  const platterCanvas = document.createElement('canvas');
-  platterCanvas.width = PLATTER_TEX_SIZE; platterCanvas.height = PLATTER_TEX_SIZE;
-  const platterCtx = platterCanvas.getContext('2d');
-  drawPlatterDefault(platterCtx);
-  const platterTex = canvasToTexture(platterCanvas);
-  platterTex.needsUpdate = true;
-  const platter = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.36, 0.36, 0.015, 48),
-    new THREE.MeshStandardMaterial({ map: platterTex, roughness: 0.5 })
-  );
-  platter.position.set(0, 0.625, 0);
+  const top = DECK_TOP + 0.006;
+
+  // 플래터(은색 테두리) + 그 위 LP(돎) + 축.
+  const platter = new THREE.Mesh(new THREE.CylinderGeometry(RECORD_R + 0.005, RECORD_R + 0.005, 0.03, 64), silver);
+  platter.position.set(PLATTER_C.x, top + 0.015, PLATTER_C.z);
   platter.castShadow = true;
   group.add(platter);
 
-  // 톤암: 뒤쪽 모서리에 얹혀서 판 가장자리 쪽으로만 살짝 걸침 — 중앙
-  // 이미지는 안 가림.
-  const armMat = new THREE.MeshStandardMaterial({ color: 0x9c9086, roughness: 0.4, metalness: 0.3 });
-  const armPivot = new THREE.Group();
-  armPivot.position.set(0.34, 0.63, -0.28);
-  armPivot.rotation.y = 0.5;
-  const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.42, 8), armMat);
-  arm.position.set(-0.19, 0, 0);
-  arm.rotation.z = Math.PI / 2;
-  armPivot.add(arm);
-  const armHead = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.02, 0.03), armMat);
-  armHead.position.set(-0.38, 0, 0);
-  armPivot.add(armHead);
-  group.add(armPivot);
+  const recCanvas = document.createElement('canvas');
+  recCanvas.width = TEX; recCanvas.height = TEX;
+  const recCtx = recCanvas.getContext('2d');
+  drawRecord(recCtx, null);
+  const recTex = canvasToTexture(recCanvas);
+  recTex.needsUpdate = true;
+  const vinylSide = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3 });
+  const record = new THREE.Mesh(
+    new THREE.CylinderGeometry(RECORD_R, RECORD_R, 0.005, 64),
+    // CylinderGeometry 재질 순서: [옆면, 윗면, 아랫면]
+    [vinylSide, new THREE.MeshStandardMaterial({ map: recTex, roughness: 0.28, metalness: 0.15 }), vinylSide]
+  );
+  record.position.set(PLATTER_C.x, top + 0.033, PLATTER_C.z);
+  group.add(record);
+  const spindle = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.03, 10), silver);
+  spindle.position.set(PLATTER_C.x, top + 0.045, PLATTER_C.z);
+  group.add(spindle);
 
-  group.add(aoBlob(0.85));
+  // 톤암 — 오른쪽 뒤 회전 받침에서 판 바깥쪽 홈으로 비스듬히 내려앉음.
+  const pivot = new THREE.Vector3(0.33, top, -0.22);
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.05, 0.05, 20), silver);
+  base.position.set(pivot.x, top + 0.025, pivot.z);
+  group.add(base);
+  const armY = top + 0.075;
+  const head = new THREE.Vector3(PLATTER_C.x + 0.17, top + 0.045, PLATTER_C.z + 0.19);
+  const armStart = new THREE.Vector3(pivot.x, armY, pivot.z);
+  group.add(stick(armStart, head, 0.008, silver));
+  const dir = new THREE.Vector3().subVectors(head, armStart).setY(0).normalize();
+  // 무게추 — 받침 뒤쪽, 팔 연장선 위.
+  const weight = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.07, 16), black);
+  weight.position.set(pivot.x - dir.x * 0.1, armY, pivot.z - dir.z * 0.1);
+  weight.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+  group.add(weight);
+  // 헤드셸 — 팔 끝의 납작한 판(바늘 달린 부분).
+  const shell = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.012, 0.07), black);
+  shell.position.copy(head).add(new THREE.Vector3(dir.x * 0.02, -0.004, dir.z * 0.02));
+  shell.rotation.y = Math.atan2(dir.x, dir.z) + 0.35;
+  group.add(shell);
+  // 암 받침대(팔을 쉬게 걸어두는 작은 기둥).
+  const rest = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.07, 8), silver);
+  rest.position.set(pivot.x + 0.02, top + 0.035, pivot.z + 0.2);
+  group.add(rest);
+
+  // 앞쪽 조작부 — 시작/정지, 33/45 버튼, 빨간 전원 불빛, 오른쪽 피치 슬라이더.
+  const btn = (w, x, z, mat) => {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(w, 0.012, 0.05), mat);
+    b.position.set(x, top + 0.006, z);
+    group.add(b);
+  };
+  btn(0.1, -0.33, 0.3, silver); // 시작/정지
+  btn(0.045, -0.2, 0.3, silver); // 33
+  btn(0.045, -0.14, 0.3, silver); // 45
+  const led = new THREE.Mesh(new THREE.SphereGeometry(0.009, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff3b2f }));
+  led.position.set(-0.4, top + 0.008, 0.22);
+  group.add(led);
+  const slot = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.004, 0.22), new THREE.MeshStandardMaterial({ color: 0x050505 }));
+  slot.position.set(0.38, top + 0.002, 0.13);
+  group.add(slot);
+  const slider = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.02, 0.03), silver);
+  slider.position.set(0.38, top + 0.01, 0.15);
+  group.add(slider);
+
+  // 투명 먼지 덮개 — 뒤쪽 경첩을 축으로 위로 열어둠.
+  const lidPivot = new THREE.Group();
+  lidPivot.position.set(0, top + 0.01, -DECK_D / 2);
+  lidPivot.rotation.x = -1.25;
+  const lid = new THREE.Mesh(
+    new THREE.BoxGeometry(DECK_W, 0.11, DECK_D),
+    new THREE.MeshStandardMaterial({ color: 0xdfe8ee, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.16, depthWrite: false })
+  );
+  lid.position.set(0, 0.055, DECK_D / 2);
+  lidPivot.add(lid);
+  group.add(lidPivot);
+
   let label = null; // 곡이 있을 때만 제목/가수를 띄움 — 곡이 없으면 아무 글자도 없음
 
-  // 뒷벽의 책장(왼쪽)과 영화 포스터(오른쪽)가 갈리는 가운데 앞 — 둘 다
-  // 가리지 않게 벽에서 충분히 빼서, 방 한가운데의 독립된 가구로 보이게 함.
-  group.position.set(0, 0, -2.2);
-  group.rotation.y = 0.1;
-
-  // main.js가 라이브러리의 최근 음악 기록을 받아온 뒤 이걸 호출해서
-  // LP와 이름표를 실제 곡 정보로 채워넣음. song이 없으면(음악 기록이
-  // 하나도 없으면) 이름표 없이 기본 LP 그대로 둠.
+  // 로비가 음악 기록(대표곡 첫 번째, 없으면 가장 최근 곡)을 받아온 뒤 이걸
+  // 호출해서 LP 라벨과 이름표를 실제 곡 정보로 채워넣음. song이 없으면(음악
+  // 기록이 하나도 없으면) 이름표 없이 기본 LP 그대로 둠.
   group.userData.setFeaturedSong = (song) => {
     if (label) { group.remove(label); label = null; }
-    if (song) {
-      label = twoLineLabelSprite(`🎵 ${song.title}`, song.creator || '아티스트 미상');
-      label.position.set(0, 1.55, 0);
-      group.add(label);
-    }
-
-    const url = song && song.photo_url;
-    if (!url) {
-      drawPlatterDefault(platterCtx);
-      platterTex.needsUpdate = true;
+    if (!song) {
+      drawRecord(recCtx, null);
+      recTex.needsUpdate = true;
       return;
     }
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      try {
-        platterCtx.clearRect(0, 0, PLATTER_TEX_SIZE, PLATTER_TEX_SIZE);
-        platterCtx.save();
-        platterCtx.beginPath();
-        platterCtx.arc(PLATTER_TEX_SIZE / 2, PLATTER_TEX_SIZE / 2, PLATTER_TEX_SIZE / 2, 0, Math.PI * 2);
-        platterCtx.clip();
-        platterCtx.drawImage(img, 0, 0, PLATTER_TEX_SIZE, PLATTER_TEX_SIZE);
-        platterCtx.restore();
-        // S3 버킷에 CORS 설정이 없는 이미지면 캔버스가 "오염"돼서 이
-        // 텍스처를 GPU에 올리는 순간 에러가 남 — getImageData로 미리
-        // 오염 여부를 확인해서, 문제가 있으면 기본 이미지로 대체함.
-        platterCtx.getImageData(0, 0, 1, 1);
-        platterTex.needsUpdate = true;
-      } catch (e) {
-        drawPlatterDefault(platterCtx);
-        platterTex.needsUpdate = true;
-      }
-    };
-    img.onerror = () => { drawPlatterDefault(platterCtx); platterTex.needsUpdate = true; };
-    img.src = url;
+    label = twoLineLabelSprite(`🎵 ${song.title}`, song.creator || '아티스트 미상');
+    label.position.set(0, top + 1.0, 0); // 뒤로 열린 먼지 덮개(높이 ~0.7)보다 위
+    group.add(label);
+    paintRecordImage(recCtx, song, {
+      drawImage: (img) => drawRecord(recCtx, img),
+      drawFallback: () => drawRecord(recCtx, null),
+      onDone: () => { recTex.needsUpdate = true; },
+    });
   };
 
-  // 매 프레임 LP를 천천히 돌림.
-  group.userData.spin = (dt) => { platter.rotation.y += dt * 0.6; };
+  // 매 프레임 LP를 천천히 돌림(33⅓ rpm보다 훨씬 느리게 — 눈이 편하게).
+  group.userData.spin = (dt) => { record.rotation.y -= dt * 0.8; };
 
   return group;
 }

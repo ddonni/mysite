@@ -2,8 +2,7 @@ import { canvasToTexture } from './canvasTexture.js';
 
 // 가구 위 벽에 칠한 큰 글씨(BOOK / MOVIE / ANIMATION) — 처음 온 사람도
 // 각 벽이 무슨 기록인지 한눈에 알 수 있게 함. 로비 헤더와 같은 Fraunces
-// 세리프 대문자 + 아래에 가는 밑줄. 벽에 칠한 페인트처럼 보이도록
-// 조명을 받는 MeshStandardMaterial로 그리고, 글자 바깥은 투명.
+// 세리프 대문자 + 아래에 가는 밑줄. 글자 바깥은 투명.
 //
 // 캔버스 글꼴은 웹폰트가 로드되기 전에 그리면 기본 글꼴로 나와버려서,
 // 먼저 한 번 그려두고 Fraunces가 준비되면 다시 그림.
@@ -39,9 +38,12 @@ export function buildWallLabel(text, color, room) {
     }).catch(() => {});
   }
 
+  // 조명/톤매핑과 무관하게 지정한 색 그대로 보이게 함(Basic + toneMapped
+  // false) — 벽을 비추는 조명(roomLayout.js의 wash)이 글씨 바로 앞에 있어서,
+  // 조명을 받게 하면 진한 색도 허옇게 떠서 밝은 벽 위에서 안 읽힘.
   const mesh = new THREE.Mesh(
     new THREE.PlaneGeometry(LABEL_H * (TEX_W / TEX_H), LABEL_H),
-    new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 0.9, depthWrite: false })
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false })
   );
   mesh.userData.room = room;
   return mesh;

@@ -1,4 +1,4 @@
-import { FLOOR_W, FLOOR_D } from '../roomDimensions.js';
+import { APOTHEM } from '../roomDimensions.js';
 import { makeCanvasTexture } from '../canvasTexture.js';
 
 const BALL_RADIUS = 0.22;
@@ -26,15 +26,15 @@ export function buildBall() {
     new THREE.SphereGeometry(BALL_RADIUS, 24, 16),
     new THREE.MeshStandardMaterial({ map: tex, roughness: 0.45 })
   );
-  // 러그(중심 -0.6,1.4 반지름 2.3)와 다른 가구를 피한 트인 바닥 자리.
-  mesh.position.set(2.5, BALL_RADIUS, 2.4);
+  // 바닥 위에 올려둠 — x/z 자리는 roomLayout.js가 잡음.
+  mesh.position.set(0, BALL_RADIUS, 0);
   mesh.castShadow = true; mesh.receiveShadow = true;
   mesh.userData.isBall = true;
 
   const velocity = new THREE.Vector3(0, 0, 0);
   const GRAVITY = -12, RESTITUTION = 0.62, WALL_BOUNCE = 0.75, AIR_DRAG = 0.998;
-  const xMin = -FLOOR_W / 2 + BALL_RADIUS, xMax = FLOOR_W / 2 - BALL_RADIUS;
-  const zMin = -FLOOR_D / 2 + BALL_RADIUS, zMax = FLOOR_D / 2 - BALL_RADIUS;
+  // 둥근 방 안쪽 원(벽 가구 앞)을 벗어나지 않게 튕김 — 벽 가구 깊이만큼 여유를 둠.
+  const MAX_R = APOTHEM - 0.8 - BALL_RADIUS;
 
   // 클릭할 때마다 호출 — 무작위 방향으로 튕겨나가게 함.
   mesh.userData.kick = () => {
@@ -59,10 +59,18 @@ export function buildBall() {
       if (Math.abs(velocity.y) < 0.5) velocity.y = 0;
       velocity.x *= 0.88; velocity.z *= 0.88; // 바닥 마찰
     }
-    if (mesh.position.x < xMin) { mesh.position.x = xMin; velocity.x = Math.abs(velocity.x) * WALL_BOUNCE; }
-    else if (mesh.position.x > xMax) { mesh.position.x = xMax; velocity.x = -Math.abs(velocity.x) * WALL_BOUNCE; }
-    if (mesh.position.z < zMin) { mesh.position.z = zMin; velocity.z = Math.abs(velocity.z) * WALL_BOUNCE; }
-    else if (mesh.position.z > zMax) { mesh.position.z = zMax; velocity.z = -Math.abs(velocity.z) * WALL_BOUNCE; }
+    // 원 경계에 닿으면 경계 안으로 되돌리고, 바깥으로 향하던 속도 성분만
+    // 뒤집어서(법선 방향 반사) 튕겨나오게 함.
+    const r = Math.hypot(mesh.position.x, mesh.position.z);
+    if (r > MAX_R) {
+      const nx = mesh.position.x / r, nz = mesh.position.z / r;
+      mesh.position.x = nx * MAX_R; mesh.position.z = nz * MAX_R;
+      const vn = velocity.x * nx + velocity.z * nz;
+      if (vn > 0) {
+        velocity.x -= (1 + WALL_BOUNCE) * vn * nx;
+        velocity.z -= (1 + WALL_BOUNCE) * vn * nz;
+      }
+    }
 
     // 굴러가는 방향에 맞게 회전축을 잡아서 실제로 굴러가는 것처럼 보이게 함.
     const speed = Math.hypot(velocity.x, velocity.z);

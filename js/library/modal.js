@@ -64,7 +64,7 @@ export function createModal({ onSaved }) {
   function resetFormForAdd() {
     editingId = null;
     titleError.style.display = 'none';
-    modalTitle.textContent = '새로운 기록';
+    modalTitle.textContent = '새 기록';
     currentCat = 'book';
     [...catTabsEl.children].forEach((b) => b.classList.toggle('active', b.dataset.key === currentCat));
     updateCreatorField();
@@ -124,7 +124,7 @@ export function createModal({ onSaved }) {
     openEdit(item) {
       titleError.style.display = 'none';
       editingId = item.id;
-      modalTitle.textContent = '기록 고쳐 쓰기';
+      modalTitle.textContent = '기록 고치기';
       currentCat = item.cat;
       [...catTabsEl.children].forEach((b) => b.classList.toggle('active', b.dataset.key === currentCat));
       updateCreatorField();

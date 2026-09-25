@@ -4,12 +4,17 @@
 로비이고, 방 두 개(스케치북/기록 보관소)는 백엔드 API 서버
 ([mysite-backend](https://github.com/<사용자명>/mysite-backend))를 씀.
 
-- `index.html` — Three.js로 만든 로비. 이젤(스케치북), 책장(책), 애니
-  진열장(아크릴 스탠드), 영화 포스터 벽, 턴테이블(음악)을 클릭하면
-  카메라가 다가가며 카드가 뜨고, "입장하기"를 누르면 해당 페이지(기록
-  보관소는 그 카테고리 탭)로 이동함. 책/애니/영화는 카테고리마다 별표로
-  고른 대표작 3개가 액자/큰 스탠드/큰 포스터로 걸림. WebGL을 못 쓰는 환경이면 자동으로 텍스트 링크
-  폴백으로 전환됨.
+- `index.html` — Three.js로 만든 로비. 둥근(다각형) 방의 벽 세 면에
+  왼쪽부터 애니 진열장(아크릴 스탠드), 책장, 영화 포스터 벽이 하나씩 있고,
+  가운데 러그 위에 캔버스 이젤, 오른쪽 앞에 음악 코너(턴테이블을 얹은
+  레코드 콘솔 — LP 보관함)가 있음. 마우스 휠은 커서가 가리키는 곳을 향해 확대됨. 가구를
+  클릭하면 카메라가 다가가며 카드가 뜨고, "입장하기"를 누르면 해당
+  페이지(기록 보관소는 그 카테고리 탭)로 이동함. 책/애니/영화는 별표로 고른
+  대표작 3개가 가구 위에 액자/큰 스탠드/큰 포스터로 걸리고(애니/영화는 별표
+  고른 것만 — 나머지는 진열장 칸/포스터 벽에 작게 쌓임), 음악은 첫 번째
+  대표곡이 턴테이블에서 돌아감. WebGL을
+  못 쓰는 환경이면 자동으로 텍스트 링크 폴백으로 전환됨. (예전 네모난 방
+  로비는 git 브랜치 `rect-room`에 남아 있음.)
 - `sketchbook.html` — 고정된 한 페이지에 자유롭게 그리는 캔버스. 그림
   저장/실시간 동기화를 백엔드가 담당하지만, 서버가 꺼져 있으면 자동으로
   이 기기 로컬 저장 모드로 폴백함.
@@ -57,11 +62,13 @@ js/lobby/
   loadRoomIntoScene.js # 씬에 실제 데이터(그림/기록)를 채워넣는 fetch들
   scene.js            # 3D 씬 조립 지점
   scene/              #   roomShell.js, lighting.js, dustMotes.js, aoBlob.js, canvasTexture.js, labelSprite.js, roomDimensions.js
+  scene/roomLayout.js #   가구를 어느 벽/자리에 둘지 + 조명 위치 + 카메라 프리셋(가구 모듈은 "자기 벽 기준" 좌표로만 지어짐)
   helpDialog.js       # 처음 온 사람에게 한 번 뜨는 도움말(오른쪽 위 ? 버튼으로 다시 열기)
-  scene/furniture/    #   easel.js, bookshelf.js, frame.js, posterWall.js, displayCase.js, turntable.js, lamps.js, ball.js, teddyBear.js
+  scene/furniture/    #   easel.js, bookshelf.js, frame.js, posterWall.js, displayCase.js, recordConsole.js(LP 보관함), turntable.js, lamps.js, ball.js, teddyBear.js
   scene/wallLabel.js  #   가구 위 벽의 BOOK / MOVIE / ANIMATION 글씨
-  scene/coverImage.js #   기록 사진(없으면 제목 카드)을 액자/포스터/스탠드 텍스처에 그리는 공용 로직
-  showcase.js         # 카테고리별 대표작 3개(별표 우선, 모자라면 최신) + 나머지를 고르는 순수 함수
+  scene/coverImage.js #   기록 사진(없으면 제목 카드)을 액자/포스터/스탠드/LP 텍스처에 그리는 공용 로직
+  scene/stick.js      #   두 점을 잇는 막대(이젤 다리, 턴테이블 톤암)
+  showcase.js         # 카테고리별 대표작 3개(별표 우선, 책/음악은 모자라면 최신으로 채움) + 나머지를 고르는 순수 함수
   controls.js         # 카메라 조작 + 가구 클릭 시 카드 UI
 ```
 

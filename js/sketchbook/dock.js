@@ -93,7 +93,7 @@ export function initDock({ canvas, toast }) {
   // ---- 이미지로 열기: 새 탭에 지금 그림을 PNG로 띄워줌 (저장/공유용) ----
   document.getElementById('openImgBtn').addEventListener('click', () => {
     const data = canvas.getDataUrl();
-    if (!data) { toast('이미지를 여는 데 실패했어요'); return; }
+    if (!data) { toast('이미지를 열지 못했어요'); return; }
     const win = window.open('', '_blank');
     if (win) {
       win.document.write(
@@ -102,7 +102,7 @@ export function initDock({ canvas, toast }) {
         '<img src="' + data + '" style="max-width:100%;max-height:100vh;" alt="내 그림" /></body>'
       );
     } else {
-      toast('팝업이 차단되었어요');
+      toast('팝업이 막혀 있어요. 브라우저에서 팝업을 허용해 주세요.');
     }
   });
 }
