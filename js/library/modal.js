@@ -82,11 +82,26 @@ export function createModal({ onSaved }) {
 
   // ---- 저장 ----
   async function handleSave() {
+    if (saveBtn.disabled) return; // 저장 중에 또 눌려도(더블클릭 등) 두 번 저장하지 않게
+    // 한글은 마지막 글자가 아직 "조합 중"일 수 있음 — 저장 버튼을 눌러도
+    // 입력칸에서 포커스가 안 빠지는 브라우저(Mac Safari/Chrome, 폰 키보드 등)에선
+    // 그 글자가 확정되기 전에 값을 읽어서 마지막 한 글자가 빠진 채 저장됐음.
+    // 포커스를 빼서 조합을 확정시키고, 확정이 반영된 다음 틱에 값을 읽음.
+    saveBtn.disabled = true;
+    if (document.activeElement && document.activeElement !== document.body) {
+      document.activeElement.blur();
+    }
+    await new Promise((r) => setTimeout(r, 0));
+
     const title = fTitle.value.trim();
-    if (!title) { titleError.style.display = 'block'; fTitle.focus(); return; }
+    if (!title) {
+      saveBtn.disabled = false;
+      titleError.style.display = 'block';
+      fTitle.focus();
+      return;
+    }
     titleError.style.display = 'none';
 
-    saveBtn.disabled = true;
     saveBtn.textContent = '저장 중…';
     try {
       let photo_url = photoPicker.getUrl();

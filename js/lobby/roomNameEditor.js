@@ -48,9 +48,14 @@ export function renderRoomName(ctx, name) {
     btn.textContent = label;
     setTimeout(() => { btn.textContent = '저장'; }, 1200);
   };
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (btn.disabled) return;
     btn.disabled = true;
+    // 한글 마지막 글자가 아직 조합 중이면 확정시킨 다음 값을 읽음 — 안 그러면
+    // Enter/저장을 누른 순간 마지막 한 글자가 빠진 채 저장될 수 있음.
+    input.blur();
+    await new Promise((r) => setTimeout(r, 0));
     fetch(`${roomApi(ctx)}/name`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'X-Room-Token': ctx.mine.token },
