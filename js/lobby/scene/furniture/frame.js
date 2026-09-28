@@ -1,5 +1,5 @@
 import { FEATURED_Y } from '../roomDimensions.js';
-import { drawCover, drawTitleCard, paintRecordImage } from '../coverImage.js';
+import { claimCanvas, drawCover, drawTitleCard, paintRecordImage } from '../coverImage.js';
 import { canvasToTexture } from '../canvasTexture.js';
 
 // 액자 캔버스에 그릴 기본 이미지 — 이 자리에 걸 인생작이 없을(기록이
@@ -58,6 +58,7 @@ export function buildFrame(x) {
 
   group.userData.setFeaturedWork = (work) => {
     if (!work) {
+      claimCanvas(artCtx);
       drawFrameArtDefault(artCtx, TEX_W, TEX_H);
       artTex.needsUpdate = true;
       return;

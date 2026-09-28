@@ -103,6 +103,14 @@ export function buildRecordConsole() {
 
   // 칸 안 — 곡마다 LP 한 장이 세로로 꽂혀 옆면만 보임(표지·제목 없이 "쌓이는"
   // 것만). 왼쪽 칸부터 채우고, 차면 오른쪽 칸으로. 전부 반듯하게 섬.
+  // LP는 전부 같은 크기라 지오메트리 하나를, 재질은 색(SPINE_COLORS)마다 하나를
+  // 모든 LP가 같이 씀 — 다시 채울 때 GPU에 새로 올리거나 해제할 게 없음.
+  const spineGeo = new THREE.BoxGeometry(SPINE_T, SLEEVE, SLEEVE);
+  const spineMats = new Map();
+  const spineMatFor = (col) => {
+    if (!spineMats.has(col)) spineMats.set(col, new THREE.MeshStandardMaterial({ color: col, roughness: 0.7 }));
+    return spineMats.get(col);
+  };
   let spines = [];
   function fillSpines(records) {
     spines.forEach((m) => group.remove(m));
@@ -110,7 +118,7 @@ export function buildRecordConsole() {
     records.slice(0, SPINE_SLOTS * compX0.length).forEach((rec, i) => {
       const comp = Math.floor(i / SPINE_SLOTS), k = i % SPINE_SLOTS;
       const col = SPINE_COLORS[hash(rec.title || String(i)) % SPINE_COLORS.length];
-      const lp = new THREE.Mesh(new THREE.BoxGeometry(SPINE_T, SLEEVE, SLEEVE), new THREE.MeshStandardMaterial({ color: col, roughness: 0.7 }));
+      const lp = new THREE.Mesh(spineGeo, spineMatFor(col));
       lp.position.set(compX0[comp] + 0.02 + k * (SPINE_T + 0.003) + SPINE_T / 2, floorY + SLEEVE / 2, 0.02);
       lp.castShadow = true;
       group.add(lp);

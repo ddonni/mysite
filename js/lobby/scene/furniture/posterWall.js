@@ -1,5 +1,5 @@
 import { FEATURED_Y, FEATURED_GAP } from '../roomDimensions.js';
-import { drawCover, drawTitleCard, paintRecordImage } from '../coverImage.js';
+import { claimCanvas, drawCover, drawTitleCard, paintRecordImage } from '../coverImage.js';
 import { canvasToTexture } from '../canvasTexture.js';
 
 // 영화 기록을 나타내는 가구: 영화 벽면의 포스터들(벽 기준 좌표로 지음 —
@@ -61,6 +61,7 @@ function makePoster(size, seed, tapeMat, tilt) {
 
   function paint(record) {
     if (!record) {
+      claimCanvas(ctx);
       drawEmptyPoster(ctx, size.texW, size.texH);
       tex.needsUpdate = true;
       return;

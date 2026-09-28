@@ -1,6 +1,6 @@
 import { drawDefaultAlbumArt } from '../../../shared/album.js';
 import { canvasToTexture } from '../canvasTexture.js';
-import { drawCover, paintRecordImage } from '../coverImage.js';
+import { claimCanvas, drawCover, paintRecordImage } from '../coverImage.js';
 import { twoLineLabelSprite } from '../labelSprite.js';
 import { stick } from '../stick.js';
 
@@ -172,8 +172,16 @@ export function buildTurntable() {
   // 호출해서 LP 라벨과 이름표를 실제 곡 정보로 채워넣음. song이 없으면(음악
   // 기록이 하나도 없으면) 이름표 없이 기본 LP 그대로 둠.
   group.userData.setFeaturedSong = (song) => {
-    if (label) { group.remove(label); label = null; }
+    if (label) {
+      // 예전 이름표의 글자 텍스처/재질을 GPU에서 해제함(Sprite 지오메트리는
+      // THREE가 모든 스프라이트에 공유하는 것이라 건드리지 않음).
+      group.remove(label);
+      label.material.map.dispose();
+      label.material.dispose();
+      label = null;
+    }
     if (!song) {
+      claimCanvas(recCtx);
       drawRecord(recCtx, null);
       recTex.needsUpdate = true;
       return;

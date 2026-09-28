@@ -42,23 +42,37 @@ export function drawTitleCard(ctx, x, y, w, h, title, accent) {
 // 실패하면 drawFallback()으로 대신 그림. 어느 쪽이든 다 그린 뒤 onDone()을
 // 불러서 호출한 쪽이 texture.needsUpdate를 켜게 함.
 //
-// S3 버킷에 CORS 설정이 없는 이미지면 캔버스가 "오염"돼서 그 텍스처를
-// GPU에 올리는 순간 에러가 남 — getImageData로 미리 오염 여부를 확인해서,
-// 문제가 있으면 대체 그림으로 바꿈.
+// crossOrigin='anonymous'로 요청하므로 S3 버킷에 CORS 설정이 없으면 이미지
+// 로드 자체가 실패(onerror)해서 캔버스가 "오염"될 일이 없음 — 예전처럼
+// getImageData로 오염 여부를 확인하면 캔버스마다 GPU→CPU 동기 읽기가 일어나
+// 로딩 중 버벅임의 원인이 됐음.
+// img.decode()로 디코딩을 메인 스레드 밖에서 끝내 두고 그려서, drawImage가
+// 그 자리에서 큰 사진을 디코딩하느라 프레임이 멈추지 않게 함.
+//
+// 같은 캔버스를 연달아 다시 칠할 수 있음(로비가 캐시로 먼저 칠하고 서버 데이터로
+// 한 번 더 칠함) — 사진 디코딩은 비동기라, 먼저 요청한 사진이 나중에 끝나면 새
+// 그림을 옛 사진으로 덮어써버림. 캔버스마다 "마지막 요청"만 기억해서, 그보다
+// 늦게 끝난 옛 요청은 그리지 않고 버림.
+const latestPaint = new WeakMap();
+
+// 사진 없이 바로 그리는 경로(빈 자리 그림 등)도 이걸 불러서, 아직 디코딩 중인
+// 옛 사진이 나중에 그 위를 덮지 않게 함.
+export function claimCanvas(ctx) {
+  const token = {};
+  latestPaint.set(ctx, token);
+  return token;
+}
+
 export function paintRecordImage(ctx, record, { drawImage, drawFallback, onDone }) {
+  const token = claimCanvas(ctx);
   const url = record && record.photo_url;
   if (!url) { drawFallback(); onDone(); return; }
   const img = new Image();
   img.crossOrigin = 'anonymous';
-  img.onload = () => {
-    try {
-      drawImage(img);
-      ctx.getImageData(0, 0, 1, 1);
-    } catch (e) {
-      drawFallback();
-    }
-    onDone();
-  };
-  img.onerror = () => { drawFallback(); onDone(); };
   img.src = url;
+  const stillLatest = () => latestPaint.get(ctx) === token;
+  img.decode()
+    .then(() => { if (stillLatest()) drawImage(img); })
+    .catch(() => { if (stillLatest()) drawFallback(); })
+    .then(() => { if (stillLatest()) onDone(); });
 }

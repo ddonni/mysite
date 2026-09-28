@@ -1,6 +1,6 @@
 import { FEATURED_GAP } from '../roomDimensions.js';
 import { aoBlob } from '../aoBlob.js';
-import { drawCover, drawTitleCard, paintRecordImage } from '../coverImage.js';
+import { claimCanvas, drawCover, drawTitleCard, paintRecordImage } from '../coverImage.js';
 import { canvasToTexture } from '../canvasTexture.js';
 
 // 애니 기록을 나타내는 가구: 애니 벽면에 붙인 나무 유리 진열장(벽 기준
@@ -57,6 +57,7 @@ function makeStand(size, acrylicMat) {
 
   // 빈 자리(인생작 없음) — 인쇄 없이 점선 테두리만 있는 빈 아크릴판.
   function paintEmpty() {
+    claimCanvas(ctx);
     ctx.clearRect(0, 0, size.texW, size.texH);
     ctx.save();
     ctx.strokeStyle = 'rgba(251,248,242,0.85)';

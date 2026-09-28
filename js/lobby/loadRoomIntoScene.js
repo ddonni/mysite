@@ -27,11 +27,26 @@ export function loadRoomIntoScene(ctx, sceneSetters) {
     .then((res) => (res.ok ? res.json() : []))
     .then((records) => {
       const list = records || [];
-      setMusic(pickMusic(list));
-      setBookFrames(pickShowcase(list, 'book'));
-      setLibraryBooks(list.filter((r) => r.cat === 'book').map((r) => r.title));
-      setMovies(pickShowcase(list, 'movie'));
-      setAnime(pickShowcase(list, 'anime'));
+      // 가구마다 캔버스 텍스처를 수십 장씩 새로 그리고 GPU에 올려서, 한 번에
+      // 다 채우면 그 프레임이 눈에 띄게 멈춤 — 한 프레임에 가구 하나씩 나눠 채움.
+      runOnePerFrame([
+        () => setMusic(pickMusic(list)),
+        () => setBookFrames(pickShowcase(list, 'book')),
+        () => setLibraryBooks(list.filter((r) => r.cat === 'book').map((r) => r.title)),
+        () => setMovies(pickShowcase(list, 'movie')),
+        () => setAnime(pickShowcase(list, 'anime')),
+      ]);
     })
     .catch(() => {}); // 실패해도 가구들은 기본(빈) 상태로 남을 뿐, 로비 자체는 멀쩡히 작동함
+}
+
+// 작업을 한 프레임에 하나씩 실행 — 하나가 실패해도 나머지는 계속 채움.
+function runOnePerFrame(tasks) {
+  const next = () => {
+    const task = tasks.shift();
+    if (!task) return;
+    try { task(); } catch (e) { console.error(e); }
+    requestAnimationFrame(next);
+  };
+  requestAnimationFrame(next);
 }

@@ -78,9 +78,22 @@ export function buildBookshelf() {
 
   const shelfYs = [0.09, SH * 0.34 + 0.09, SH * 0.67 + 0.09];
   let bookMeshes = [];
+  // 책 옆면 재질은 색(BOOK_COLORS)마다 하나만 만들어 모든 책이 같이 씀.
+  const sideMats = new Map();
+  const sideMatFor = (col) => {
+    if (!sideMats.has(col)) sideMats.set(col, new THREE.MeshStandardMaterial({ color: col, roughness: 0.85 }));
+    return sideMats.get(col);
+  };
 
+  // 다시 꽂을 때 예전 책의 지오메트리/책등 텍스처를 GPU에서 해제함
+  // (옆면 재질은 공유라 남겨둠).
   function clearBooks() {
-    bookMeshes.forEach((m) => shelf.remove(m));
+    bookMeshes.forEach((m) => {
+      shelf.remove(m);
+      m.geometry.dispose();
+      m.material[4].map.dispose();
+      m.material[4].dispose();
+    });
     bookMeshes = [];
   }
 
@@ -99,7 +112,7 @@ export function buildBookshelf() {
       const title = titles[i];
       const col = BOOK_COLORS[hashString(title) % BOOK_COLORS.length];
       const colorHex = '#' + col.toString(16).padStart(6, '0');
-      const sideMat = new THREE.MeshStandardMaterial({ color: col, roughness: 0.85 });
+      const sideMat = sideMatFor(col);
       // 책등(카메라를 향하는 +z 면)에만 제목 텍스처를 입히고, 나머지
       // 5면은 그냥 색만 — BoxGeometry 재질 배열 순서는 [+x,-x,+y,-y,+z,-z].
       const spineTex = makeCanvasTexture((ctx, w, h) => drawBookSpine(ctx, w, h, colorHex, title), 64, 256);

@@ -178,10 +178,15 @@ function bootWithTheme(theme, ctx) {
     updateBall(dt);
     renderer.render(scene, camera);
   }
+  // 셰이더 컴파일은 처음 그릴 때 한꺼번에 일어나 수백 ms씩 멈출 수 있음 —
+  // 로딩 화면이 떠 있는 지금 미리 해둠.
+  renderer.compile(scene, camera);
   requestAnimationFrame(tick);
-  requestAnimationFrame(() => {
+  // 첫 프레임(가장 무거운 프레임)이 다 그려진 다음 프레임에 로딩 화면을
+  // 걷어야, 페이드가 첫 프레임에 걸려 멈칫하지 않음.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
     loading.classList.add('hide');
     // 로딩 화면이 걷히고(0.5초 페이드) 방이 보인 다음에 도움말을 띄움.
     setTimeout(() => help.showIfFirstVisit(), 700);
-  });
+  }));
 }
