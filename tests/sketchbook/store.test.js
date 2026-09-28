@@ -109,6 +109,20 @@ describe('makeApiStore.subscribePage 재연결', () => {
     expect(sockets).toHaveLength(1);
   });
 
+  it('탭이 가려져 있으면 다시 붙지 않고 기다렸다가, 다시 보이면 바로 붙음', () => {
+    let hidden = true;
+    const spy = vi.spyOn(document, 'hidden', 'get').mockImplementation(() => hidden);
+    makeApiStore('ABC123', 'tok').subscribePage(1, () => {});
+    sockets[0].emit('close', { code: 1006 });
+    vi.advanceTimersByTime(60000);
+    expect(sockets).toHaveLength(1); // 가려진 동안엔 서버를 깨우지 않음
+
+    hidden = false;
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(sockets).toHaveLength(2);
+    spy.mockRestore();
+  });
+
   it('구독을 끊은 뒤엔 다시 붙지 않음', () => {
     const unsubscribe = makeApiStore('ABC123', 'tok').subscribePage(1, () => {});
     unsubscribe();

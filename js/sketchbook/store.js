@@ -79,12 +79,23 @@ export function makeApiStore(roomCode, ownerToken) {
     // 가며 다시 붙음 — 예전엔 한 번 끊기면 새로고침 전까지 실시간 반영이 멈췄음.
     // 다시 붙었을 땐 끊겨 있던 동안의 변경을 놓쳤을 수 있으니 페이지를 한 번
     // 새로 받아와서 cb로 넘김. 방이 없다고(4404) 닫히면 재시도하지 않음.
+    // 탭이 안 보이는 동안엔 다시 붙지 않고 기다렸다가, 다시 보이면 바로 붙음 —
+    // 잊고 열어둔 탭이 재연결 시도로 잠든 서버(Render 무료)를 계속 깨우지 않게.
     subscribePage: (n, cb) => {
       if (typeof WebSocket === 'undefined') return () => {};
       let ws = null;
       let stopped = false;
       let retryTimer = null;
       let delay = RECONNECT_MIN_MS;
+      let waitingForVisible = false;
+      const isHidden = () => typeof document !== 'undefined' && document.hidden;
+      const onVisible = () => {
+        if (stopped || !waitingForVisible || isHidden()) return;
+        waitingForVisible = false;
+        delay = RECONNECT_MIN_MS;
+        connect(true);
+      };
+      if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisible);
 
       function connect(isReconnect) {
         try {
@@ -115,7 +126,11 @@ export function makeApiStore(roomCode, ownerToken) {
       function scheduleRetry() {
         if (stopped) return;
         clearTimeout(retryTimer);
-        retryTimer = setTimeout(() => connect(true), delay);
+        if (isHidden()) { waitingForVisible = true; return; }
+        retryTimer = setTimeout(() => {
+          if (isHidden()) { waitingForVisible = true; return; } // 기다리는 사이 탭이 가려졌으면
+          connect(true);
+        }, delay);
         delay = Math.min(delay * 2, RECONNECT_MAX_MS);
       }
 
@@ -123,6 +138,7 @@ export function makeApiStore(roomCode, ownerToken) {
       return () => {
         stopped = true;
         clearTimeout(retryTimer);
+        if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisible);
         if (ws) { try { ws.close(); } catch (e) {} }
       };
     },
