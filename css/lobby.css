@@ -196,11 +196,22 @@ body{
 .google-btn{margin-top:8px;pointer-events:auto;}
 .google-btn:empty{display:none;} /* GOOGLE_CLIENT_ID 미설정 시 빈 채로 남으니 자리도 안 차지하게 */
 /* 연동 해제: 화면 왼쪽 아래에 작고 흐리게만 — 자주 쓰는 게 아니라 일부러 눈에 안 띄게 */
-.google-unlink-slot{
+/* 왼쪽 아래 글자 링크 자리 — 방문자에겐 "개발자의 방 구경하기", 방 주인에겐
+   (구글 연동돼 있으면) 흐린 "연동 해제". 둘은 동시에 뜨지 않음. */
+.lobby-foot{
   position:absolute;left:max(22px, env(safe-area-inset-left));bottom:max(20px, env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;align-items:flex-start;gap:6px;
   pointer-events:auto;
 }
 .google-unlink-slot:empty{display:none;}
+/* 연동 해제와 달리 눈에 띄어야 하는 링크라 흐리게 두지 않음. */
+.dev-room-link{
+  font-size:13px;font-weight:600;color:var(--paper);
+  text-decoration:underline;text-underline-offset:3px;
+  text-shadow:0 1px 6px rgba(0,0,0,0.7);
+}
+.dev-room-link:hover{color:var(--gold);}
+.dev-room-link[hidden]{display:none;}
 .google-unlink{
   font-family:inherit;font-size:10.5px;color:var(--paper-dim);opacity:.45;
   background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;

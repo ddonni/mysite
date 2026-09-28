@@ -58,12 +58,6 @@
 }
 .site-nav a:hover { background: var(--nav-hover); color: var(--nav-ink); }
 .site-nav a.active { background: var(--nav-ink); color: var(--nav-paper); }
-/* "개발자의 방"(roomNav.js) — 페이지 이동 링크와 구분되게 포인트 색 글자로,
-   그 방을 보는 중이면 포인트 색 바탕. */
-.site-nav a.dev-room { color: var(--nav-accent); font-weight: 600; }
-.site-nav a.dev-room:hover { color: var(--nav-accent); }
-.site-nav a.dev-room.on { background: var(--nav-accent); color: var(--nav-paper); }
-
 /* --- 방 코드 UI --- */
 .site-nav .room-box { display: flex; align-items: center; gap: 4px; padding: 2px 4px 2px 10px; }
 .site-nav .room-tag { font-size: 11px; color: var(--nav-dim); white-space: nowrap; }

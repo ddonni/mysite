@@ -4,6 +4,7 @@ import { renderRoomName } from './roomNameEditor.js';
 import { renderThemePicker } from './themePicker.js';
 import { initGoogleAuth } from '../shared/googleAuth.js';
 import { copyToClipboard } from '../shared/dom.js';
+import { DEVELOPER_ROOM_CODE } from '../shared/config.js';
 
 // 방 코드 표시 + 다른 방 방문 폼(+ 남의 방을 보는 중이면 "내 방으로"),
 // 구글 계정 연동, 방 이름/테마 스위처까지 — 로비 헤더/카드 "주변" UI를
@@ -50,6 +51,15 @@ export function initRoomChrome(ctx) {
       if (code) window.location.href = lobbyUrl(code, mine.code);
     });
   });
+
+  // 왼쪽 아래 "개발자의 방 구경하기" — 처음 온 사람도 실제로 꾸며진 방을
+  // 둘러보고 참고할 수 있게. 방 주인 본인과, 이미 그 방을 보는 중일 땐 안 띄움.
+  const devLink = document.getElementById('devRoomLink');
+  const devCode = DEVELOPER_ROOM_CODE && DEVELOPER_ROOM_CODE.toUpperCase();
+  if (devLink && devCode && devCode !== mine.code && devCode !== viewingCode) {
+    devLink.href = lobbyUrl(devCode, mine.code);
+    devLink.hidden = false;
+  }
 
   if (readOnly) {
     // 폴백 링크 화면의 정적 링크들도 이 방을 이어서 보게 함. 테마 변경과

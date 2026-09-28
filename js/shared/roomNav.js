@@ -22,23 +22,13 @@ export function initRoomNav({ navEl, currentPage }) {
     const readOnly = viewingCode !== mine.code;
 
     // 로비/스케치북/기록보관소 사이를 오갈 때도 지금 보고 있는 방을 유지.
-    const pageLinks = navEl.querySelectorAll('a[data-page]');
-    pageLinks.forEach((a) => {
+    navEl.querySelectorAll('a[data-page]').forEach((a) => {
       a.href = roomLink(a.dataset.page, viewingCode, mine.code);
     });
 
-    // "개발자의 방" — 누구나 완성된 방을 구경하고 참고할 수 있게 항상 그 방의
-    // 로비(3D 방)로 보냄. 방 주인 본인에겐 자기 방이라 띄우지 않음.
-    const devCode = DEVELOPER_ROOM_CODE && DEVELOPER_ROOM_CODE.toUpperCase();
-    const viewingDev = !!devCode && viewingCode === devCode;
-    if (devCode && devCode !== mine.code) {
-      const dev = document.createElement('a');
-      dev.className = 'dev-room' + (viewingDev ? ' on' : '');
-      dev.href = roomLink('./', devCode, mine.code);
-      dev.textContent = '개발자의 방';
-      if (viewingDev) dev.setAttribute('aria-current', 'true');
-      pageLinks[pageLinks.length - 1].after(dev);
-    }
+    // 보고 있는 방이 "개발자의 방"(config.js — 로비 왼쪽 아래 링크로 들어옴)이면
+    // 방 코드 대신 그렇게 표시함.
+    const viewingDev = !!DEVELOPER_ROOM_CODE && viewingCode === DEVELOPER_ROOM_CODE.toUpperCase();
 
     const box = document.createElement('div');
     box.className = 'room-box';
