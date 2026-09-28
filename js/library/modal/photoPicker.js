@@ -23,7 +23,8 @@ export function createPhotoPicker({ input, preview, removeBtn, dropZone, dropTex
   }
 
   function handleFile(f) {
-    if (!f || !f.type.startsWith('image/')) return;
+    // SVG는 서버가 받지 않음(안에 스크립트를 넣을 수 있어서) — 골라도 무시.
+    if (!f || !f.type.startsWith('image/') || f.type === 'image/svg+xml') return;
     file = f;
     const reader = new FileReader();
     reader.onload = (e) => {

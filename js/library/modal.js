@@ -11,6 +11,7 @@ import { CREATOR_FIELD } from './modal/categoryFields.js';
 import { createStarPicker } from './modal/starPicker.js';
 import { createPhotoPicker } from './modal/photoPicker.js';
 import { createPresetAutocomplete } from './modal/presetAutocomplete.js';
+import { shrinkImage } from './modal/shrinkImage.js';
 
 export function createModal({ onSaved }) {
   const overlay = document.getElementById('overlay');
@@ -106,7 +107,7 @@ export function createModal({ onSaved }) {
     try {
       let photo_url = photoPicker.getUrl();
       if (photoPicker.getFile()) {
-        photo_url = await uploadPhoto(photoPicker.getFile());
+        photo_url = await uploadPhoto(await shrinkImage(photoPicker.getFile()));
       }
       await saveRecord({
         cat: currentCat,

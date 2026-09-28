@@ -68,7 +68,7 @@ export function coverHtml(it, { playing = false } = {}) {
   if (it.photo_url) {
     const src = escapeAttr(it.photo_url);
     if (it.cat === 'music') {
-      return `<div class="cover square"><img class="bg" src="${src}" alt="" aria-hidden="true"><img class="fg" src="${src}" alt="" loading="lazy">${badge}</div>`;
+      return `<div class="cover square"><img class="bg" src="${src}" alt="" aria-hidden="true" loading="lazy"><img class="fg" src="${src}" alt="" loading="lazy">${badge}</div>`;
     }
     return `<div class="cover"><img src="${src}" alt="" loading="lazy">${badge}</div>`;
   }
