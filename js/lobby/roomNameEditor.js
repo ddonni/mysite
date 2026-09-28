@@ -1,4 +1,5 @@
 import { roomApi } from './roomContext.js';
+import { DEVELOPER_ROOM_CODE } from '../shared/config.js';
 
 // 헤더 제목을 방 이름으로 바꿔서 "누구 방인지" 보여줌(이름이 없으면 내 방은
 // "내 방", 남의 방은 "친구의 방"). 제목 위 작은 영문도 같이 맞춤.
@@ -7,8 +8,10 @@ import { roomApi } from './roomContext.js';
 export function renderRoomName(ctx, name) {
   const h1 = document.querySelector('#header h1');
   const eyebrow = document.querySelector('#header .eyebrow');
-  if (eyebrow) eyebrow.textContent = ctx.readOnly ? "Friend's Room" : 'Archive Room';
-  const fallback = ctx.readOnly ? '친구의 방' : '내 방';
+  // 남의 방 중에서도 "개발자의 방"(config.js)이면 그렇다고 알려줌.
+  const isDev = ctx.readOnly && !!DEVELOPER_ROOM_CODE && ctx.viewingCode === DEVELOPER_ROOM_CODE.toUpperCase();
+  if (eyebrow) eyebrow.textContent = isDev ? "Developer's Room" : ctx.readOnly ? "Friend's Room" : 'Archive Room';
+  const fallback = isDev ? '개발자의 방' : ctx.readOnly ? '친구의 방' : '내 방';
   const showName = (n) => {
     if (h1) h1.textContent = n || fallback;
     document.title = n || fallback;

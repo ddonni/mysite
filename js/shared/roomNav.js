@@ -3,6 +3,7 @@
 // 다른 방 코드로 이동, 읽기 전용일 때 "내 방으로" 돌아가기.
 import { getMyRoom, getViewingRoomCode, roomLink } from './room.js';
 import { copyToClipboard } from './dom.js';
+import { DEVELOPER_ROOM_CODE } from './config.js';
 
 // 메뉴는 좁은 화면에서 두 줄로 접혀 높이가 달라짐 — 실제 높이를 CSS 변수
 // --nav-h로 알려줘서, 각 페이지가 그 아래로 본문/헤더를 내릴 수 있게 함.
@@ -21,20 +22,42 @@ export function initRoomNav({ navEl, currentPage }) {
     const readOnly = viewingCode !== mine.code;
 
     // 로비/스케치북/기록보관소 사이를 오갈 때도 지금 보고 있는 방을 유지.
-    navEl.querySelectorAll('a[data-page]').forEach((a) => {
+    const pageLinks = navEl.querySelectorAll('a[data-page]');
+    pageLinks.forEach((a) => {
       a.href = roomLink(a.dataset.page, viewingCode, mine.code);
     });
+
+    // "개발자의 방" — 누구나 완성된 방을 구경하고 참고할 수 있게 항상 그 방의
+    // 로비(3D 방)로 보냄. 방 주인 본인에겐 자기 방이라 띄우지 않음.
+    const devCode = DEVELOPER_ROOM_CODE && DEVELOPER_ROOM_CODE.toUpperCase();
+    const viewingDev = !!devCode && viewingCode === devCode;
+    if (devCode && devCode !== mine.code) {
+      const dev = document.createElement('a');
+      dev.className = 'dev-room' + (viewingDev ? ' on' : '');
+      dev.href = roomLink('./', devCode, mine.code);
+      dev.textContent = '개발자의 방';
+      if (viewingDev) dev.setAttribute('aria-current', 'true');
+      pageLinks[pageLinks.length - 1].after(dev);
+    }
 
     const box = document.createElement('div');
     box.className = 'room-box';
     if (readOnly) {
       box.innerHTML = `
-        <span class="room-tag readonly">방 <b class="viewing-code"></b> 보는 중 · 읽기 전용</span>
+        <span class="room-tag readonly"><span class="viewing-label"></span> 보는 중 · 읽기 전용</span>
         <a class="room-home" href="${roomLink(currentPage, mine.code, mine.code)}">내 방으로</a>
       `;
       // 주소창의 ?room= 값이라 아무 문자열이나 들어올 수 있음 — innerHTML에
       // 직접 끼우지 않고 textContent로 넣어서 HTML 주입을 막음.
-      box.querySelector('.viewing-code').textContent = viewingCode;
+      const label = box.querySelector('.viewing-label');
+      if (viewingDev) {
+        label.textContent = '개발자의 방';
+      } else {
+        label.append('방 ');
+        const b = document.createElement('b');
+        b.textContent = viewingCode;
+        label.append(b);
+      }
     } else {
       box.innerHTML = `
         <span class="room-tag mine">내 방 코드 <b>${mine.code}</b></span>
