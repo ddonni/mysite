@@ -33,10 +33,12 @@ export function createStrokeBuffer() {
     addPending(stroke) { pending.push(stroke); },
 
     // 지금 상태를 저장하러 보낼 때 씀 — 너무 길면 오래된 것부터 잘라냄.
+    // trimmed: 이번에 잘려나간 획이 있었는지(화면에서 사라지니 사용자에게 알려야 함).
     snapshotForSave() {
       let strokes = merged();
-      if (strokes.length > MAX_STROKES) strokes = strokes.slice(strokes.length - MAX_STROKES);
-      return { strokes, gen: generation, ids: strokes.map((s) => s.id) };
+      const trimmed = strokes.length > MAX_STROKES;
+      if (trimmed) strokes = strokes.slice(strokes.length - MAX_STROKES);
+      return { strokes, gen: generation, ids: strokes.map((s) => s.id), trimmed };
     },
 
     // 저장이 끝났다고 서버가 알려주면, pending 중 이미 저장된 것들을

@@ -15,6 +15,9 @@
 import { API_BASE } from '../shared/config.js';
 
 const WS_BASE = API_BASE.replace(/^http/, 'ws');
+// 실시간 연결이 끊겼을 때 다시 붙기까지 기다리는 시간 — 1초부터 두 배씩, 최대 30초.
+const RECONNECT_MIN_MS = 1000;
+const RECONNECT_MAX_MS = 30000;
 
 // localStorage 키에 페이지 번호를 6자리로 맞춰 넣기 위한 헬퍼.
 // (예: 1 -> "000001") 문자열로 정렬했을 때도 순서가 안 꼬이게 하기 위함.
@@ -72,18 +75,56 @@ export function makeApiStore(roomCode, ownerToken) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ strokes }),
     }, ownerToken),
+    // 연결이 끊기면(서버 재배포, Render가 잠듦, 폰 화면 꺼짐 등) 간격을 늘려
+    // 가며 다시 붙음 — 예전엔 한 번 끊기면 새로고침 전까지 실시간 반영이 멈췄음.
+    // 다시 붙었을 땐 끊겨 있던 동안의 변경을 놓쳤을 수 있으니 페이지를 한 번
+    // 새로 받아와서 cb로 넘김. 방이 없다고(4404) 닫히면 재시도하지 않음.
     subscribePage: (n, cb) => {
+      if (typeof WebSocket === 'undefined') return () => {};
       let ws = null;
-      try {
-        ws = new WebSocket(WS_BASE + '/ws/rooms/' + roomCode + '/pages/' + n);
+      let stopped = false;
+      let retryTimer = null;
+      let delay = RECONNECT_MIN_MS;
+
+      function connect(isReconnect) {
+        try {
+          ws = new WebSocket(WS_BASE + '/ws/rooms/' + roomCode + '/pages/' + n);
+        } catch (e) {
+          ws = null;
+          scheduleRetry();
+          return;
+        }
+        ws.addEventListener('open', () => {
+          delay = RECONNECT_MIN_MS;
+          if (isReconnect) {
+            apiFetch(base + '/pages/' + n).then((d) => { if (!stopped) cb(d.strokes || []); }).catch(() => {});
+          }
+        });
         ws.addEventListener('message', (ev) => {
           try {
             const msg = JSON.parse(ev.data);
             if (msg.type === 'strokes') cb(msg.strokes);
           } catch (e) { /* 형식이 이상한 메시지는 그냥 무시 */ }
         });
-      } catch (e) { ws = null; }
-      return () => { if (ws) { try { ws.close(); } catch (e) {} } };
+        ws.addEventListener('close', (ev) => {
+          if (stopped || ev.code === 4404) return;
+          scheduleRetry();
+        });
+      }
+
+      function scheduleRetry() {
+        if (stopped) return;
+        clearTimeout(retryTimer);
+        retryTimer = setTimeout(() => connect(true), delay);
+        delay = Math.min(delay * 2, RECONNECT_MAX_MS);
+      }
+
+      connect(false);
+      return () => {
+        stopped = true;
+        clearTimeout(retryTimer);
+        if (ws) { try { ws.close(); } catch (e) {} }
+      };
     },
   };
 }

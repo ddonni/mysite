@@ -122,8 +122,16 @@ export function createCanvas({ toast }) {
   window.addEventListener('pointerup', onPointerUp);
   window.addEventListener('pointercancel', onPointerUp);
 
+  // 한 페이지에 획이 너무 많아지면 strokeBuffer가 가장 오래된 획부터 잘라서
+  // 저장함 — 예전엔 그 획들이 아무 말 없이 사라졌음. 처음 잘릴 때 한 번 알려줌
+  // (매 획마다 띄우면 그리는 흐름을 방해해서).
+  let trimNoticeShown = false;
   function save() {
-    const { strokes, gen, ids } = buffer.snapshotForSave();
+    const { strokes, gen, ids, trimmed } = buffer.snapshotForSave();
+    if (trimmed && !trimNoticeShown) {
+      trimNoticeShown = true;
+      toast('획이 너무 많아서 가장 오래된 획부터 지워지고 있어요', 4000);
+    }
     onChange(strokes, gen, ids);
   }
 

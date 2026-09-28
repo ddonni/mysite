@@ -29,6 +29,7 @@ describe('snapshotForSave', () => {
     const snap = buf.snapshotForSave();
     expect(snap.gen).toBe(buf.generation);
     expect(snap.ids).toEqual(['a', 'b']);
+    expect(snap.trimmed).toBe(false);
     expect(snap.strokes.map((s) => s.id)).toEqual(['a', 'b']);
   });
 
@@ -38,6 +39,7 @@ describe('snapshotForSave', () => {
     buf.loadPage(many);
 
     const snap = buf.snapshotForSave();
+    expect(snap.trimmed).toBe(true);
     expect(snap.strokes.length).toBe(300);
     expect(snap.strokes[0].id).toBe('s5'); // 앞의 5개(가장 오래된)가 잘려나감
     expect(snap.strokes[299].id).toBe('s304');
