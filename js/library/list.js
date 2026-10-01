@@ -65,7 +65,9 @@ export function createList({ onEdit, onDelete, onFeature, onPlay, readOnly, init
     if (featured.length === 0 && readOnly) { featuredEl.hidden = true; return; }
     featuredEl.hidden = false;
     featuredTitle.textContent = featureLabel(activeTab);
-    renderCards(featuredGrid, featured, { onOpen: openDetail, showCat: false, emptyText: '', playingId });
+    // 내 방의 최애음악 줄에선 카드마다 "▶ 재생"으로 바로 턴테이블에 올릴 수 있음.
+    const onPlayCard = activeTab === 'music' && !readOnly ? (it) => onPlay(it, true) : undefined;
+    renderCards(featuredGrid, featured, { onOpen: openDetail, showCat: false, emptyText: '', playingId, onPlay: onPlayCard });
     if (readOnly) return;
     for (let i = featured.length; i < TOP_SLOTS; i++) {
       const slot = document.createElement('div');

@@ -133,6 +133,18 @@ body.read-only #addTabBtn{ display:none; }
 .badge.playing{ background:rgb(var(--c-music)); color:#fff; }
 .detail-playing{ font-size:12.5px; font-weight:600; color:rgb(var(--c-music)); margin:-2px 0 8px; }
 .featured-cards .tc-title{ font-size:20px; }
+/* 최애음악 카드의 "▶ 재생" 버튼(cardsView.js) — 카드와 나란히 감싸개에 두고 표지
+   왼쪽 위에 띄움(오른쪽 위는 배지 자리). */
+.card-wrap{ position:relative; min-width:0; }
+.card-wrap > .card{ width:100%; }
+.play-btn{
+  position:absolute; top:8px; left:8px; z-index:2;
+  font-family:inherit; font-size:11px; font-weight:700; color:#fff;
+  background:rgba(var(--c-music),0.92); border:none; border-radius:999px; padding:4px 10px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.45); cursor:pointer;
+  transition:transform .15s ease, background .15s ease;
+}
+.play-btn:hover, .play-btn:focus-visible{ background:rgb(var(--c-music)); transform:scale(1.06); outline:none; }
 /* 아직 비어 있는 인생작 자리(내 방일 때만) */
 .card.slot{ cursor:default; }
 .slot-cover{
