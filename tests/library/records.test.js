@@ -4,7 +4,7 @@
 // 겪은 버그(fetchRecords가 404의 에러 바디를 정상 데이터인 척 넘겨서
 // 화면에 "undefined"가 찍힌 것)의 재발을 막기 위한 회귀 테스트.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { deleteRecord, fetchRecords, saveRecord, setFeatured, setRoom } from '../../js/library/records.js';
+import { deleteRecord, fetchRecords, saveRecord, setFeatured, setPlaying, setRoom } from '../../js/library/records.js';
 
 function jsonResponse(body, ok = true, status = ok ? 200 : 400) {
   return { ok, status, json: () => Promise.resolve(body) };
@@ -50,6 +50,24 @@ describe('deleteRecord', () => {
   it('실패하면 reject됨(소유자 토큰이 없거나 이미 지워진 경우 등)', async () => {
     global.fetch.mockResolvedValueOnce(jsonResponse({ detail: 'not_found' }, false, 404));
     await expect(deleteRecord(1)).rejects.toThrow();
+  });
+});
+
+describe('setPlaying', () => {
+  it('PUT .../playing으로 소유자 토큰과 함께 보내고, 실패하면 reject함', async () => {
+    global.fetch.mockResolvedValueOnce(jsonResponse({}, true));
+    await expect(setPlaying(7, true)).resolves.toBeUndefined();
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/rooms/ABC123/records/7/playing'),
+      expect.objectContaining({
+        method: 'PUT',
+        headers: expect.objectContaining({ 'X-Room-Token': 'owner-token' }),
+        body: JSON.stringify({ playing: true }),
+      }),
+    );
+
+    global.fetch.mockResolvedValueOnce(jsonResponse({ detail: 'not_music' }, false, 400));
+    await expect(setPlaying(7, true)).rejects.toThrow();
   });
 });
 

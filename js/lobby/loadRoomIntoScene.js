@@ -22,7 +22,8 @@ export function loadRoomIntoScene(ctx, sceneSetters) {
   //    포스터/큰 스탠드로 걸림(빈자리는 빈 채로). 책장엔 책 전체의 제목이
   //    꽂히고, 영화/애니 나머지는 작은 포스터/작은 스탠드로 쌓임.
   //  - 음악: 최애음악은 콘솔 위(첫 번째는 턴테이블, 나머지는 옆 받침),
-  //    나머지 곡은 콘솔 칸 안. 최애음악이 없으면 가장 최근 곡이 턴테이블에서 돎.
+  //    나머지 곡은 콘솔 칸 안. 턴테이블엔 방 주인이 직접 고른 곡이, 없으면 첫
+  //    최애음악이, 그것도 없으면 가장 최근 곡이 돎(showcase.js의 pickMusic).
   fetch(`${roomApi(ctx)}/records`)
     .then((res) => (res.ok ? res.json() : []))
     .then((records) => {

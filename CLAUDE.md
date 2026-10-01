@@ -28,7 +28,9 @@
 
 ## 두 저장소가 맞물린 곳 (한쪽을 바꾸면 다른 쪽도)
 
-- 에러 문자열(`featured_limit`, `page not found`, `not room owner` 등, 업로드 415/413).
+- 에러 문자열(`featured_limit`, `not_music`, `page not found`, `not room owner` 등, 업로드 415/413).
+- 턴테이블 곡: 백엔드 `records.playing`(방마다 한 곡, `PUT .../records/{id}/playing`) ↔
+  `js/lobby/showcase.js`의 `pickMusic`(고른 곡 → 첫 최애음악 → 최신 곡 순).
 - 테마 목록: 백엔드 `schemas.ROOM_THEMES` ↔ `js/lobby/scene.js`의 `THEMES`.
 - `GOOGLE_CLIENT_ID`: `js/shared/config.js` ↔ 백엔드 환경 변수(같은 값이어야 함).
 - 개발자의 방: `config.js`의 `DEVELOPER_ROOM_CODE = 'TTHB8N'`(사용자 본인 방,

@@ -99,6 +99,19 @@ export function setFeatured(id, featured) {
   });
 }
 
+// 이 음악을 로비 턴테이블에 올리거나(true) 내림(false). 방마다 한 곡뿐이라
+// 서버가 켜져 있던 다른 곡은 알아서 끔. 내리면 로비는 기본 규칙(최애음악 첫
+// 번째, 없으면 최신 곡)으로 돌아감.
+export function setPlaying(id, playing) {
+  return fetch(API_BASE + '/api/rooms/' + roomCode + '/records/' + id + '/playing', {
+    method: 'PUT',
+    headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+    body: JSON.stringify({ playing }),
+  }).then((res) => {
+    if (!res.ok) throw new Error('playing toggle failed');
+  });
+}
+
 // 새 기록을 만들거나(editingId가 없을 때), 기존 기록을 덮어씀
 // (editingId가 있을 때). record는 { cat, title, creator, rating, memo,
 // photo_url } 모양의 평범한 객체.

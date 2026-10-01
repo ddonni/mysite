@@ -1,6 +1,6 @@
 // 기록 보관소 페이지의 시작점. list.js(목록 그리기)와 modal.js(추가/
 // 수정 창)를 만들어서 서로 연결하고, 첫 목록을 불러옴.
-import { fetchRecords, deleteRecord, setFeatured, setRoom } from './records.js';
+import { fetchRecords, deleteRecord, setFeatured, setPlaying, setRoom } from './records.js';
 import { createList } from './list.js';
 import { createModal } from './modal.js';
 import { initRoomNav } from '../shared/roomNav.js';
@@ -50,6 +50,9 @@ initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: 'library'
         ? `${withEunNeun(label)} 3개까지예요. 다른 ${withEulReul(label)} 먼저 빼 주세요.`
         : '저장에 실패했어요. 잠시 후 다시 시도해주세요.');
     }),
+    // 음악을 로비 턴테이블에 올리거나 내림 — 목록을 다시 불러오면 "재생 중" 표시도 옮겨감.
+    onPlay: (item, playing) => setPlaying(item.id, playing).then(reload)
+      .catch(() => alert('저장에 실패했어요. 잠시 후 다시 시도해주세요.')),
   });
 
   // 보고 있던 탭의 카테고리로 추가 창을 엶(전체 탭이면 책).

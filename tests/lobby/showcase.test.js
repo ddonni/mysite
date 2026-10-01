@@ -61,6 +61,28 @@ describe('pickMusic', () => {
     expect(ids(rest)).toEqual([2]);
   });
 
+  it('직접 고른 곡(playing)이 있으면 최애음악보다 먼저 턴테이블에서 돎', () => {
+    const chosen = { ...rec(3, 'music'), playing: true };
+    const { playing, picks, rest } = pickMusic([rec(1, 'music', true), rec(2, 'music', true), chosen]);
+    expect(playing.id).toBe(3);
+    expect(ids(picks)).toEqual([1, 2]); // 최애음악은 둘 다 받침으로
+    expect(rest).toEqual([]);
+  });
+
+  it('고른 곡이 최애음악이면 받침엔 나머지 최애음악만', () => {
+    const chosen = { ...rec(2, 'music', true), playing: true };
+    const { playing, picks } = pickMusic([rec(1, 'music', true), chosen, rec(3, 'music', true)]);
+    expect(playing.id).toBe(2);
+    expect(ids(picks)).toEqual([1, 3]);
+  });
+
+  it('받침은 2자리라, 최애음악 3곡이 있는데 다른 곡을 골랐으면 셋째 최애음악은 칸 안으로', () => {
+    const chosen = { ...rec(4, 'music'), playing: true };
+    const { picks, rest } = pickMusic([rec(1, 'music', true), rec(2, 'music', true), rec(3, 'music', true), chosen]);
+    expect(ids(picks)).toEqual([1, 2]);
+    expect(ids(rest)).toEqual([3]);
+  });
+
   it('음악 기록이 없으면 턴테이블도 비어 있음', () => {
     expect(pickMusic([rec(1, 'book')])).toEqual({ playing: null, picks: [], rest: [] });
     expect(pickMusic(null)).toEqual({ playing: null, picks: [], rest: [] });

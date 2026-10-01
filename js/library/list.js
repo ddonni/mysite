@@ -17,14 +17,14 @@ const EMPTY_ALL = '아직 기록이 없어요. 오른쪽 위 + 기록하기로 �
 const EMPTY_CAT = '아직 이 카테고리엔 기록이 없어요. 오른쪽 위 + 기록하기로 남겨보세요.';
 const EMPTY_READONLY = '아직 기록이 없어요.';
 
-export function createList({ onEdit, onDelete, onFeature, readOnly, initialTab }) {
+export function createList({ onEdit, onDelete, onFeature, onPlay, readOnly, initialTab }) {
   const tabsEl = document.getElementById('tabs');
   const listEl = document.getElementById('list');
   const featuredEl = document.getElementById('featured');
   const featuredGrid = document.getElementById('featuredGrid');
   const featuredTitle = document.getElementById('featuredTitle');
   const allTitle = document.getElementById('allTitle');
-  const detail = createDetail(document.getElementById('detailDialog'), { onEdit, onDelete, onFeature, readOnly });
+  const detail = createDetail(document.getElementById('detailDialog'), { onEdit, onDelete, onFeature, onPlay, readOnly });
 
   let activeTab = CATS.some((c) => c.key === initialTab) ? initialTab : 'all';
   let currentItems = [];
