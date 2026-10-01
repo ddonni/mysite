@@ -78,8 +78,9 @@ export function createModal({ onSaved }) {
     presetAutocomplete.hide();
   }
 
+  // 창은 "취소"(또는 저장 성공)로만 닫힘 — 예전엔 창 바깥을 누르면 닫혀서,
+  // 입력하다 실수로 바깥을 건드리면 쓰던 내용이 통째로 날아갔음.
   document.getElementById('cancelBtn').addEventListener('click', () => overlay.classList.remove('open'));
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('open'); });
 
   // ---- 저장 ----
   async function handleSave() {
