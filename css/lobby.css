@@ -22,6 +22,9 @@ body{
 #canvas3d{position:absolute;inset:0;display:block;touch-action:none;cursor:grab;}
 #canvas3d.dragging{cursor:grabbing;}
 #canvas3d.hover{cursor:pointer;}
+/* 인형 위(끌어서 옮길 수 있음)와 옮기는 중 — 카메라 회전(grab)과 구분되게. */
+#canvas3d.movable{cursor:move;}
+#canvas3d.carrying{cursor:grabbing;}
 
 #loading{
   position:absolute;inset:0;display:flex;align-items:center;justify-content:center;

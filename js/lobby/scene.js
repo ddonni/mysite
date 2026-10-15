@@ -104,6 +104,9 @@ export function buildScene(theme) {
   const ball = buildBall();
   const teddyBear = buildTeddyBear();
   const bunny = buildBunnyPlush(); // 곰인형 옆 토끼 인형(장식)
+  // 두 인형은 끌어서 옮길 수 있음(controls.js가 userData.isPlush를 보고 구분).
+  teddyBear.userData.isPlush = true;
+  bunny.userData.isPlush = true;
   const floorLamp = buildFloorLamp(); // 빛의 출처가 보이는 장식(클릭 대상 아님)
   const bed = buildBed(); // 사는 방처럼 보이게 하는 장식(클릭 대상 아님)
 
@@ -131,7 +134,8 @@ export function buildScene(theme) {
     // 클릭/호버 대상이 되는 가구 그룹들 — controls.js가 레이캐스팅할 때 씀.
     // ball도 여기 포함시켜서 클릭/호버 판정을 받지만, userData.room이
     // 없어서 방 이동으로는 안 이어지고 controls.js가 따로 kickBall로 연결함.
-    interactiveGroups: [easel, recordConsole, shelf, ...bookFrames, displayCase, posterWall, ...Object.values(labels), ball],
+    // 인형들(userData.isPlush)은 방 이동 대신 끌어서 옮기는 대상(controls.js).
+    interactiveGroups: [easel, recordConsole, shelf, ...bookFrames, displayCase, posterWall, ...Object.values(labels), ball, teddyBear, bunny],
     // 이 배치의 카메라 위치(첫 화면/가구별 포커스) — controls.js가 씀.
     cameraPresets,
     // 아래 set* 함수들은 loadRoomIntoScene.js가 서버에서 받아온 데이터로

@@ -47,15 +47,66 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
   let dragging = false, lastX = 0, lastY = 0, downX = 0, downY = 0, downT = 0;
   let entered = null; // 지금 카드가 열려있는 방 이름, 없으면 null
 
+  // ---- 인형 옮기기: 인형(userData.isPlush)을 누르면 카메라 대신 인형을 집어서,
+  // 끄는 동안 커서 아래 바닥 지점을 따라오게 하고 놓으면 그 자리에 내려놓음.
+  // (저장은 안 함 — 새로고침하면 원래 자리로 돌아감.)
+  const LIFT = 0.15; // 집었을 때 살짝 떠오르는 높이
+  const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  const grabOffset = new THREE.Vector3();
+  let carrying = null; // 지금 들고 있는 인형 그룹
+  function plushOf(obj) {
+    let o = obj;
+    while (o) { if (o.userData && o.userData.isPlush) return o; o = o.parent; }
+    return null;
+  }
+  function floorPointUnder(e) {
+    setNDC(e);
+    raycaster.setFromCamera(mouseNDC, camera);
+    return raycaster.ray.intersectPlane(floorPlane, new THREE.Vector3());
+  }
+  function tryPickUp(e) {
+    setNDC(e);
+    raycaster.setFromCamera(mouseNDC, camera);
+    const hits = raycaster.intersectObjects(interactiveGroups, true);
+    const plush = hits.length && plushOf(hits[0].object);
+    const floor = plush && floorPointUnder(e);
+    if (!plush || !floor) return false;
+    carrying = plush;
+    grabOffset.set(plush.position.x - floor.x, 0, plush.position.z - floor.z);
+    plush.position.y = LIFT;
+    canvas.classList.add('carrying');
+    return true;
+  }
+  function moveCarried(e) {
+    const floor = floorPointUnder(e);
+    if (!floor) return;
+    let x = floor.x + grabOffset.x, z = floor.z + grabOffset.z;
+    // 벽 가구 앞 안쪽 원을 벗어나지 않게(카메라 목표 지점 한계보다 조금 더 안쪽).
+    const maxR = LIMIT.radius - 0.6, r = Math.hypot(x, z);
+    if (r > maxR) { x *= maxR / r; z *= maxR / r; }
+    carrying.position.x = x;
+    carrying.position.z = z;
+  }
+  function dropCarried() {
+    carrying.position.y = 0;
+    carrying = null;
+    canvas.classList.remove('carrying');
+  }
+
   canvas.addEventListener('pointerdown', (e) => {
     downX = e.clientX; downY = e.clientY; downT = performance.now();
     if (entered) return; // 카드가 열려있는 동안은 드래그로 회전 안 되게 함 (탭 여부는 pointerup에서 판단)
+    if (tryPickUp(e)) {
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* 캡처 못 해도 옮기기는 됨 */ }
+      return;
+    }
     dragging = true;
     lastX = e.clientX; lastY = e.clientY;
     canvas.classList.add('dragging');
     canvas.setPointerCapture(e.pointerId);
   });
   canvas.addEventListener('pointermove', (e) => {
+    if (carrying) { moveCarried(e); return; }
     if (dragging) {
       const dx = e.clientX - lastX, dy = e.clientY - lastY;
       lastX = e.clientX; lastY = e.clientY;
@@ -65,7 +116,10 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
       checkHover(e);
     }
   });
+  // 터치가 중간에 취소돼도(스크롤 제스처 등) 들고 있던 인형은 그 자리에 내려놓음.
+  window.addEventListener('pointercancel', () => { if (carrying) dropCarried(); });
   window.addEventListener('pointerup', (e) => {
+    if (carrying) { dropCarried(); return; }
     // 드래그 없이 살짝 눌렀다 뗀 것(450ms 안, 거의 안 움직인 것)만 "클릭"으로 침 —
     // 안 그러면 회전하려고 드래그할 때마다 가구를 잘못 클릭한 걸로 오해함.
     const tapped = Math.abs(e.clientX - downX) <= 4 && Math.abs(e.clientY - downY) <= 4
@@ -140,7 +194,9 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
     setNDC(e);
     raycaster.setFromCamera(mouseNDC, camera);
     const hits = raycaster.intersectObjects(interactiveGroups, true);
-    canvas.classList.toggle('hover', hits.length > 0);
+    const movable = hits.length > 0 && !!plushOf(hits[0].object);
+    canvas.classList.toggle('movable', movable);
+    canvas.classList.toggle('hover', hits.length > 0 && !movable);
   }
   function handleClick(e) {
     setNDC(e);
