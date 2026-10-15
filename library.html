@@ -53,7 +53,7 @@
     <div class="field">
       <label>제목</label>
       <div class="title-wrap">
-        <input type="text" id="fTitle" placeholder="제목을 입력하거나 목록에서 골라보세요">
+        <input type="text" id="fTitle" autocomplete="off" placeholder="제목을 입력하거나 목록에서 골라보세요">
         <div class="preset-list" id="presetList" style="display:none;"></div>
       </div>
       <div id="titleError" class="field-error" style="display:none;">제목을 적어 주세요.</div>
@@ -61,7 +61,10 @@
 
     <div class="field">
       <label id="creatorLabel">작가 / 감독 / 제작</label>
-      <input type="text" id="fCreator">
+      <div class="title-wrap">
+        <input type="text" id="fCreator" autocomplete="off">
+        <div class="preset-list" id="creatorList" style="display:none;"></div>
+      </div>
     </div>
 
     <div class="field">

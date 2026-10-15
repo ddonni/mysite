@@ -51,11 +51,12 @@ export function fetchRecords() {
   });
 }
 
-// 제목 자동 완성 후보 — 이 방 + 공개된 방들의 기록에서 서버가 골라 줌
-// ([{ title, creator(정해질 때만), mine, rooms }]). signal로 이전 요청을 취소할 수 있음.
-export function fetchTitleSuggestions(cat, q, signal) {
-  const params = new URLSearchParams({ cat, q });
-  return fetch(API_BASE + '/api/rooms/' + roomCode + '/title-suggestions?' + params, { signal }).then((res) => {
+// 자동 완성 후보 — field는 'title'(제목 칸) 또는 'creator'(만든 사람 칸). 이 방 +
+// 공개된 방들의 기록에서 서버가 골라 줌([{ value, mine, rooms }]).
+// signal로 이전 요청을 취소할 수 있음.
+export function fetchSuggestions(cat, field, q, signal) {
+  const params = new URLSearchParams({ cat, field, q });
+  return fetch(API_BASE + '/api/rooms/' + roomCode + '/suggestions?' + params, { signal }).then((res) => {
     if (!res.ok) throw new Error('suggestions failed');
     return res.json();
   });

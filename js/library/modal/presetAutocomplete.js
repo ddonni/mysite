@@ -1,16 +1,17 @@
-// 제목 입력창 아래에 뜨는 "혹시 이거 아니에요?" 목록.
-// 후보는 서버(fetchSuggestions → GET .../title-suggestions)가 이 방 + 공개된 방들의
-// 기록에서 골라 줌 — 내가 이미 기록한 제목엔 "이미 기록함" 표시. 서버 후보가 모자라거나
-// 서버가 안 닿으면 코드에 적어둔 PRESETS(카테고리별 대표 제목)로 채움.
-// 후보를 고르면 제목을 넣고, 만든 사람 칸이 비어 있을 때만 서버가 알려준 만든 사람을
-// 채움(그 제목의 만든 사람이 한 명으로 정해질 때만 옴 — 동명의 다른 작품이면 비워둠).
+// 입력칸 아래에 뜨는 "혹시 이거 아니에요?" 목록 — 제목 칸과 만든 사람 칸이
+// 각자 하나씩 씀(서로 독립: 하나를 골라도 다른 칸은 안 바뀜).
+// 후보는 서버(fetchSuggestions → GET .../suggestions)가 이 방 + 공개된 방들의
+// 기록에서 골라 줌. 제목 칸은 코드에 적어둔 PRESETS로 모자란 걸 채우고(서버가
+// 안 닿아도), 내 방에 이미 있는 제목엔 "이미 기록함" 표시(markMine).
 // getCat()으로 지금 카테고리를 매번 물어봄(카테고리 탭이 바뀔 수 있어서).
 const MAX_ITEMS = 8;
 const DEBOUNCE_MS = 180;
 
 const norm = (s) => (s || '').replace(/\s+/g, ' ').trim().toLowerCase();
 
-export function createPresetAutocomplete({ input, listEl, creatorInput }, PRESETS, getCat, fetchSuggestions) {
+// fetchSuggestions(cat, q, signal) → Promise<[{ value, mine }]>
+// presets(cat) → 서버 후보가 모자랄 때 채울 문자열 목록(없으면 안 채움)
+export function createPresetAutocomplete({ input, listEl }, { getCat, fetchSuggestions, presets, markMine = false }) {
   let timer = null;
   let ctrl = null; // 진행 중인 서버 요청 — 새로 치면 이전 것은 취소
   let seq = 0;
@@ -20,8 +21,9 @@ export function createPresetAutocomplete({ input, listEl, creatorInput }, PRESET
   }
 
   function presetMatches(filter) {
+    if (!presets) return [];
     const f = norm(filter);
-    return (PRESETS[getCat()] || []).filter((t) => norm(t).includes(f)).map((title) => ({ title }));
+    return (presets(getCat()) || []).filter((t) => norm(t).includes(f)).map((value) => ({ value }));
   }
 
   function draw(items) {
@@ -32,9 +34,9 @@ export function createPresetAutocomplete({ input, listEl, creatorInput }, PRESET
       const el = document.createElement('div');
       el.className = 'preset-item';
       const name = document.createElement('span');
-      name.textContent = s.title;
+      name.textContent = s.value;
       el.appendChild(name);
-      if (s.mine) {
+      if (markMine && s.mine) {
         const badge = document.createElement('span');
         badge.className = 'preset-mine';
         badge.textContent = '이미 기록함';
@@ -44,20 +46,19 @@ export function createPresetAutocomplete({ input, listEl, creatorInput }, PRESET
       el.addEventListener('mousedown', (e) => e.preventDefault());
       el.addEventListener('click', () => {
         // 한글 조합 중에 골랐으면 먼저 조합을 확정시킴 — 안 그러면 나중에 확정된
-        // 글자가 고른 제목을 덮어쓸 수 있음.
+        // 글자가 고른 값을 덮어쓸 수 있음.
         input.blur();
-        input.value = s.title;
-        if (creatorInput && s.creator && !creatorInput.value.trim()) creatorInput.value = s.creator;
+        input.value = s.value;
         hide();
       });
       listEl.appendChild(el);
     });
   }
 
-  // 서버 후보 먼저, 모자라면 같은 제목이 아닌 PRESETS로 채움.
+  // 서버 후보 먼저, 모자라면 같은 값이 아닌 PRESETS로 채움.
   function merge(server, filter) {
-    const seen = new Set(server.map((s) => norm(s.title)));
-    const extra = presetMatches(filter).filter((p) => !seen.has(norm(p.title)));
+    const seen = new Set(server.map((s) => norm(s.value)));
+    const extra = presetMatches(filter).filter((p) => !seen.has(norm(p.value)));
     return server.concat(extra).slice(0, MAX_ITEMS);
   }
 
