@@ -67,3 +67,9 @@
 - 버킷을 만든 AWS 계정을 사용자가 아직 못 찾음(2026-09-29). Render의
   `AWS_ACCESS_KEY_ID`(시크릿 말고)로 12자리 계정 번호를 계산해 대조하는 방법이 남아 있음.
 - 옛 Render DB: 2026-10-15에 만료돼 삭제했고 `render.yaml`의 `databases:` 블록도 지움.
+- **Render 자동 배포 안 됨(2026-10-15)**: 백엔드 `b073ca8` 푸시(같은 푸시에 `render.yaml`
+  변경 포함) 때 Render Events에 자동 배포 시도 자체가 없었고, 수동 배포(Manual Deploy →
+  Deploy latest commit)로 올림. GitHub CI는 통과, Render Auto-Deploy 설정과 GitHub의
+  Render 앱 저장소 권한도 정상이었음 — 원인 미확인. **다음 백엔드 푸시 때 자동 배포되는지
+  꼭 확인**(`GET /health` 말고 새 변경이 운영에 보이는지로). 또 안 되면 Render Deploy Hook을
+  만들어 GitHub Secrets에 넣고, CI(`.github/workflows/ci.yml`) 통과 뒤 호출하게 바꾸기로 함.
