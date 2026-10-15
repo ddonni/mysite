@@ -17,7 +17,7 @@ function drawBallTexture(ctx, w, h) {
 
 // 방 한가운데 굴러다니는 장난감 공. 어느 "방"에도 속하지 않는 순수한
 // 장난감이라 userData.room은 안 붙임 — 대신 userData.isBall을 붙여서
-// controls.js가 클릭했을 때 방 이동이 아니라 kick()으로 튕겨내도록
+// controls.js가 클릭했을 때 방 이동이 아니라 kick()으로(누른 반대쪽으로) 튕겨내도록
 // 구분함. 물리는 진짜 엔진 없이 중력 + 바닥/벽 반사만 흉내 낸 값싼
 // 시뮬레이션.
 export function buildBall() {
@@ -36,11 +36,20 @@ export function buildBall() {
   // 둥근 방 안쪽 원(벽 가구 앞)을 벗어나지 않게 튕김 — 벽 가구 깊이만큼 여유를 둠.
   const MAX_R = APOTHEM - 0.8 - BALL_RADIUS;
 
-  // 클릭할 때마다 호출 — 무작위 방향으로 튕겨나가게 함.
-  mesh.userData.kick = () => {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 2.2 + Math.random() * 1.8;
-    velocity.set(Math.cos(angle) * speed, 3.2 + Math.random() * 1.6, Math.sin(angle) * speed);
+  // 클릭할 때마다 호출 — 누른 지점(hitPoint)의 반대쪽으로 차냄: 공의 왼쪽을
+  // 누르면 오른쪽으로, 앞쪽(카메라 쪽)을 누르면 안쪽으로 — 발로 차는 것처럼.
+  // 정중앙을 누르면 바라보는 방향(viewDir)으로. 둘 다 없으면 무작위 방향.
+  const KICK_SPEED = 3.4, KICK_UP = 3.6;
+  mesh.userData.kick = (hitPoint, viewDir) => {
+    const dir = new THREE.Vector3();
+    if (hitPoint) dir.set(mesh.position.x - hitPoint.x, 0, mesh.position.z - hitPoint.z).divideScalar(BALL_RADIUS);
+    if (viewDir) dir.add(new THREE.Vector3(viewDir.x, 0, viewDir.z).normalize().multiplyScalar(0.6));
+    if (dir.lengthSq() < 1e-4) {
+      const angle = Math.random() * Math.PI * 2;
+      dir.set(Math.cos(angle), 0, Math.sin(angle));
+    }
+    dir.normalize().multiplyScalar(KICK_SPEED);
+    velocity.set(dir.x, KICK_UP, dir.z);
   };
 
   // 매 프레임 중력을 적용하고, 바닥/벽에 닿으면 속도를 반사시켜

@@ -147,7 +147,8 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
     raycaster.setFromCamera(mouseNDC, camera);
     const hits = raycaster.intersectObjects(interactiveGroups, true);
     if (!hits.length) return;
-    if (isBall(hits[0].object)) { kickBall(); return; }
+    // 공은 누른 지점의 반대쪽으로 차냄(ball.js의 kick).
+    if (isBall(hits[0].object)) { kickBall(hits[0].point, raycaster.ray.direction); return; }
     const room = roomOfObject(hits[0].object);
     if (room) enterRoom(room);
   }
