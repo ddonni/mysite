@@ -2,7 +2,7 @@ import { escapeHtml } from '../../shared/dom.js';
 import { catLabel, coverHtml, featureButtonLabel, ratingStars } from './itemFormat.js';
 
 // 카드를 누르면 뜨는 상세 창 — 큰 표지, 제목/만든 사람/별점/날짜, 한 줄 감상,
-// 그리고(내 방일 때만) 고쳐 쓰기·인생작·삭제 버튼. 버튼을 누르면 창을 닫고
+// 그리고(내 방일 때만) 수정하기·인생작·삭제 버튼. 버튼을 누르면 창을 닫고
 // 원래 콜백(main.js가 정함)으로 넘김 — 수정 창이 뜨거나 목록이 다시 그려지는
 // 동안 이 창이 남아 있으면 헷갈림. "정말 삭제할까요?" 확인만 창 안에서 처리함.
 export function createDetail(dialogEl, { onEdit, onDelete, onFeature, onPlay, readOnly }) {
@@ -24,7 +24,7 @@ export function createDetail(dialogEl, { onEdit, onDelete, onFeature, onPlay, re
     if (readOnly) return '';
     return `
       <div class="detail-actions">
-        <button type="button" class="act" data-act="edit">고쳐 쓰기</button>
+        <button type="button" class="act" data-act="edit">수정하기</button>
         <button type="button" class="act" data-act="feature">${featureButtonLabel(it.cat, it.featured)}</button>
         ${playButtonHtml(it, playing)}
         <button type="button" class="act danger" data-act="delete">삭제</button>

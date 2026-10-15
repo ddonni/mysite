@@ -4,7 +4,7 @@
 // list/detail.js에 맡김.
 //
 // "기록을 어떻게 서버와 주고받는지"는 모르고, 건네받은 items 배열을 화면에
-// 뿌리기만 함. 상세 창의 "고쳐 쓰기"/"삭제"/"인생작"을 눌렀을 때 실제로 무슨
+// 뿌리기만 함. 상세 창의 "수정하기"/"삭제"/"인생작"을 눌렀을 때 실제로 무슨
 // 일이 일어날지는 createList를 부른 쪽(main.js)이 onEdit/onDelete/onFeature
 // 콜백으로 정해줌.
 import { CATS } from './records.js';

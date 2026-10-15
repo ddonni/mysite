@@ -1,4 +1,4 @@
-// "새 기록 추가 / 기존 기록 고쳐 쓰기" 모달창을 담당하는 모듈.
+// "새 기록 추가 / 기존 기록 수정하기" 모달창을 담당하는 모듈.
 // 카테고리 탭, 제목 입력, 저장 버튼 배선은 여기서 하지만, 별점/사진
 // 첨부/제목 추천 목록은 각자 자기 상태를 스스로 관리하는 위젯
 // (modal/starPicker.js, modal/photoPicker.js, modal/presetAutocomplete.js)
@@ -137,12 +137,12 @@ export function createModal({ onSaved }) {
       overlay.classList.add('open');
     },
 
-    // list.js에서 "고쳐 쓰기"를 누르면 그 기록(item) 전체를 그대로
+    // list.js에서 "수정하기"를 누르면 그 기록(item) 전체를 그대로
     // 넘겨받아서, 모달 폼에 기존 값을 채워 넣음.
     openEdit(item) {
       titleError.style.display = 'none';
       editingId = item.id;
-      modalTitle.textContent = '기록 고치기';
+      modalTitle.textContent = '기록 수정하기';
       currentCat = item.cat;
       [...catTabsEl.children].forEach((b) => b.classList.toggle('active', b.dataset.key === currentCat));
       updateCreatorField();
