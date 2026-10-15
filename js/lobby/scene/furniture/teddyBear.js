@@ -3,8 +3,9 @@ import { aoBlob } from '../aoBlob.js';
 
 // 곰인형 털 텍스처 — 매끈한 구슬처럼 안 보이게, 짧은 잔털처럼 보이는
 // 무작위 획을 잔뜩 그려서 표면에 은은한 질감을 입힘(진짜 털 셰이더 대신
-// 쓰는 값싼 트릭 — 다른 가구들의 캔버스 텍스처와 같은 방식).
-function drawFurTexture(ctx, w, h, baseHex) {
+// 쓰는 값싼 트릭 — 다른 가구들의 캔버스 텍스처와 같은 방식). 토끼 인형
+// (bunnyPlush.js)도 같이 씀.
+export function drawFurTexture(ctx, w, h, baseHex) {
   ctx.fillStyle = baseHex;
   ctx.fillRect(0, 0, w, h);
   for (let i = 0; i < 1400; i++) {

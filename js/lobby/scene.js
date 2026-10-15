@@ -30,6 +30,7 @@ import { buildDisplayCase } from './scene/furniture/displayCase.js';
 import { buildFloorLamp } from './scene/furniture/lamps.js';
 import { buildBall } from './scene/furniture/ball.js';
 import { buildTeddyBear } from './scene/furniture/teddyBear.js';
+import { buildBunnyPlush } from './scene/furniture/bunnyPlush.js';
 import { buildBed } from './scene/furniture/bed.js';
 
 // 방 테마 프리셋 — 바닥/벽/러그/배경 색만 바꿔서 분위기를 갈아끼움. 가구
@@ -102,6 +103,7 @@ export function buildScene(theme) {
   const recordConsole = buildRecordConsole(); // 턴테이블을 얹은 LP 보관함
   const ball = buildBall();
   const teddyBear = buildTeddyBear();
+  const bunny = buildBunnyPlush(); // 곰인형 옆 토끼 인형(장식)
   const floorLamp = buildFloorLamp(); // 빛의 출처가 보이는 장식(클릭 대상 아님)
   const bed = buildBed(); // 사는 방처럼 보이게 하는 장식(클릭 대상 아님)
 
@@ -111,11 +113,11 @@ export function buildScene(theme) {
       { face: 'book', items: [shelf, ...bookFrames, labels.book] },
       { face: 'movie', items: [posterWall, labels.movie] },
     ],
-    easel, recordConsole, ball, teddyBear, floorLamp, bed,
+    easel, recordConsole, ball, teddyBear, bunny, floorLamp, bed,
   });
 
   room.add(shelf, ...bookFrames, displayCase, posterWall, ...Object.values(labels),
-    easel, recordConsole, ball, teddyBear, floorLamp, bed);
+    easel, recordConsole, ball, teddyBear, bunny, floorLamp, bed);
   scene.add(room);
 
   addLighting(scene, lights);

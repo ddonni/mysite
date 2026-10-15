@@ -34,6 +34,9 @@ export function arrangeRoom(p) {
   p.recordConsole.rotation.y = -0.85;
   p.teddyBear.position.set(-3.3, 0, 3.1);
   p.teddyBear.rotation.y = 0.5;
+  // 토끼 인형은 곰인형 오른쪽 옆에, 곰 쪽으로 살짝 몸을 돌려 나란히 앉음.
+  p.bunny.position.set(-2.15, 0, 3.45);
+  p.bunny.rotation.y = 0.15;
   // 왼쪽 앞 구석 침대 — 머리를 방 바깥쪽(왼쪽)으로, 발치가 방 가운데를 향하게.
   // 스탠드는 머리맡 안쪽 옆(카메라에서 먼 쪽)에 둬서 침대 옆 조명처럼
   // 보이면서 헤드보드를 가리지 않게 함.
