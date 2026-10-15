@@ -31,7 +31,10 @@
 - 에러 문자열(`featured_limit`, `not_music`, `page not found`, `not room owner` 등, 업로드 415/413).
 - 턴테이블 곡: 백엔드 `records.playing`(방마다 한 곡, `PUT .../records/{id}/playing`) ↔
   `js/lobby/showcase.js`의 `pickMusic`(고른 곡 → 첫 최애음악 → 최신 곡 순).
-- 테마 목록: 백엔드 `schemas.ROOM_THEMES` ↔ `js/lobby/scene.js`의 `THEMES`.
+- 테마 목록: 백엔드 `schemas.ROOM_THEMES` ↔ `js/lobby/scene.js`의 `THEMES`
+  (색은 `js/rooms/main.js`의 `THEME_COLORS`에도 — 둘러보기 카드 띠).
+- 방 둘러보기: 백엔드 `rooms.is_public` + `GET /api/rooms`(공개·기록 있는 방만) +
+  `PUT .../visibility` ↔ `rooms.html`/`js/rooms/main.js`, `js/shared/visibilityToggle.js`.
 - `GOOGLE_CLIENT_ID`: `js/shared/config.js` ↔ 백엔드 환경 변수(같은 값이어야 함).
 - 개발자의 방: `config.js`의 `DEVELOPER_ROOM_CODE = 'TTHB8N'`(사용자 본인 방,
   "도현의 방"). 방문자에게만 로비 왼쪽 아래 "개발자의 방 구경하기" 링크로 뜸.
@@ -61,5 +64,4 @@
   없음. 업로드 전 줄이기(1200px)와 캐시 헤더는 새로 올리는 사진부터 적용됨.
 - 버킷을 만든 AWS 계정을 사용자가 아직 못 찾음(2026-09-29). Render의
   `AWS_ACCESS_KEY_ID`(시크릿 말고)로 12자리 계정 번호를 계산해 대조하는 방법이 남아 있음.
-- 2026-10-15 무렵: 백엔드 `render.yaml`의 옛 Render DB(`databases:`) 블록 삭제
-  (2026-09-27에 Neon으로 옮기고 백업으로 남겨둔 것).
+- 옛 Render DB: 2026-10-15에 만료돼 삭제했고 `render.yaml`의 `databases:` 블록도 지움.

@@ -26,8 +26,12 @@
   기록 보관소. 카테고리 탭을 고르면 맨 위에 인생작이 크게 나옴. 완전히
   백엔드 API에 의존함(로컬 폴백 없음) — 서버가 꺼져 있으면 목록이
   안 뜸.
+- `rooms.html` — 방 둘러보기. 방 주인이 "둘러보기에 공개"를 켠 방들(기록이 있는
+  방만, 최근 활동순)을 카드로 보여주고, 누르면 그 방에 읽기 전용으로 놀러 감.
+  공개 스위치(`js/shared/visibilityToggle.js`)는 이 페이지 위쪽과 로비 헤더(테마
+  색 버튼 옆)에 있고, 기본은 비공개. 비공개여도 방 코드를 아는 사람은 들어올 수 있음.
 
-세 페이지 모두 왼쪽 위에 방/캔버스/기록 보관소로 이동하는 같은 메뉴가
+네 페이지 모두 왼쪽 위에 방/캔버스/기록 보관소/둘러보기로 이동하는 같은 메뉴가
 붙어 있음(`.site-nav` — 모양은 `css/nav.css`, 방 코드·방문 칸은
 `js/shared/roomNav.js`). `js/shared/config.js`의 `DEVELOPER_ROOM_CODE`를
 채우면 로비 왼쪽 아래에 "개발자의 방 구경하기" 링크가 떠서, 누구나 그 방을
@@ -39,10 +43,13 @@
 index.html          # 3D 로비 마크업
 sketchbook.html      # 스케치북 마크업
 library.html         # 기록 보관소 마크업
+rooms.html           # 방 둘러보기 마크업
 css/lobby.css        # 로비 스타일
 css/style.css        # 스케치북 스타일
 css/library.css      # 기록 보관소 스타일
-css/nav.css          # 세 페이지가 같이 쓰는 왼쪽 위 메뉴
+css/nav.css          # 모든 페이지가 같이 쓰는 왼쪽 위 메뉴
+css/visibility.css   # 둘러보기 공개 스위치(로비 헤더, 둘러보기 페이지)
+css/rooms.css        # 방 둘러보기 카드(바탕은 library.css를 같이 씀)
 
 js/shared/config.js  # API_BASE 등, 여러 방이 공통으로 쓰는 값
 
@@ -54,6 +61,9 @@ js/sketchbook/
   pager.js           # 페이지 넘기기/삭제/점프 + canvas의 변경사항을 저장소에 반영
   dock.js            # 색상·굵기·지우개·되돌리기 등 도구 서랍 UI
   toast.js           # 화면 아래 잠깐 뜨는 알림
+
+js/rooms/
+  main.js            # 방 둘러보기 — 공개 방 목록(GET /api/rooms)을 카드로 + 내 방 공개 스위치
 
 js/library/
   main.js            # 시작점 — list/modal을 만들고 연결함

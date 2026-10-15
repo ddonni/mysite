@@ -1,0 +1,23 @@
+/* "둘러보기에 공개" 스위치(js/shared/visibilityToggle.js) — 로비 헤더와
+   둘러보기 페이지가 같이 씀. 두 페이지 모두 어두운 바탕이라 색을 여기서 정함. */
+.vis-box{ display:flex; flex-direction:column; align-items:flex-start; gap:4px; pointer-events:auto; }
+.vis-box:empty{ display:none; }
+.vis-toggle{
+  display:inline-flex; align-items:center; gap:8px; padding:0; margin:0;
+  background:none; border:none; cursor:pointer; font-family:inherit;
+  font-size:12.5px; font-weight:600; color:#f3ece0;
+}
+.vis-toggle:disabled{ opacity:.6; cursor:default; }
+.vis-track{
+  position:relative; width:34px; height:20px; border-radius:999px; flex:none;
+  background:rgba(243,236,224,0.16); border:1px solid rgba(243,236,224,0.24);
+  transition:background .2s ease, border-color .2s ease;
+}
+.vis-knob{
+  position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%;
+  background:#f3ece0; transition:transform .2s ease;
+}
+.vis-toggle[aria-checked="true"] .vis-track{ background:#d9793a; border-color:#d9793a; }
+.vis-toggle[aria-checked="true"] .vis-knob{ transform:translateX(14px); }
+.vis-hint{ font-size:11.5px; color:#b7ac98; line-height:1.4; }
+@media (prefers-reduced-motion: reduce){ .vis-track, .vis-knob{ transition:none; } }

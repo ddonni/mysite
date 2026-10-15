@@ -192,6 +192,14 @@ body{
 .theme-swatch:hover{transform:scale(1.1);}
 .theme-swatch[aria-pressed="true"]{border-color:var(--paper);}
 
+/* --- 둘러보기 공개 스위치(js/shared/visibilityToggle.js, 모양은 css/visibility.css) ---
+   테마 색 버튼과 한 줄에 둬서 헤더가 길어지지 않게 함(길어지면 아래 구글 버튼이
+   벽 글씨를 가림). 설명 문구는 여기선 숨기고 버튼 툴팁으로만. */
+.header-controls{display:flex;align-items:center;flex-wrap:wrap;gap:6px 16px;margin-top:8px;}
+.header-controls .theme-picker{margin-top:0;}
+#header .vis-hint{display:none;}
+#header .vis-toggle{text-shadow:0 1px 4px rgba(0,0,0,0.6);}
+
 /* --- 구글 로그인 버튼(js/shared/googleAuth.js가 GIS 위젯을 그려넣음) --- */
 .google-btn{margin-top:8px;pointer-events:auto;}
 .google-btn:empty{display:none;} /* GOOGLE_CLIENT_ID 미설정 시 빈 채로 남으니 자리도 안 차지하게 */
@@ -274,7 +282,7 @@ body .site-nav{max-width:calc(100% - 28px - 52px);}
   #header{gap:2px;}
   #header h1{font-size:22px;}
   #header p{display:none;}
-  .theme-picker{margin-top:4px;}
+  .header-controls{margin-top:4px;}
   #header .google-btn{display:none;}
 }
 
