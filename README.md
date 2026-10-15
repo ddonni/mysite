@@ -71,7 +71,7 @@ js/library/
   list.js            # 카테고리 탭 + 인생작 줄 + 표지 카드 격자 — 실제 그리기는 list/*.js에 위임
   list/              #   itemFormat.js(표지/별점), cardsView.js(카드), detail.js(카드를 누르면 뜨는 상세 창)
   modal.js           # 추가/수정 모달 오케스트레이션
-  modal/             #   categoryFields.js, starPicker.js, photoPicker.js, presetAutocomplete.js
+  modal/             #   categoryFields.js, starPicker.js, photoPicker.js, presetAutocomplete.js(제목 자동 완성 — 내 방 + 공개 방 기록에서 서버가 고른 후보, 모자라면 PRESETS)
 
 js/lobby/
   main.js            # 시작점 — 부팅 순서만 담당

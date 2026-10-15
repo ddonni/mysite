@@ -35,6 +35,8 @@
   (색은 `js/rooms/main.js`의 `THEME_COLORS`에도 — 둘러보기 카드 띠).
 - 방 둘러보기: 백엔드 `rooms.is_public` + `GET /api/rooms`(공개·기록 있는 방만) +
   `PUT .../visibility` ↔ `rooms.html`/`js/rooms/main.js`, `js/shared/visibilityToggle.js`.
+- 제목 자동 완성: 백엔드 `GET .../title-suggestions`(`crud.title_suggestions`) ↔
+  `js/library/modal/presetAutocomplete.js`(만든 사람 칸이 비어 있을 때만 `creator`로 채움).
 - `GOOGLE_CLIENT_ID`: `js/shared/config.js` ↔ 백엔드 환경 변수(같은 값이어야 함).
 - 개발자의 방: `config.js`의 `DEVELOPER_ROOM_CODE = 'TTHB8N'`(사용자 본인 방,
   "도현의 방"). 방문자에게만 로비 왼쪽 아래 "개발자의 방 구경하기" 링크로 뜸.

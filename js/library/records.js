@@ -51,6 +51,16 @@ export function fetchRecords() {
   });
 }
 
+// 제목 자동 완성 후보 — 이 방 + 공개된 방들의 기록에서 서버가 골라 줌
+// ([{ title, creator(정해질 때만), mine, rooms }]). signal로 이전 요청을 취소할 수 있음.
+export function fetchTitleSuggestions(cat, q, signal) {
+  const params = new URLSearchParams({ cat, q });
+  return fetch(API_BASE + '/api/rooms/' + roomCode + '/title-suggestions?' + params, { signal }).then((res) => {
+    if (!res.ok) throw new Error('suggestions failed');
+    return res.json();
+  });
+}
+
 // 기록 하나를 삭제.
 export function deleteRecord(id) {
   return fetch(API_BASE + '/api/rooms/' + roomCode + '/records/' + id, {

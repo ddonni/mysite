@@ -6,7 +6,7 @@
 // 결과만 모아서 폼을 채우고 비우고 저장하는 오케스트레이션만 함.
 //
 // 실제 서버 저장은 records.js의 uploadPhoto/saveRecord를 불러 씀.
-import { CATS, PRESETS, uploadPhoto, saveRecord } from './records.js';
+import { CATS, PRESETS, uploadPhoto, saveRecord, fetchTitleSuggestions } from './records.js';
 import { CREATOR_FIELD } from './modal/categoryFields.js';
 import { createStarPicker } from './modal/starPicker.js';
 import { createPhotoPicker } from './modal/photoPicker.js';
@@ -33,9 +33,10 @@ export function createModal({ onSaved }) {
     dropText: document.getElementById('photoDropText'),
   });
   const presetAutocomplete = createPresetAutocomplete(
-    { input: fTitle, listEl: document.getElementById('presetList') },
+    { input: fTitle, listEl: document.getElementById('presetList'), creatorInput: fCreator },
     PRESETS,
     () => currentCat,
+    fetchTitleSuggestions,
   );
 
   let currentCat = 'book';
