@@ -7,7 +7,7 @@
 // 자동으로 바라보게 함 — 배포본(GitHub Pages 등)의 hostname은 절대
 // localhost/127.0.0.1이 아니라서 이 분기가 실제 사용자에게는 영향 없음.
 const isLocalDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-export const API_BASE = isLocalDev ? 'http://localhost:8000' : 'https://sketchbook-api.onrender.com';
+export const API_BASE = isLocalDev ? 'http://localhost:8000' : 'https://mysite-ddonni.duckdns.org';
 
 // "구글 계정으로 내 방 복구" 버튼(js/shared/googleAuth.js)용 OAuth
 // client id. 비밀은 아니지만(브라우저에 그대로 노출됨) 아무 값이나
