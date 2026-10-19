@@ -12,8 +12,9 @@
 - 확인 질문은 최소로. 배포(push)나 되돌리기 어려운 일만 먼저 물어보고, 나머지는 그냥 진행.
 - Bash에서 `cd 경로 && 명령`을 쓰지 말 것(권한 확인 창이 자주 뜸) —
   `git -C <경로>`, `npm --prefix <경로>`, 절대 경로를 씀.
-- 커밋 메시지는 영어, 주제별로 나눔. push하면 바로 배포됨
-  (백엔드: Render 자동 재배포, 프론트: GitHub Pages).
+- 커밋 메시지는 영어, 주제별로 나눔. 프론트는 push하면 바로 배포됨(GitHub Pages,
+  약 40초). **백엔드는 push만으로 운영에 안 올라감** — EC2에서 수동으로 받아서 재시작
+  (`mysite-backend/CLAUDE.md`의 "배포" 참고).
 
 ## 폴더 구조
 
@@ -21,9 +22,12 @@
 
 - `mysite/` — 이 저장소. 빌드 없는 정적 사이트(GitHub Pages `ddonni.github.io/mysite`).
   테스트는 Vitest(`npm test`). 구조는 README.md 참고.
-- `mysite-backend/` — FastAPI + Neon Postgres + S3, Render 배포. 규칙·에러 문자열
+- `mysite-backend/` — FastAPI + PostgreSQL + S3, 직접 운영하는 EC2에서 돌아감
+  (2026-10-18 Render에서 전환). 규칙·에러 문자열
   계약은 그 저장소의 CLAUDE.md 참고. 테스트는 `pytest -q`(SQLite) — 반드시
   `mysite-backend` 폴더를 기준으로 돌릴 것(아니면 `test.db`가 엉뚱한 폴더에 생김).
+- `mysite-infra/` — 백엔드를 EC2로 옮기고 운영하는 인프라 프로젝트(문서 저장소).
+  서버 구성, 전환 절차(CUTOVER.md), 장애 기록은 거기에.
 - `DATA_FLOW.md`(상위 폴더, git 밖) — 프론트↔백엔드 데이터 흐름 설명. OneDrive로만 동기화됨.
 
 ## 두 저장소가 맞물린 곳 (한쪽을 바꾸면 다른 쪽도)
@@ -61,15 +65,12 @@
 
 - 페이지 이동 시 데이터 캐싱(localStorage)은 시도했다가 되돌림 — 사용자가 렉을
   못 느낀다고 함. 다시 렉 얘기가 나오기 전엔 제안하지 않음.
-- 사진은 S3 버킷 `mysite-buckets`(시드니 `ap-southeast-2`)에 있음. 2026-09-29에 재 보니
-  개발자 방 사진 119장이 합계 5.4MB(평균 46KB, 최대 0.14MB)라 기존 사진을 줄일 필요는
-  없음. 업로드 전 줄이기(1200px)와 캐시 헤더는 새로 올리는 사진부터 적용됨.
-- 버킷을 만든 AWS 계정을 사용자가 아직 못 찾음(2026-09-29). Render의
-  `AWS_ACCESS_KEY_ID`(시크릿 말고)로 12자리 계정 번호를 계산해 대조하는 방법이 남아 있음.
-- 옛 Render DB: 2026-10-15에 만료돼 삭제했고 `render.yaml`의 `databases:` 블록도 지움.
-- **Render 자동 배포 안 됨(2026-10-15)**: 백엔드 `b073ca8` 푸시(같은 푸시에 `render.yaml`
-  변경 포함) 때 Render Events에 자동 배포 시도 자체가 없었고, 수동 배포(Manual Deploy →
-  Deploy latest commit)로 올림. GitHub CI는 통과, Render Auto-Deploy 설정과 GitHub의
-  Render 앱 저장소 권한도 정상이었음 — 원인 미확인. **다음 백엔드 푸시 때 자동 배포되는지
-  꼭 확인**(`GET /health` 말고 새 변경이 운영에 보이는지로). 또 안 되면 Render Deploy Hook을
-  만들어 GitHub Secrets에 넣고, CI(`.github/workflows/ci.yml`) 통과 뒤 호출하게 바꾸기로 함.
+- **백엔드 주소**: `config.js`의 `API_BASE` = `https://mysite-ddonni.duckdns.org`
+  (2026-10-18 `53fb4ff`로 전환, 그 전엔 `https://sketchbook-api.onrender.com`). 이 한 줄이
+  전환·롤백 스위치임 — 되돌릴 땐 그 커밋을 revert. WebSocket 주소도 여기서 만들어짐.
+- 사진: **새로 올리는 사진**은 `mysite-photos-ddonni`(서울)로 감. **예전 사진**(약 119장,
+  5.4MB)은 `mysite-buckets`(시드니, 만든 계정을 못 찾은 다른 AWS 계정)에 그대로 있고 DB에
+  전체 URL로 저장돼 있어서 계속 보임. 병행 운영이 끝나면 새 버킷으로 복사하고
+  `photo_url`을 바꿀 예정. 업로드 전 줄이기(1200px)와 캐시 헤더는 새로 올리는 사진부터 적용됨.
+- Render + Neon은 롤백용으로만 남아 있음(병행 운영이 끝나면 정리). 예전 Render 자동 배포
+  문제(2026-10-15, 원인 미확인)는 더 이상 운영에 영향 없음.
