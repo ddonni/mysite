@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/lobby.css">
 <link rel="stylesheet" href="css/nav.css">
+<link rel="stylesheet" href="css/feedback.css">
 <link rel="stylesheet" href="css/visibility.css">
 </head>
 <body>
@@ -17,6 +18,7 @@
   <a href="sketchbook" data-page="sketchbook">캔버스</a>
   <a href="library" data-page="library">기록 보관소</a>
   <a href="rooms">둘러보기</a>
+  <button type="button" class="nav-feedback" data-feedback-open>의견 보내기</button>
 </nav>
 
 <div id="stage">
@@ -87,5 +89,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.152.2/three.min.js"></script>
 <script src="https://accounts.google.com/gsi/client"></script>
 <script type="module" src="js/lobby/main.js"></script>
+<script type="module" src="js/shared/feedback.js"></script>
 </body>
 </html>

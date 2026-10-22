@@ -78,3 +78,9 @@
   background: none; cursor: pointer; color: var(--nav-dim); font-family: inherit;
 }
 .site-nav .room-visit button:hover { background: var(--nav-hover); color: var(--nav-ink); }
+/* --- "의견 보내기"(js/shared/feedback.js) — 링크처럼 보이는 버튼 --- */
+.site-nav .nav-feedback {
+  padding: 6px 12px; border-radius: 999px; border: none; background: none; cursor: pointer;
+  font-size: 12px; font-family: inherit; color: var(--nav-dim); white-space: nowrap;
+}
+.site-nav .nav-feedback:hover { background: var(--nav-hover); color: var(--nav-ink); }

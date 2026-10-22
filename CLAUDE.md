@@ -41,6 +41,10 @@
   `PUT .../visibility` ↔ `rooms.html`/`js/rooms/main.js`, `js/shared/visibilityToggle.js`.
 - 자동 완성(제목 칸·만든 사람 칸, 서로 독립): 백엔드 `GET .../suggestions?field=title|creator`
   (`crud.suggestions`) ↔ `js/library/modal/presetAutocomplete.js`(제목 칸만 "이미 기록함"·PRESETS).
+- 의견 보내기: 백엔드 `POST /api/feedback`(`schemas.FeedbackIn` 길이 제한, 429 제한) ↔
+  `js/shared/feedback.js`(`MESSAGE_MAX`·`NAME_MAX`). 네 html 모두 메뉴의
+  `data-feedback-open` 버튼 + `css/feedback.css` + 이 스크립트를 따로 불러옴.
+  받은 의견은 서버에서 psql로 봄(`mysite-backend/CLAUDE.md`).
 - `GOOGLE_CLIENT_ID`: `js/shared/config.js` ↔ 백엔드 환경 변수(같은 값이어야 함).
 - 개발자의 방: `config.js`의 `DEVELOPER_ROOM_CODE = 'TTHB8N'`(사용자 본인 방,
   "도현의 방"). 방문자에게만 로비 왼쪽 아래 "개발자의 방 구경하기" 링크로 뜸.

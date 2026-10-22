@@ -1,0 +1,62 @@
+/* "의견 보내기" 창(js/shared/feedback.js) — 네 페이지가 같이 씀. nav.css처럼
+   페이지 색 토큰에 기대지 않고 여기서 따로 정의함(페이지마다 토큰 이름이 달라서).
+   z-index는 로비 도움말(60)보다 위. */
+.feedback-dialog {
+  --fb-bg: #fffdfa;
+  --fb-ink: #2b2b2e;
+  --fb-dim: #57534e;
+  --fb-line: rgba(40, 38, 34, 0.18);
+  --fb-field: #ffffff;
+  --fb-accent: #d9793a;
+  --fb-accent-ink: #fffdfa;
+  --fb-error: #b42318;
+  --fb-ok: #2f7d4f;
+
+  position: fixed; inset: 0; z-index: 70;
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: rgba(10, 8, 6, 0.55);
+  font-family: 'Manrope', system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .feedback-dialog {
+    --fb-bg: #23201c;
+    --fb-ink: #fffdfa;
+    --fb-dim: #cbc6bd;
+    --fb-line: rgba(255, 253, 250, 0.18);
+    --fb-field: #2b2b2e;
+    --fb-accent: #e08a42;
+    --fb-accent-ink: #1a1714;
+    --fb-error: #f97066;
+    --fb-ok: #6fcf97;
+  }
+}
+.feedback-dialog[hidden] { display: none; }
+.feedback-card {
+  width: min(100%, 420px); max-height: calc(100vh - 32px); overflow-y: auto;
+  background: var(--fb-bg); color: var(--fb-ink);
+  border: 1px solid var(--fb-line); border-radius: 16px;
+  padding: 20px 20px 16px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  text-align: left; text-shadow: none;
+}
+.feedback-card h2 { margin: 0 0 6px; font-size: 18px; font-weight: 700; }
+.feedback-lead { margin: 0 0 14px; font-size: 13px; line-height: 1.6; color: var(--fb-dim); }
+.feedback-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.feedback-field span { font-size: 12px; font-weight: 600; color: var(--fb-dim); }
+.feedback-field textarea, .feedback-field input {
+  width: 100%; box-sizing: border-box; padding: 9px 11px;
+  border: 1px solid var(--fb-line); border-radius: 10px;
+  background: var(--fb-field); color: var(--fb-ink);
+  font: inherit; font-size: 14px; line-height: 1.5;
+}
+.feedback-field textarea { resize: vertical; min-height: 100px; }
+.feedback-field textarea:focus, .feedback-field input:focus { outline: 2px solid var(--fb-accent); outline-offset: 1px; }
+.feedback-status { min-height: 1.4em; margin: 0 0 10px; font-size: 12.5px; color: var(--fb-dim); }
+.feedback-status[data-kind="error"] { color: var(--fb-error); }
+.feedback-status[data-kind="ok"] { color: var(--fb-ok); }
+.feedback-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.feedback-actions button {
+  font: inherit; font-size: 13px; font-weight: 600; padding: 9px 16px; border-radius: 999px; cursor: pointer;
+}
+.feedback-cancel { background: none; color: var(--fb-dim); border: 1px solid var(--fb-line); }
+.feedback-send { background: var(--fb-accent); color: var(--fb-accent-ink); border: none; }
+.feedback-send:disabled { opacity: 0.6; cursor: default; }

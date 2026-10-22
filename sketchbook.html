@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/nav.css" />
+  <link rel="stylesheet" href="css/feedback.css" />
 </head>
 <body>
 
@@ -16,6 +17,7 @@
   <a href="sketchbook" data-page="sketchbook" class="active">캔버스</a>
   <a href="library" data-page="library">기록 보관소</a>
   <a href="rooms">둘러보기</a>
+  <button type="button" class="nav-feedback" data-feedback-open>의견 보내기</button>
 </nav>
 
 <div id="stage">
@@ -64,5 +66,6 @@
 <div id="toast"></div>
 
 <script type="module" src="js/sketchbook/main.js"></script>
+<script type="module" src="js/shared/feedback.js"></script>
 </body>
 </html>
