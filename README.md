@@ -83,6 +83,7 @@ js/lobby/
   scene/              #   roomShell.js, lighting.js, dustMotes.js, aoBlob.js, canvasTexture.js, labelSprite.js, roomDimensions.js
   scene/roomLayout.js #   가구를 어느 벽/자리에 둘지 + 조명 위치 + 카메라 프리셋(가구 모듈은 "자기 벽 기준" 좌표로만 지어짐)
   helpDialog.js       # 처음 온 사람에게 한 번 뜨는 도움말(오른쪽 위 ? 버튼으로 다시 열기)
+  share.js            # 헤더의 "공유하기" — 지금 보이는 방을 사진으로 찍어 방 링크(?room=)와 함께 공유(인스타그램 — 휴대폰은 OS 공유 시트, PC는 사진 저장·링크 복사 후 instagram.com 열기)
   scene/furniture/    #   easel.js, bookshelf.js, frame.js, posterWall.js, displayCase.js, recordConsole.js(LP 보관함), turntable.js, lamps.js, ball.js, teddyBear.js, bunnyPlush.js(토끼 인형), bed.js(장식)
   scene/wallLabel.js  #   가구 위 벽의 BOOK / MOVIE / ANIMATION 글씨
   scene/coverImage.js #   기록 사진(없으면 제목 카드)을 액자/포스터/스탠드/LP 텍스처에 그리는 공용 로직

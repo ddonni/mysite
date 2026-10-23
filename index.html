@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>내 방</title>
+<!-- 링크 미리보기(카카오톡·SNS)용. 정적 사이트라 방마다 다르게는 못 하고 공통 문구만. -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="내 방 — 읽고, 보고, 들은 것들을 모아두는 3D 방">
+<meta property="og:description" content="책·애니·영화·음악 기록이 가구가 되는 방. 링크를 눌러 구경해 보세요.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/lobby.css">
@@ -35,6 +39,7 @@
     <div class="header-controls">
       <div class="theme-picker" id="themePicker"></div>
       <div class="vis-box" id="visibilityBox"></div>
+      <button type="button" id="shareBtn" class="share-btn" hidden>공유하기</button>
     </div>
     <div class="google-btn"></div>
   </div>
@@ -83,6 +88,21 @@
     <div id="helpBody"></div>
     <button type="button" id="helpClose" class="help-close">시작하기</button>
     <p class="help-foot">오른쪽 위 <b>?</b> 버튼으로 언제든 다시 볼 수 있어요.</p>
+  </div>
+</div>
+
+<!-- 공유 창(js/lobby/share.js) — 3D 방을 찍은 사진 + 방 링크 -->
+<div id="shareDialog" class="share-dialog" role="dialog" aria-modal="true" aria-labelledby="shareTitle" hidden>
+  <div class="share-card">
+    <h2 id="shareTitle">방 공유하기</h2>
+    <div class="share-frame"><img class="share-preview" alt="지금 보이는 방을 찍은 사진"></div>
+    <p class="share-hint"></p>
+    <div class="share-actions">
+      <button type="button" class="share-main" data-share="instagram">인스타그램에 올리기</button>
+      <button type="button" data-share="save">사진 저장</button>
+      <button type="button" data-share="copy">링크 복사</button>
+    </div>
+    <button type="button" class="share-close">닫기</button>
   </div>
 </div>
 

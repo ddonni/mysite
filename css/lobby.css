@@ -292,3 +292,44 @@ body .site-nav{max-width:calc(100% - 28px - 52px);}
 @media (prefers-reduced-motion: reduce){
   #loading, #ui, #card{ transition:none; }
 }
+
+/* --- 공유(js/lobby/share.js): 헤더의 버튼 + 사진 미리보기 창. 창 모양은 도움말과 맞춤 --- */
+.share-btn{
+  font-family:inherit;font-size:12px;font-weight:600;color:var(--paper);
+  background:rgba(18,15,12,0.6);border:1px solid var(--void-border);border-radius:999px;
+  padding:5px 12px;cursor:pointer;pointer-events:auto;
+}
+.share-btn:hover{border-color:var(--paper-dim);}
+.share-btn[hidden]{display:none;}
+.share-dialog{
+  position:fixed;inset:0;z-index:60;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  background:rgba(10,8,6,0.62);
+}
+.share-dialog[hidden]{display:none;}
+.share-card{
+  width:min(100%,480px);max-height:calc(100vh - 40px);overflow-y:auto;
+  background:var(--void-2);border:1px solid var(--void-border);border-radius:16px;
+  padding:22px 22px 18px;box-shadow:0 24px 60px rgba(0,0,0,0.5);
+}
+.share-card h2{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:21px;margin:0 0 12px;}
+/* 사진이 만들어지기 전에도 자리가 잡혀 있게 16:10 틀을 둠. */
+.share-frame{aspect-ratio:16/10;border-radius:10px;overflow:hidden;background:var(--void);}
+.share-preview{display:block;width:100%;height:100%;object-fit:cover;}
+.share-preview:not([src]){visibility:hidden;}
+.share-hint{margin:10px 0 14px;font-size:11.5px;line-height:1.5;color:var(--paper-dim);}
+.share-actions{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.share-actions > *{
+  font-family:inherit;font-size:12.5px;font-weight:600;color:var(--paper);text-decoration:none;
+  background:transparent;border:1px solid var(--void-border);border-radius:999px;
+  padding:7px 13px;cursor:pointer;
+}
+.share-actions > *:hover{border-color:var(--paper-dim);}
+.share-actions > *:disabled{opacity:.5;cursor:default;}
+.share-actions [hidden]{display:none;}
+.share-actions .share-main{width:100%;color:var(--void);background:var(--ember);border-color:var(--ember);}
+.share-close{
+  width:100%;font-family:inherit;font-size:13px;font-weight:600;
+  color:var(--paper-dim);background:none;border:none;padding:6px;cursor:pointer;
+}
+.share-close:hover{color:var(--paper);}

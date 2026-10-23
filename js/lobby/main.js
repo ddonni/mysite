@@ -15,6 +15,7 @@ import { initRoomChrome } from './roomChrome.js';
 import { loadRoomIntoScene } from './loadRoomIntoScene.js';
 import { webglAvailable } from './webgl.js';
 import { initHelpDialog } from './helpDialog.js';
+import { initShare } from './share.js';
 import { forgetMyRoom } from '../shared/room.js';
 import { initRoomNav } from '../shared/roomNav.js';
 import { watchForSlowWake, WAKE_MESSAGE } from '../shared/wake.js';
@@ -165,6 +166,9 @@ function bootWithTheme(theme, ctx) {
   }
   window.addEventListener('resize', resize);
   resize();
+
+  // 공유 버튼 — 누른 순간 씬을 한 번 더 그려서 그 캔버스를 사진으로 찍음.
+  initShare({ ctx, capture: () => { renderer.render(scene, camera); return canvasEl; } });
 
   let lastFrame = performance.now();
   function tick(now) {
