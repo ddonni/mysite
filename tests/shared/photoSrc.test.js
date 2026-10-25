@@ -8,7 +8,17 @@ vi.mock('../../js/shared/config.js', () => ({
   DEVELOPER_ROOM_CODE: '',
 }));
 
-const { photoSrc } = await import('../../js/shared/photoSrc.js');
+const { photoSrc, isSearchCover } = await import('../../js/shared/photoSrc.js');
+
+describe('isSearchCover', () => {
+  it('카카오·유튜브 뮤직·TMDB 표지는 검색 표지, S3 사진은 직접 올린 사진', () => {
+    expect(isSearchCover('https://t1.daumcdn.net/lbook/image/1')).toBe(true);
+    expect(isSearchCover('https://yt3.googleusercontent.com/abc=w544')).toBe(true);
+    expect(isSearchCover('https://image.tmdb.org/t/p/w342/a.jpg')).toBe(true);
+    expect(isSearchCover('https://mysite-photos-ddonni.s3.ap-northeast-2.amazonaws.com/records/a.jpg')).toBe(false);
+    expect(isSearchCover('not a url')).toBe(false);
+  });
+});
 
 describe('photoSrc', () => {
   it('카카오 표지 서버 주소는 /api/cover로 감쌈', () => {

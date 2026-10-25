@@ -14,6 +14,7 @@ import { createStarPicker } from './modal/starPicker.js';
 import { createPhotoPicker } from './modal/photoPicker.js';
 import { createPresetAutocomplete } from './modal/presetAutocomplete.js';
 import { shrinkImage } from './modal/shrinkImage.js';
+import { isSearchCover } from '../shared/photoSrc.js';
 
 export function createModal({ onSaved }) {
   const overlay = document.getElementById('overlay');
@@ -82,11 +83,10 @@ export function createModal({ onSaved }) {
 
   let currentCat = 'book';
   let editingId = null;
-  // 검색 결과로 채워 넣은 제목·작가·표지 — 사용자가 그 뒤 직접 바꾸지 않았으면
-  // 다른 결과를 다시 골랐을 때 새 값으로 바꿔도 됨(직접 쓴/올린 건 안 덮어씀).
+  // 검색 결과로 채워 넣은 제목·작가 — 사용자가 그 뒤 손대지 않았으면 "직접 쓴 값"이
+  // 아니라서 두 칸을 합친 검색에 안 씀(typedTitle/typedArtist).
   let autoTitle = null;
   let autoCreator = null;
-  let autoCover = null;
   // 작가 칸에서 검색 결과를 고를 땐 아래 change 리스너의 "제목 칸 다시 검색"을 건너뜀.
   let skipCreatorRefresh = false;
   // 영화·애니를 고른 뒤 감독을 따로 물어보는 요청의 번호 — 그사이 다른 작품을 고르거나
@@ -319,49 +319,44 @@ export function createModal({ onSaved }) {
     return `'${q}' 검색 결과가 없어요.${tip}`;
   }
 
-  // pick: { title?, creator?, cover? } — 빈 칸이거나 전에 자동으로 채운 칸만 채움.
+  // pick: { title?, creator?, cover? } — 목록에서 고른 것 자체가 "이걸로 하겠다"는
+  // 선택이라 결과가 가진 제목·작가는 전에 직접 쓴 값이 있어도 바꿈(고른 뒤에 고친
+  // 값은 다음에 또 고르기 전까지 그대로). 사진만 예외 — 직접 올린 사진(새로 고른 파일,
+  // 수정 중인 기록에 올려 둔 사진)은 다시 찾아 올리기 번거로워서 안 바꾸고, 검색으로
+  // 가져온 표지만 새 선택으로 바꿈.
   function fillFromPick(pick) {
-    const title = fTitle.value.trim();
-    if (pick.title && (!title || title === autoTitle)) {
+    if (pick.title) {
       fTitle.value = pick.title;
       autoTitle = pick.title;
     }
-    const creator = fCreator.value.trim();
-    if (pick.creator && (!creator || creator === autoCreator)) {
+    if (pick.creator) {
       fCreator.value = pick.creator;
       autoCreator = pick.creator;
     }
-    // 사진은 아직 없거나, 전에 검색 결과로 채운 표지일 때만 바꿈 — 직접 고른
-    // 파일이나 수정 중인 기록의 원래 사진은 그대로 둠.
-    const current = photoPicker.getFile() ? 'file' : photoPicker.getUrl();
-    if (pick.cover && (!current || current === autoCover)) {
-      photoPicker.setExisting(pick.cover);
-      autoCover = pick.cover;
-    }
-    // 영화·애니는 검색 결과에 감독이 없어서 고른 작품만 따로 물어봄 — 답이 올 때도
-    // 같은 규칙(빈 칸이거나 자동으로 채운 칸만). 그사이 다른 걸 고르면 옛 답은 버림.
+    const current = photoPicker.getUrl();
+    const ownPhoto = photoPicker.getFile() || (current && !isSearchCover(current));
+    if (pick.cover && !ownPhoto) photoPicker.setExisting(pick.cover);
+    // 영화·애니는 검색 결과에 감독이 없어서 고른 작품만 따로 물어봄. 답이 오기 전에
+    // 다른 걸 고르거나 감독 칸을 직접 고치면(아래 input 리스너) 늦게 온 답은 버림.
     const lookup = ++creatorLookup;
     if (pick.screen) {
       fetchScreenCreator(pick.screen.media, pick.screen.id)
         .then((name) => {
           if (lookup !== creatorLookup || !name) return;
-          const now = fCreator.value.trim();
-          if (!now || now === autoCreator) {
-            fCreator.value = name;
-            autoCreator = name;
-          }
+          fCreator.value = name;
+          autoCreator = name;
         })
         .catch(() => {}); // 못 찾으면 사용자가 직접 씀
     }
   }
 
   // 칸에 한 번이라도 직접 손대면 그 값은 사용자가 쓴 것 — 자동으로 채운 값이었다는
-  // 표시를 지워서, 검색어에 넣고(typedArtist) 다음 결과를 골라도 안 덮어씀
-  // (fillFromPick). 고쳤다가 같은 글자로 되돌려도 마찬가지.
+  // 표시를 지워서 검색어에 넣음(typedArtist/typedTitle). 고쳤다가 같은 글자로 되돌려도
+  // 마찬가지. 감독 칸을 고치면 아직 안 온 감독 조회 답도 버림(고친 값을 덮지 않게).
   // 한쪽 칸에 입력을 시작하면 다른 칸의 목록은 닫음 — 두 목록이 같은 자리(묶음 아래)에
   // 떠서 겹치지 않게(keepOpenOn으로 눌렀을 때는 열어 둠).
   fTitle.addEventListener('input', () => { autoTitle = null; creatorAutocomplete.hide(); });
-  fCreator.addEventListener('input', () => { autoCreator = null; presetAutocomplete.hide(); });
+  fCreator.addEventListener('input', () => { autoCreator = null; creatorLookup++; presetAutocomplete.hide(); });
 
   // 작가·가수를 제목보다 나중에 써도 되게 — 작가 칸을 고치고 나가면 제목 칸의
   // 검색 결과를 두 칸을 합친 검색으로 다시 찾아 보여줌(webSearch). 작가 칸 목록에서
@@ -409,7 +404,6 @@ export function createModal({ onSaved }) {
     fMemo.value = '';
     autoTitle = null;
     autoCreator = null;
-    autoCover = null;
     creatorLookup++;
     photoPicker.reset();
     starPicker.setValue(0);
@@ -490,7 +484,6 @@ export function createModal({ onSaved }) {
       fMemo.value = item.memo || '';
       autoTitle = null;
       autoCreator = null;
-      autoCover = null;
       creatorLookup++;
       photoPicker.setExisting(item.photo_url || null);
       starPicker.setValue(item.rating || 0);

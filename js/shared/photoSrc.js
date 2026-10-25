@@ -8,6 +8,14 @@ import { API_BASE } from './config.js';
 // 백엔드 book_search.COVER_HOSTS와 같아야 함.
 const RELAY_HOSTS = ['t1.daumcdn.net', 'search1.kakaocdn.net'];
 
+// 검색 결과에서 가져온 표지인지(카카오·유튜브 뮤직·TMDB) — 아니면 사용자가 직접
+// 올린 사진(S3)으로 봄. 새 기록 창이 결과를 고를 때 직접 올린 사진은 안 바꾸려고 씀.
+const SEARCH_COVER_HOSTS = [...RELAY_HOSTS, 'yt3.googleusercontent.com', 'lh3.googleusercontent.com', 'image.tmdb.org'];
+
+export function isSearchCover(url) {
+  try { return SEARCH_COVER_HOSTS.includes(new URL(url).hostname); } catch (e) { return false; }
+}
+
 export function photoSrc(url) {
   if (!url) return url;
   let host;

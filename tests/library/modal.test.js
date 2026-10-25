@@ -111,12 +111,12 @@ describe('음악 탭 제목 검색', () => {
     await settle();
     expect(searchMusic).toHaveBeenLastCalledWith('JANNABI 뜨거운 여름밤은 가고 남은 건 볼품없지만', expect.anything());
 
-    // 다른 결과를 골라도 직접 손댄 가수는 그대로
+    // 결과를 다시 고르는 건 새 선택이라, 손댄 가수도 그 결과의 가수로 바뀜
     searchMusic.mockResolvedValue([{ ...ALBUM, creator: '다른 가수' }]);
     typeTitle('밤양갱');
     await settle();
     $('presetList').querySelector('.preset-item.rich').click();
-    expect($('fCreator').value).toBe('JANNABI');
+    expect($('fCreator').value).toBe('다른 가수');
   });
 
   it('결과가 없으면 검색어와 함께 알려줌', async () => {
@@ -194,15 +194,25 @@ describe('만든 사람 칸 검색', () => {
     expect($('photoPreview').getAttribute('src')).toContain('/api/cover?url=');
   });
 
-  it('책: 이미 쓴 제목은 덮어쓰지 않음', async () => {
+  it('책: 이미 쓴 제목이 있어도 고른 결과의 제목으로 바뀜', async () => {
     modal.openAdd('book');
     searchBooks.mockResolvedValue([HAN]);
     typeTitle('채식주의자');
-    $('fTitle').dispatchEvent(new Event('input'));
     typeCreator('한강');
     await settle();
     $('creatorList').querySelector('.preset-item.rich').click();
-    expect($('fTitle').value).toBe('채식주의자');
+    expect($('fTitle').value).toBe('소년이 온다');
+  });
+
+  it('고른 뒤에 고친 값은 그대로 — 저장되는 것도 고친 값', async () => {
+    modal.openAdd('book');
+    searchBooks.mockResolvedValue([HAN]);
+    typeCreator('한강');
+    await settle();
+    $('creatorList').querySelector('.preset-item.rich').click();
+    typeTitle('소년이 온다 (내 메모판)');
+    expect($('fTitle').value).toBe('소년이 온다 (내 메모판)');
+    expect($('fCreator').value).toBe('한강');
   });
 
   it('책: 제목 칸에 직접 쓴 제목이 있으면 "제목 작가"로 합쳐 찾음', async () => {
@@ -286,17 +296,49 @@ describe('영화·애니 탭', () => {
     expect($('fCreator').value).toBe('이시하마 마사시');
   });
 
-  it('감독 칸에 직접 쓴 이름이 있으면 감독 답이 와도 안 덮어씀', async () => {
+  it('고르기 전에 쓴 감독은 고른 작품의 감독으로 바뀜', async () => {
     modal.openAdd('movie');
     searchScreen.mockResolvedValue([{ ...SHINSEKAI, media: 'movie', title: '기생충', original_title: '' }]);
     fetchScreenCreator.mockResolvedValue('봉준호');
-    $('fCreator').value = '내가 쓴 감독';
-    $('fCreator').dispatchEvent(new Event('input'));
+    typeTitle('기생충');
+    await settle();
+    $('fCreator').value = '틀린 감독';
+    $('presetList').querySelector('.preset-item.rich').click();
+    await settle();
+    expect($('fCreator').value).toBe('봉준호');
+  });
+
+  it('고른 뒤 감독 답이 오기 전에 감독 칸을 고치면 늦게 온 답으로 안 덮음', async () => {
+    modal.openAdd('movie');
+    searchScreen.mockResolvedValue([{ ...SHINSEKAI, media: 'movie', title: '기생충', original_title: '' }]);
+    let answer;
+    fetchScreenCreator.mockReturnValue(new Promise((r) => { answer = r; }));
     typeTitle('기생충');
     await settle();
     $('presetList').querySelector('.preset-item.rich').click();
+    $('fCreator').value = '내가 고친 감독';
+    $('fCreator').dispatchEvent(new Event('input'));
+    answer('봉준호');
     await settle();
-    expect($('fCreator').value).toBe('내가 쓴 감독');
+    expect($('fCreator').value).toBe('내가 고친 감독');
+  });
+
+  it('직접 올린 사진은 안 바꾸고, 검색으로 가져온 표지는 새 선택으로 바꿈', async () => {
+    modal.openEdit({ id: 1, cat: 'movie', title: '기생충', creator: '', memo: '', rating: 0,
+      photo_url: 'https://mysite-photos-ddonni.s3.ap-northeast-2.amazonaws.com/records/mine.jpg' });
+    searchScreen.mockResolvedValue([{ ...SHINSEKAI, media: 'movie', title: '기생충', original_title: '' }]);
+    fetchScreenCreator.mockResolvedValue('봉준호');
+    typeTitle('기생충');
+    await settle();
+    $('presetList').querySelector('.preset-item.rich').click();
+    expect($('photoPreview').getAttribute('src')).toContain('records/mine.jpg');
+
+    modal.openEdit({ id: 2, cat: 'movie', title: '옥자', creator: '', memo: '', rating: 0,
+      photo_url: 'https://image.tmdb.org/t/p/w342/old.jpg' });
+    typeTitle('기생충');
+    await settle();
+    $('presetList').querySelector('.preset-item.rich').click();
+    expect($('photoPreview').getAttribute('src')).toBe(SHINSEKAI.cover);
   });
 
   const PARASITE = { id: 496243, media: 'movie', title: '기생충', original_title: '', year: '2019', cover: 'https://image.tmdb.org/t/p/w342/p.jpg', creator: '봉준호' };
