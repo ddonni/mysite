@@ -1,5 +1,5 @@
 // "방을 둘러보고 고르는" 인터랙션을 전부 담당하는 모듈: 드래그로
-// 카메라 돌리기, 휠로 줌, 가구에 마우스를 올리면 커서 바뀌기, 가구를
+// 카메라 돌리기, 휠(폰은 두 손가락 핀치)로 줌, 가구에 마우스를 올리면 커서 바뀌기, 가구를
 // 클릭(또는 하단 버튼을 클릭)하면 카메라가 그 방으로 다가가면서 설명
 // 카드가 뜨는 것까지.
 //
@@ -93,7 +93,37 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
     canvas.classList.remove('carrying');
   }
 
+  // ---- 핀치 줌(폰): 두 손가락을 벌리면 그 사이 지점 쪽으로 다가가고, 오므리면
+  // 첫 화면 쪽으로 물러남 — PC의 휠 줌(zoomBy)과 같은 규칙. 화면에 닿아 있는 손가락을
+  // id별로 기억해서, 두 번째 손가락이 닿는 순간 회전(드래그)을 멈추고 핀치로 바꿈.
+  // 한 손가락을 떼면 남은 손가락으로 다시 회전을 이어 감. (canvas의 touch-action:none
+  // 덕분에 브라우저가 페이지 자체를 확대하지 않고 손가락 움직임을 그대로 넘겨줌.)
+  const touches = new Map(); // pointerId → { x, y }
+  let pinchDist = 0;         // 0이면 핀치 중 아님
+  let pinchedSinceDown = false; // 핀치하고 손을 뗀 건 가구 "탭"으로 치지 않음
+  const fingerGap = () => {
+    const [a, b] = [...touches.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  };
+  const fingerMid = () => {
+    const [a, b] = [...touches.values()];
+    return { clientX: (a.x + b.x) / 2, clientY: (a.y + b.y) / 2 };
+  };
+
   canvas.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'touch') touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (touches.size === 1) pinchedSinceDown = false;
+    if (touches.size === 2 && !entered && !carrying) {
+      dragging = false;
+      canvas.classList.remove('dragging');
+      pinchDist = fingerGap();
+      pinchedSinceDown = true;
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* 캡처 못 해도 핀치는 됨 */ }
+      return;
+    }
+    // 두 번째 이후 손가락(인형을 들고 있거나 카드가 열려 있어 핀치를 안 하는 경우 포함)은
+    // 회전·집기로 다시 시작하지 않음.
+    if (touches.size >= 2 || pinchDist) return;
     downX = e.clientX; downY = e.clientY; downT = performance.now();
     if (entered) return; // 카드가 열려있는 동안은 드래그로 회전 안 되게 함 (탭 여부는 pointerup에서 판단)
     if (tryPickUp(e)) {
@@ -106,6 +136,13 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
     canvas.setPointerCapture(e.pointerId);
   });
   canvas.addEventListener('pointermove', (e) => {
+    if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinchDist && touches.size >= 2) {
+      const gap = fingerGap();
+      if (gap > 0) zoomBy(want.radius * (pinchDist / gap) - want.radius, fingerMid());
+      pinchDist = gap || pinchDist;
+      return;
+    }
     if (carrying) { moveCarried(e); return; }
     if (dragging) {
       const dx = e.clientX - lastX, dy = e.clientY - lastY;
@@ -116,13 +153,30 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
       checkHover(e);
     }
   });
+  // 손가락 하나를 떼면 핀치를 끝내고, 남은 손가락이 있으면 그걸로 회전을 이어 감.
+  function releaseTouch(e) {
+    if (!touches.delete(e.pointerId) || !pinchDist || touches.size >= 2) return;
+    pinchDist = 0;
+    const rest = [...touches.values()][0];
+    if (rest && !entered) {
+      dragging = true;
+      lastX = rest.x; lastY = rest.y;
+      canvas.classList.add('dragging');
+    }
+  }
   // 터치가 중간에 취소돼도(스크롤 제스처 등) 들고 있던 인형은 그 자리에 내려놓음.
-  window.addEventListener('pointercancel', () => { if (carrying) dropCarried(); });
+  window.addEventListener('pointercancel', (e) => {
+    releaseTouch(e);
+    if (carrying) dropCarried();
+  });
   window.addEventListener('pointerup', (e) => {
+    const wasPinch = !!pinchDist;
+    releaseTouch(e);
+    if (wasPinch) return; // 핀치 중 손가락 하나를 뗀 것 — 회전·탭으로 치지 않음
     if (carrying) { dropCarried(); return; }
     // 드래그 없이 살짝 눌렀다 뗀 것(450ms 안, 거의 안 움직인 것)만 "클릭"으로 침 —
     // 안 그러면 회전하려고 드래그할 때마다 가구를 잘못 클릭한 걸로 오해함.
-    const tapped = Math.abs(e.clientX - downX) <= 4 && Math.abs(e.clientY - downY) <= 4
+    const tapped = !pinchedSinceDown && Math.abs(e.clientX - downX) <= 4 && Math.abs(e.clientY - downY) <= 4
       && performance.now() - downT < 450;
     if (entered) {
       // 카드가 열려있을 땐 3D 캔버스(=카드 뒤 배경) 아무 데나 탭하면 포커스가 풀림.
@@ -137,12 +191,12 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
   // 휠 줌은 "커서가 가리키는 곳"을 향해 — 가까이 갈 땐 목표 지점을 커서 아래
   // 지점 쪽으로 끌어오고(가장자리의 턴테이블/곰인형도 확대해서 볼 수 있게),
   // 멀어질 땐 첫 화면 목표 지점으로 조금씩 되돌려서 끝까지 빼면 원래 시점이 됨.
-  canvas.addEventListener('wheel', (e) => {
-    e.preventDefault();
+  // 핀치 줌도 같은 함수를 씀(at = 두 손가락 사이 지점).
+  function zoomBy(delta, at) {
     const oldR = want.radius;
-    const newR = Math.min(maxR(), Math.max(MIN_R, oldR + e.deltaY * 0.012 * fit));
+    const newR = Math.min(maxR(), Math.max(MIN_R, oldR + delta));
     if (newR < oldR) {
-      const p = pointUnderCursor(e);
+      const p = pointUnderCursor(at);
       if (p) wantTarget.lerp(p, 1 - newR / oldR);
     } else if (newR > oldR) {
       const back = oldR < homeR() ? Math.min(1, (newR - oldR) / (homeR() - oldR)) : 1;
@@ -150,6 +204,10 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
     }
     want.radius = newR;
     clampTarget(wantTarget);
+  }
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    zoomBy(e.deltaY * 0.012 * fit, e);
   }, { passive: false });
 
   // ---- 가구 위에 마우스를 올리면 커서 변경, 클릭하면 입장 ----
