@@ -63,7 +63,7 @@ export function featureButtonLabel(cat, featured) {
 export function coverHtml(it, { playing = false } = {}) {
   const tags = [
     it.featured ? `<span class="badge">${featureLabel(it.cat)}</span>` : '',
-    playing ? '<span class="badge playing">▶ 재생 중</span>' : '',
+    playing ? '<span class="badge playing">◉ 턴테이블 위</span>' : '',
   ].join('');
   const badge = tags ? `<span class="badges">${tags}</span>` : '';
   if (it.photo_url) {

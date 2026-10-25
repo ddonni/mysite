@@ -40,7 +40,7 @@ export function createDetail(dialogEl, { onEdit, onDelete, onFeature, onPlay, re
       <div class="detail-cover">${coverHtml(it, { playing })}</div>
       <div class="detail-body">
         <div class="detail-cat"><i class="dot"></i>${catLabel(it.cat)}${it.date ? ` · ${it.date.replace(/-/g, '.')}` : ''}</div>
-        ${playing ? '<div class="detail-playing">▶ 지금 방의 턴테이블에서 돌고 있어요</div>' : ''}
+        ${playing ? '<div class="detail-playing">◉ 지금 방의 턴테이블에 올라가 있어요</div>' : ''}
         <h2 class="detail-title">${escapeHtml(it.title)}</h2>
         ${it.creator ? `<div class="detail-creator">${escapeHtml(it.creator)}</div>` : ''}
         ${it.rating ? `<div class="detail-rating">${ratingStars(it.rating)}<span>${it.rating.toFixed(1)}</span></div>` : ''}

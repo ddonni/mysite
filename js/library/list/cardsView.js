@@ -24,11 +24,12 @@ function renderCard(it, { onOpen, showCat, playingId, showPlayingBadge = true })
   return card;
 }
 
-// 음악 카드 표지 왼쪽 위의 재생 표시 — 한 자리에서 상태만 바뀜(누를 때마다
-// 표시가 다른 위치로 옮겨 다니면 헷갈려서): 돌고 있는 곡은 꽉 찬 "▶ 재생 중"
-// (누를 수 없음), 나머지는 테두리만 있는 "▶ 재생" 버튼(누르면 상세 창 없이 바로
-// 턴테이블에 올림). 카드 자체가 <button>이라 그 안에 버튼을 넣을 수 없어서,
-// 카드와 표시를 감싸개(.card-wrap)에 나란히 두고 표시만 표지 위로 띄움.
+// 음악 카드 표지 왼쪽 위의 턴테이블 표시 — 한 자리에서 상태만 바뀜(누를 때마다
+// 표시가 다른 위치로 옮겨 다니면 헷갈려서): 턴테이블에 올라간 곡은 꽉 찬 "◉ 턴테이블
+// 위"(누를 수 없음), 나머지는 테두리만 있는 "턴테이블에 올리기" 버튼(누르면 상세 창
+// 없이 바로 올림). 예전 "▶ 재생"은 진짜 음악이 나오는 줄 알게 해서 바꿈(소리는 안 남).
+// 카드 자체가 <button>이라 그 안에 버튼을 넣을 수 없어서, 카드와 표시를
+// 감싸개(.card-wrap)에 나란히 두고 표시만 표지 위로 띄움.
 function withPlayToggle(card, it, { playing, onPlay }) {
   const wrap = document.createElement('div');
   wrap.className = 'card-wrap';
@@ -37,12 +38,12 @@ function withPlayToggle(card, it, { playing, onPlay }) {
   if (playing) {
     toggle = document.createElement('span');
     toggle.className = 'play-btn on';
-    toggle.textContent = '▶ 재생 중';
+    toggle.textContent = '◉ 턴테이블 위';
   } else {
     toggle = document.createElement('button');
     toggle.type = 'button';
     toggle.className = 'play-btn';
-    toggle.textContent = '▶ 재생';
+    toggle.textContent = '턴테이블에 올리기';
     toggle.setAttribute('aria-label', `${it.title} 턴테이블에 올리기`);
     toggle.addEventListener('click', () => onPlay(it));
   }

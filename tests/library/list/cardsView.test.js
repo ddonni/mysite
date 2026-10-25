@@ -1,5 +1,5 @@
-// 최애음악 카드의 재생 표시 — 표지 왼쪽 위 한 자리에서 상태만 바뀌는지(돌고 있는
-// 곡은 "▶ 재생 중", 나머지는 누를 수 있는 "▶ 재생"), 오른쪽 위 "재생 중" 배지와
+// 최애음악 카드의 턴테이블 표시 — 표지 왼쪽 위 한 자리에서 상태만 바뀌는지(올라간
+// 곡은 "◉ 턴테이블 위", 나머지는 누를 수 있는 "턴테이블에 올리기"), 오른쪽 위 "턴테이블 위" 배지와
 // 겹쳐 두 번 나오지 않는지, 누르면 상세 창(onOpen)을 거치지 않고 바로 onPlay가
 // 불리는지.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -19,17 +19,17 @@ const toggles = () => [...grid.querySelectorAll('.play-btn')].map((el) => ({
   button: el.tagName === 'BUTTON',
 }));
 
-describe('최애음악 재생 표시', () => {
-  it('모든 곡이 같은 자리에 표시를 갖고, 돌고 있는 곡만 "재생 중"(누를 수 없음)', () => {
+describe('최애음악 턴테이블 표시', () => {
+  it('모든 곡이 같은 자리에 표시를 갖고, 올라간 곡만 "턴테이블 위"(누를 수 없음)', () => {
     renderCards(grid, [song(1), song(2), song(3)], { onOpen: () => {}, playingId: 2, onPlay: () => {} });
     expect(toggles()).toEqual([
-      { title: '곡1', text: '▶ 재생', button: true },
-      { title: '곡2', text: '▶ 재생 중', button: false },
-      { title: '곡3', text: '▶ 재생', button: true },
+      { title: '곡1', text: '턴테이블에 올리기', button: true },
+      { title: '곡2', text: '◉ 턴테이블 위', button: false },
+      { title: '곡3', text: '턴테이블에 올리기', button: true },
     ]);
   });
 
-  it('오른쪽 위 "재생 중" 배지는 빼서 두 번 나오지 않음', () => {
+  it('오른쪽 위 "턴테이블 위" 배지는 빼서 두 번 나오지 않음', () => {
     renderCards(grid, [song(1)], { onOpen: () => {}, playingId: 1, onPlay: () => {} });
     expect(grid.querySelector('.badge.playing')).toBeNull();
   });
@@ -44,7 +44,7 @@ describe('최애음악 재생 표시', () => {
     expect(onOpen).not.toHaveBeenCalled();
   });
 
-  it('onPlay를 안 주면(남의 방, 아래 전체 목록) 표시 없이 기존 "재생 중" 배지 그대로', () => {
+  it('onPlay를 안 주면(남의 방, 아래 전체 목록) 표시 없이 기존 "턴테이블 위" 배지 그대로', () => {
     renderCards(grid, [song(1), song(2)], { onOpen: () => {}, playingId: 1 });
     expect(grid.querySelector('.play-btn')).toBeNull();
     expect(grid.querySelector('.badge.playing')).not.toBeNull();

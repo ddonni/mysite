@@ -28,7 +28,7 @@ export function createList({ onEdit, onDelete, onFeature, onPlay, readOnly, init
 
   let activeTab = CATS.some((c) => c.key === initialTab) ? initialTab : 'all';
   let currentItems = [];
-  let playingId = null; // 방의 턴테이블에서 도는 곡 — 그 카드에 "재생 중" 표시
+  let playingId = null; // 방의 턴테이블에서 도는 곡 — 그 카드에 "턴테이블 위" 표시
   const openDetail = (it) => detail.open(it, { playing: it.id === playingId });
 
   function renderTabs() {
@@ -65,7 +65,7 @@ export function createList({ onEdit, onDelete, onFeature, onPlay, readOnly, init
     if (featured.length === 0 && readOnly) { featuredEl.hidden = true; return; }
     featuredEl.hidden = false;
     featuredTitle.textContent = featureLabel(activeTab);
-    // 내 방의 최애음악 줄에선 카드마다 "▶ 재생"으로 바로 턴테이블에 올릴 수 있음.
+    // 내 방의 최애음악 줄에선 카드마다 "턴테이블에 올리기"로 바로 턴테이블에 올릴 수 있음.
     const onPlayCard = activeTab === 'music' && !readOnly ? (it) => onPlay(it, true) : undefined;
     renderCards(featuredGrid, featured, { onOpen: openDetail, showCat: false, emptyText: '', playingId, onPlay: onPlayCard });
     if (readOnly) return;
