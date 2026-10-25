@@ -323,12 +323,28 @@ body{
    않게 폭을 버튼만큼 줄임(좁으면 메뉴가 두 줄로 접힘). */
 body .site-nav{max-width:calc(100% - 28px - 52px);}
 
+.header-more{display:none;}
 @media (max-width:560px){
-  #header{max-width:70vw;}
+  /* 폰: 3D 방에 자리를 더 주려고 머리말을 방 이름 + "방 설정" 버튼으로 줄이고, 테마·공개
+     스위치·구글 버튼은 그 버튼으로 펼침(roomChrome.js). */
+  #header{max-width:70vw;padding-bottom:10px;gap:4px;}
   #header p{display:none;}
-  #cta{flex-direction:column;align-items:flex-end;}
-  /* 버튼 다섯 개가 세로로 쌓임(한 개 약 36px + 간격 8px). */
-  .cta-hint{--cta-h:212px;}
+  #header .header-controls, #header .google-btn{display:none;}
+  #header.more-open .header-controls{display:flex;}
+  #header.more-open .google-btn{display:block;}
+  .header-more{
+    display:inline-flex;align-self:flex-start;pointer-events:auto;margin-top:2px;
+    font-family:inherit;font-size:11.5px;font-weight:600;color:var(--paper-dim);
+    background:var(--void-2);border:1px solid var(--void-border);border-radius:999px;padding:5px 11px;cursor:pointer;
+  }
+  .header-more[hidden]{display:none;}
+  /* 카테고리 버튼은 아래쪽 가로 한 줄 — 세로로 쌓으면 오른쪽을 길게 가리고, 가구 카드와도 겹쳤음. */
+  #cta{left:max(10px, env(safe-area-inset-left));right:max(10px, env(safe-area-inset-right));justify-content:center;gap:5px;}
+  .room-btn{padding:8px 10px 8px 9px;font-size:12px;gap:5px;}
+  .cta-hint{--cta-h:36px;right:auto;left:50%;transform:translateX(-50%);animation:none;}
+  .cta-hint::after{right:auto;left:50%;margin-left:-7px;}
+  /* "개발자의 방 구경하기"·"연동 해제"는 버튼 줄과 빈 방 말풍선(.cta-hint) 위로. */
+  .lobby-foot{bottom:calc(max(20px, env(safe-area-inset-bottom)) + 96px);}
 }
 /* 높이가 낮은 화면(폰 가로 등) — 헤더가 3D 방을 덜 가리게 작게. 넓은 구글
    버튼은 방을 가려서 숨김(세로 화면/컴퓨터에선 그대로 보임). */

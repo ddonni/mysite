@@ -154,6 +154,11 @@ function bootWithTheme(theme, ctx) {
   // 잘림 — 먼저 시야각을 넓히고(왜곡이 심해지지 않게 75°까지), 그래도
   // 모자라면 카메라를 그만큼 뒤로 물림(fit). 멀어진 만큼 안개/먼 평면도 밀어냄.
   const BASE_FOV = 42, MAX_FOV = 75, REF_ASPECT = 1.6;
+  // 세로 화면(폰)에선 가로 폭을 다 담으려면 카메라가 너무 멀어져서 방이 화면의 1/4 크기로
+  // 작아지고 포스터가 손톱만 해짐 — 모자란 폭의 일부만 메워서(양옆 벽은 조금 잘림, 손가락으로
+  // 돌려 보면 됨) 방을 크게 보여줌. 1이면 예전처럼 가로 전체, 0이면 기준 화면 그대로.
+  const PORTRAIT_FILL = 0.55;
+  const PORTRAIT_LIFT = 0.12; // 세로 화면에서 방을 화면 높이의 몇 배만큼 위로 올릴지(아래 resize)
   const baseFog = { near: scene.fog.near, far: scene.fog.far };
   const tanHalf = (deg) => Math.tan((deg * Math.PI) / 360);
   function resize() {
@@ -162,9 +167,15 @@ function bootWithTheme(theme, ctx) {
     renderer.setSize(w, h);
     camera.aspect = aspect;
     // 기준 화면과 같은 가로 폭을 담으려면 필요한 세로 시야각의 절반의 tan.
-    const needTan = tanHalf(BASE_FOV) * Math.max(1, REF_ASPECT / aspect);
+    const widen = Math.max(1, REF_ASPECT / aspect);
+    const needTan = tanHalf(BASE_FOV) * (aspect < 1 ? 1 + (widen - 1) * PORTRAIT_FILL : widen);
     camera.fov = Math.min(MAX_FOV, (Math.atan(needTan) * 360) / Math.PI);
     const fit = needTan / tanHalf(camera.fov);
+    // 세로 화면에선 방이 화면 아래쪽에 치우쳐 위(머리말 아래)가 비어 보여서, 그리는 영역을
+    // 화면 높이의 일부만큼 아래로 밀어 방을 위로 올림. 레이캐스트(가구 누르기)도 같은 투영을
+    // 쓰니 누르는 위치는 그대로 맞음.
+    if (aspect < 1) camera.setViewOffset(w, h, 0, h * PORTRAIT_LIFT, w, h);
+    else camera.clearViewOffset();
     camera.far = 60 * fit;
     scene.fog.near = baseFog.near * fit;
     scene.fog.far = baseFog.far * fit;

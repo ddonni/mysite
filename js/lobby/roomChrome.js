@@ -62,6 +62,20 @@ export function initRoomChrome(ctx) {
     devLink.hidden = false;
   }
 
+  // 폰에서 머리말이 3D 방을 너무 가려서, 내 방일 때 테마·공개 스위치·구글 버튼을 "방
+  // 설정" 버튼 뒤로 접어 둠(보이고 숨기는 건 lobby.css의 폭 560px 이하 규칙 — 컴퓨터에선
+  // 버튼 자체가 안 보이고 원래대로 다 펼쳐져 있음). 남의 방엔 접을 게 없어서 버튼도 없음.
+  const more = document.getElementById('headerMore');
+  const header = document.getElementById('header');
+  if (more && header && !readOnly) {
+    more.hidden = false;
+    more.addEventListener('click', () => {
+      const open = header.classList.toggle('more-open');
+      more.setAttribute('aria-expanded', String(open));
+      more.textContent = open ? '방 설정 닫기' : '방 설정';
+    });
+  }
+
   if (readOnly) {
     // 폴백 링크 화면의 정적 링크들도 이 방을 이어서 보게 함. 테마 변경과
     // 구글 계정 연결은 내 방을 바꾸는 일이라 남의 방에선 아예 안 그림.
