@@ -46,6 +46,9 @@
   `data-feedback-open` 버튼 + `css/feedback.css` + 이 스크립트를 따로 불러옴.
   받은 의견은 서버에서 psql로 봄(`mysite-backend/CLAUDE.md`).
 - `GOOGLE_CLIENT_ID`: `js/shared/config.js` ↔ 백엔드 환경 변수(같은 값이어야 함).
+- 구글 방 복구: `POST /api/auth/google` 응답의 `current_empty`(지금 브라우저의 방이
+  비었는지, 다른 방을 복구할 때만 true/false) ↔ `js/shared/googleAuth.js`(빈 방이면
+  묻지 않고 넘어가고, 아니면 확인 창 → 취소 시 안내).
 - 앱 안 브라우저(카톡·인스타 웹뷰): `js/shared/inAppBrowser.js` + `css/inapp.css`를 네 html이
   모두 페이지 본체 스크립트보다 **앞에** 불러옴. 카톡은 세션당 한 번 바깥 브라우저로 자동
   이동, 그 밖엔 안내 띠. 웹뷰에선 구글 로그인 버튼 대신 안내 문구(구글이 웹뷰 로그인을 막음).

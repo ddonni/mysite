@@ -71,7 +71,7 @@ function handleCredential(response) {
     }),
   })
     .then((res) => (res.ok ? res.json() : Promise.reject()))
-    .then(({ code, token, linked_new }) => {
+    .then(({ code, token, linked_new, current_empty }) => {
       if (linked_new) {
         // 처음 연결된 것 — 지금 방은 그대로고, 나중에 이 계정으로
         // 로그인하면 이 방을 되찾을 수 있다는 것만 알려주면 됨. 새로고침해서
@@ -84,12 +84,26 @@ function handleCredential(response) {
         alert('이미 이 방에 연결된 계정이에요.');
         return;
       }
-      // 이미 다른 방에 연결된 계정으로 로그인한 경우 — 지금 방을 덮어쓰는
-      // 되돌리기 어려운 전환이라 한 번 확인함.
-      if (stored && !confirm(`이 구글 계정에 연결된 방(${code})을 불러올까요? 지금 브라우저의 방은 더 이상 안 보여요.`)) {
-        return;
+      // 이미 다른 방에 연결된 계정으로 로그인한 경우. 새 브라우저가 저절로
+      // 만든 빈 방이면(current_empty) 잃을 게 없으니 묻지 않고 바로 넘어감 —
+      // 새 기기에서 로그인한 사람 대부분이 이 경우. 기록이 있는 방이면 그
+      // 기록을 두고 가는 되돌리기 어려운 전환이라 한 번 확인함.
+      if (stored && current_empty !== true) {
+        const ok = confirm(
+          `이 구글 계정에는 다른 방(${code})이 연결돼 있어요.\n` +
+          `불러오면 지금 이 브라우저의 방(${stored.code})에 남긴 기록은 더 이상 볼 수 없어요.\n\n` +
+          '[확인] 연결된 방 불러오기\n[취소] 지금 방에 그대로 있기',
+        );
+        if (!ok) {
+          alert(
+            `지금 방(${stored.code})에 그대로 있어요.\n` +
+            `이 구글 계정은 방 ${code}에 연결돼 있어서, 지금 방은 다른 구글 계정으로만 연결할 수 있어요.`,
+          );
+          return;
+        }
       }
       adoptRoom({ code, token });
+      alert(`구글 계정에 연결된 방(${code})을 불러왔어요.`);
       window.location.reload();
     })
     .catch(() => alert('구글 로그인에 실패했어요. 잠시 후 다시 시도해주세요.'));
