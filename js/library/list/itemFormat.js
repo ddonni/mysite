@@ -67,10 +67,13 @@ export function coverHtml(it, { playing = false } = {}) {
   const badge = tags ? `<span class="badges">${tags}</span>` : '';
   if (it.photo_url) {
     const src = escapeAttr(it.photo_url);
+    // crossorigin: 로비(coverImage.js)는 같은 사진을 CORS로 받아 WebGL 텍스처로 씀.
+    // 여기서 CORS 없이 먼저 받으면 ACAO 헤더 없는 응답이 1년(immutable) 캐시에 남아
+    // 로비가 그 캐시를 쓰다 실패함(2026-10-25 실제로 겪음) — 두 곳의 요청 방식을 맞춤.
     if (it.cat === 'music') {
-      return `<div class="cover square"><img class="bg" src="${src}" alt="" aria-hidden="true" loading="lazy"><img class="fg" src="${src}" alt="" loading="lazy">${badge}</div>`;
+      return `<div class="cover square"><img class="bg" src="${src}" alt="" aria-hidden="true" loading="lazy" crossorigin="anonymous"><img class="fg" src="${src}" alt="" loading="lazy" crossorigin="anonymous">${badge}</div>`;
     }
-    return `<div class="cover"><img src="${src}" alt="" loading="lazy">${badge}</div>`;
+    return `<div class="cover"><img src="${src}" alt="" loading="lazy" crossorigin="anonymous">${badge}</div>`;
   }
   return `
     <div class="cover title-card">

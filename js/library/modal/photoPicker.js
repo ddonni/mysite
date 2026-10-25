@@ -11,6 +11,8 @@ export function createPhotoPicker({ input, preview, removeBtn, dropZone, dropTex
 
   function showExisting(existingUrl) {
     if (existingUrl) {
+      // 목록(itemFormat.js)·로비와 같은 CORS 방식으로 받아 캐시가 섞이지 않게.
+      preview.crossOrigin = 'anonymous';
       preview.src = existingUrl;
       preview.style.display = 'block';
       removeBtn.style.display = 'inline-block';
