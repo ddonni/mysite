@@ -193,6 +193,11 @@ export function createModal({ onSaved }) {
     }
   }
 
+  // 가수(만든 사람) 칸에 한 번이라도 직접 손대면 그 값은 사용자가 쓴 것 — 자동으로
+  // 채운 값이었다는 표시를 지워서, 검색어에 넣고(typedArtist) 다음 결과를 골라도
+  // 안 덮어씀(fillFromPick). 고쳤다가 같은 글자로 되돌려도 마찬가지.
+  fCreator.addEventListener('input', () => { autoCreator = null; });
+
   // 음악은 가수를 제목보다 나중에 써도 되게 — 가수 칸을 고치고 나가면 제목 칸의
   // 검색 결과를 "가수 제목"으로 다시 찾아 보여줌.
   fCreator.addEventListener('change', () => {

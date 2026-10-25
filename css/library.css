@@ -249,6 +249,12 @@ body.read-only #addTabBtn{ display:none; }
 .field-row .title-field{ flex:3 1 0; }
 .field-row .creator-field{ flex:2 1 0; }
 .field-error.title-error{ margin:-8px 0 12px; }
+/* 폰에선 두 칸이 너무 좁아져서 두 줄로 — 추천 목록은 여전히 줄(.field-row) 아래라
+   가수 칸 밑에 뜨고 가수 칸을 가리지 않음. */
+@media (max-width:480px){
+  .field-row{ flex-direction:column; gap:14px; }
+  .field-row .title-field, .field-row .creator-field{ flex:none; }
+}
 .preset-list{
   max-height:160px; overflow-y:auto; border:1px solid var(--line-strong); border-radius:10px;
   position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--void-2); z-index:10;

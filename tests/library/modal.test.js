@@ -88,6 +88,31 @@ describe('음악 탭 제목 검색', () => {
     expect(searchMusic).toHaveBeenLastCalledWith('밤양갱', expect.anything());
   });
 
+  it('자동으로 채워진 가수도 한 번 손대면 직접 쓴 것 — 같은 글자로 되돌려도', async () => {
+    searchMusic.mockResolvedValue([ALBUM]);
+    typeTitle('주저하는 연인들을 위해');
+    await settle();
+    $('presetList').querySelector('.preset-item.rich').click();
+    expect($('fCreator').value).toBe('JANNABI');
+
+    // 한 글자 지웠다가 다시 써서 원래 값으로 되돌림
+    $('fCreator').value = 'JANNAB';
+    $('fCreator').dispatchEvent(new Event('input'));
+    $('fCreator').value = 'JANNABI';
+    $('fCreator').dispatchEvent(new Event('input'));
+
+    typeTitle('뜨거운 여름밤은 가고 남은 건 볼품없지만');
+    await settle();
+    expect(searchMusic).toHaveBeenLastCalledWith('JANNABI 뜨거운 여름밤은 가고 남은 건 볼품없지만', expect.anything());
+
+    // 다른 결과를 골라도 직접 손댄 가수는 그대로
+    searchMusic.mockResolvedValue([{ ...ALBUM, creator: '다른 가수' }]);
+    typeTitle('밤양갱');
+    await settle();
+    $('presetList').querySelector('.preset-item.rich').click();
+    expect($('fCreator').value).toBe('JANNABI');
+  });
+
   it('결과가 없으면 검색어와 함께 알려줌', async () => {
     searchMusic.mockResolvedValue([]);
     typeTitle('없는노래');
