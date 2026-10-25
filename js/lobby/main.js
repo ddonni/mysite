@@ -15,6 +15,7 @@ import { initRoomChrome } from './roomChrome.js';
 import { loadRoomIntoScene } from './loadRoomIntoScene.js';
 import { webglAvailable } from './webgl.js';
 import { initHelpDialog } from './helpDialog.js';
+import { initEmptyRoom } from './onboarding.js';
 import { forgetMyRoom } from '../shared/room.js';
 import { initRoomNav } from '../shared/roomNav.js';
 import { watchForSlowWake, WAKE_MESSAGE } from '../shared/wake.js';
@@ -38,6 +39,9 @@ const ROOM_INFO = {
 // 도움말(? 버튼)은 바로 연결하지만, 처음 온 사람에게 자동으로 띄우는 건 방이
 // 다 그려진 뒤(bootWithTheme 끝) — 3D를 못 쓰는 브라우저면 링크 화면이 뜬 직후.
 const help = initHelpDialog();
+// 내 방의 비어 있는 카테고리(기록을 받아오면 채워짐) — 그 가구의 "첫 ○ 기록하기"는
+// 기록 보관소에서 새 기록 창을 바로 열게 함(goToRoom).
+const emptyCats = initEmptyRoom(ROOM_INFO);
 // 왼쪽 위 상단 메뉴(캔버스/기록 보관소와 같은 것) — 방 코드·방문 폼도 여기에 붙음.
 initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: './' }).catch(() => {});
 roomContext.then(initRoomChrome);
@@ -120,7 +124,8 @@ function bootWithTheme(theme, ctx) {
     ui.style.transition = 'opacity .35s ease';
     stage.style.opacity = '0';
     ui.style.opacity = '0';
-    setTimeout(() => { window.location.href = pageUrl(PAGES[room], ctx); }, 320);
+    const page = PAGES[room] + (emptyCats.has(room) ? '&new=1' : '');
+    setTimeout(() => { window.location.href = pageUrl(page, ctx); }, 320);
   }
 
   const interaction = createRoomInteraction({

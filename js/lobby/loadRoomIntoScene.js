@@ -1,4 +1,4 @@
-import { roomApi } from './roomContext.js';
+import { roomApi, roomRecords } from './roomContext.js';
 import { pickShowcase, pickMusic } from './showcase.js';
 
 // 지금 보는 방의 실제 데이터(스트로크/기록)를 서버에서 받아와 3D 씬의
@@ -24,8 +24,8 @@ export function loadRoomIntoScene(ctx, sceneSetters) {
   //  - 음악: 최애음악은 콘솔 위(첫 번째는 턴테이블, 나머지는 옆 받침),
   //    나머지 곡은 콘솔 칸 안. 턴테이블엔 방 주인이 직접 고른 곡이, 없으면 첫
   //    최애음악이, 그것도 없으면 가장 최근 곡이 돎(showcase.js의 pickMusic).
-  fetch(`${roomApi(ctx)}/records`)
-    .then((res) => (res.ok ? res.json() : []))
+  // (요청은 roomContext.js의 roomRecords가 한 번만 보냄 — 처음 온 사람 안내도 같이 씀.)
+  roomRecords
     .then((records) => {
       const list = records || [];
       // 가구마다 캔버스 텍스처를 수십 장씩 새로 그리고 GPU에 올려서, 한 번에

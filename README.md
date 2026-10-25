@@ -15,7 +15,7 @@
   레코드 콘솔 위에 올라감(턴테이블엔 기록 보관소에서 "턴테이블에 올리기"로 직접
   고른 곡이, 안 골랐으면 첫 최애음악이, 최애음악도 없으면 가장 최근 곡이 돌고 —
   나머지 최애음악은 옆 받침에, 그 밖의 곡은 콘솔 칸 안). 기록 보관소는
-  턴테이블에서 도는 곡에 "재생 중" 표시를 붙임. ("인생작"은 화면에서 카테고리마다
+  턴테이블에서 도는 곡에 "턴테이블 위" 표시를 붙임. ("인생작"은 화면에서 카테고리마다
   인생책/인생애니/인생영화/최애음악으로 불리고, 코드·API에선 `featured`.) WebGL을
   못 쓰는 환경이면 자동으로 텍스트 링크 폴백으로 전환됨. (예전 네모난 방
   로비는 git 브랜치 `rect-room`에 남아 있음.)
@@ -82,7 +82,8 @@ js/lobby/
   scene.js            # 3D 씬 조립 지점
   scene/              #   roomShell.js, lighting.js, dustMotes.js, aoBlob.js, canvasTexture.js, labelSprite.js, roomDimensions.js
   scene/roomLayout.js #   가구를 어느 벽/자리에 둘지 + 조명 위치 + 카메라 프리셋(가구 모듈은 "자기 벽 기준" 좌표로만 지어짐)
-  helpDialog.js       # 처음 온 사람에게 한 번 뜨는 도움말(오른쪽 위 ? 버튼으로 다시 열기)
+  helpDialog.js       # 처음 온 사람 환영 카드(빈 내 방: "첫 기록 남기기", 남의 방: "나도 내 방 만들기") + ? 버튼 도움말
+  onboarding.js       # 빈 방 안내 — 기록이 없으면 카테고리 버튼 위 말풍선, 빈 가구 카드는 "첫 ○ 기록하기"
   scene/furniture/    #   easel.js, bookshelf.js, frame.js, posterWall.js, displayCase.js, recordConsole.js(LP 보관함), turntable.js, lamps.js, ball.js, teddyBear.js, bunnyPlush.js(토끼 인형), bed.js(장식)
   scene/wallLabel.js  #   가구 위 벽의 BOOK / MOVIE / ANIMATION 글씨
   scene/coverImage.js #   기록 사진(없으면 제목 카드)을 액자/포스터/스탠드/LP 텍스처에 그리는 공용 로직

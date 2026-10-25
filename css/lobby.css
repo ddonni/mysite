@@ -63,6 +63,23 @@ body{
   position:absolute;right:max(22px, env(safe-area-inset-right));bottom:max(20px, env(safe-area-inset-bottom));
   display:flex;gap:8px;pointer-events:auto;
 }
+/* 빈 방 말풍선(js/lobby/onboarding.js) — 카테고리 버튼 바로 위, 꼬리가 버튼을 가리킴.
+   --cta-h: 버튼 줄의 높이(폰에선 버튼이 세로로 쌓여서 아래 미디어쿼리에서 키움). */
+.cta-hint{
+  --cta-h:40px;
+  position:absolute;right:max(22px, env(safe-area-inset-right));
+  bottom:calc(max(20px, env(safe-area-inset-bottom)) + var(--cta-h) + 12px);
+  padding:8px 13px;border-radius:12px;
+  font-size:12.5px;font-weight:600;color:var(--void);background:var(--gold);
+  box-shadow:0 8px 20px rgba(0,0,0,0.4);pointer-events:none;
+  animation:cta-hint-bob 1.6s ease-in-out infinite;
+}
+.cta-hint::after{
+  content:'';position:absolute;right:26px;top:100%;
+  border:7px solid transparent;border-top-color:var(--gold);
+}
+.cta-hint[hidden], .help-open .cta-hint{display:none;}
+@keyframes cta-hint-bob{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-4px);} }
 .room-btn{
   font-family:inherit;font-size:12.5px;font-weight:600;color:var(--paper);
   background:var(--void-2);border:1px solid var(--void-border);border-radius:999px;
@@ -269,6 +286,38 @@ body{
 }
 .help-close:hover{filter:brightness(1.08);}
 .help-foot{margin:10px 0 0;text-align:center;font-size:11px;color:var(--paper-dim);}
+.help-foot[hidden]{display:none;}
+
+/* 환영 카드(helpDialog.js의 owner/visitor 모드) — 할 일 하나만 크게. 카테고리 버튼은
+   가구 색 점을 그대로(로비 오른쪽 아래 버튼과 같은 색). 닫기 버튼은 "그냥 둘러볼게요"
+   같은 보조 행동이라 흐린 외곽선으로. */
+.help-step{margin:4px 0 8px;font-size:12px;font-weight:700;color:var(--paper);}
+.help-cats{display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;margin-bottom:14px;}
+.help-cat{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:12px 6px;border-radius:12px;border:1px solid var(--void-border);
+  font-size:14px;font-weight:700;color:var(--paper);text-decoration:none;background:rgba(243,236,224,0.04);
+}
+.help-cat::before{content:'';width:8px;height:8px;border-radius:50%;}
+.help-cat[data-cat="book"]::before{background:var(--gold);}
+.help-cat[data-cat="movie"]::before{background:var(--crimson);}
+.help-cat[data-cat="anime"]::before{background:var(--rose);}
+.help-cat[data-cat="music"]::before{background:var(--teal);}
+.help-cat:hover, .help-cat:focus-visible{border-color:var(--paper-dim);background:rgba(243,236,224,0.08);}
+.help-primary, .help-secondary{
+  display:block;text-align:center;text-decoration:none;
+  font-size:13px;font-weight:600;border-radius:999px;padding:10px 14px;margin-bottom:8px;
+}
+.help-primary{color:var(--void);background:var(--ember);}
+.help-primary:hover{filter:brightness(1.08);}
+.help-secondary{color:var(--paper);border:1px solid var(--void-border);}
+.help-secondary:hover{border-color:var(--paper-dim);}
+.help-dialog[data-mode="owner"] .help-close,
+.help-dialog[data-mode="visitor"] .help-close{
+  background:none;color:var(--paper-dim);border:1px solid transparent;
+}
+.help-dialog[data-mode="owner"] .help-close:hover,
+.help-dialog[data-mode="visitor"] .help-close:hover{color:var(--paper);filter:none;}
 
 /* 방 화면엔 오른쪽 위에 ? 버튼이 있어서, 상단 메뉴가 그 자리까지 늘어나 겹치지
    않게 폭을 버튼만큼 줄임(좁으면 메뉴가 두 줄로 접힘). */
@@ -278,6 +327,8 @@ body .site-nav{max-width:calc(100% - 28px - 52px);}
   #header{max-width:70vw;}
   #header p{display:none;}
   #cta{flex-direction:column;align-items:flex-end;}
+  /* 버튼 다섯 개가 세로로 쌓임(한 개 약 36px + 간격 8px). */
+  .cta-hint{--cta-h:212px;}
 }
 /* 높이가 낮은 화면(폰 가로 등) — 헤더가 3D 방을 덜 가리게 작게. 넓은 구글
    버튼은 방을 가려서 숨김(세로 화면/컴퓨터에선 그대로 보임). */
@@ -291,4 +342,5 @@ body .site-nav{max-width:calc(100% - 28px - 52px);}
 
 @media (prefers-reduced-motion: reduce){
   #loading, #ui, #card{ transition:none; }
+  .cta-hint{ animation:none; }
 }

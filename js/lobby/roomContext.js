@@ -31,6 +31,13 @@ export const roomInfo = roomContext.then((ctx) =>
   })
 );
 
+// 지금 보는 방의 기록 전체(최신순). 3D 가구 채우기(loadRoomIntoScene.js)와 처음 온
+// 사람 안내(onboarding.js — 빈 방인지, 어느 카테고리가 비었는지)가 같이 써서 한 번만
+// 받음. 실패하면 null — 쓰는 쪽은 "모름"으로 보고 안내를 안 띄움.
+export const roomRecords = roomContext.then((ctx) =>
+  fetch(`${roomApi(ctx)}/records`).then((res) => (res.ok ? res.json() : null), () => null)
+);
+
 // sketchbook.html/library.html로 넘어갈 때, 남의 방을 보던 중이면 ?room=을
 // 이어 붙여서 거기서도 그 방을 읽기 전용으로 보게 함. page에 이미
 // 쿼리(예: library.html?cat=music)가 있을 수 있어서 ?와 &를 구분함.

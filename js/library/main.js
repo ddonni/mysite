@@ -50,13 +50,27 @@ initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: 'library'
         ? `${withEunNeun(label)} 3개까지예요. 다른 ${withEulReul(label)} 먼저 빼 주세요.`
         : '저장에 실패했어요. 잠시 후 다시 시도해주세요.');
     }),
-    // 음악을 로비 턴테이블에 올리거나 내림 — 목록을 다시 불러오면 "재생 중" 표시도 옮겨감.
+    // 음악을 로비 턴테이블에 올리거나 내림 — 목록을 다시 불러오면 "턴테이블 위" 표시도 옮겨감.
     onPlay: (item, playing) => setPlaying(item.id, playing).then(reload)
       .catch(() => alert('저장에 실패했어요. 잠시 후 다시 시도해주세요.')),
   });
 
   // 보고 있던 탭의 카테고리로 추가 창을 엶(전체 탭이면 책).
   document.getElementById('addTabBtn').addEventListener('click', () => modal.openAdd(list.activeTab()));
+
+  // 로비의 "첫 기록 남기기"·"첫 책 기록하기"로 오면(library?cat=book&new=1) 새 기록 창을
+  // 바로 엶 — 처음 온 사람이 기록 보관소에서 또 "추가" 버튼을 찾지 않게. 새로고침하면
+  // 또 열리지 않도록 주소에서 new는 지움.
+  const params = new URLSearchParams(location.search);
+  if (params.get('new') === '1') {
+    params.delete('new');
+    const rest = params.toString();
+    history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + location.hash);
+    if (!readOnly) {
+      modal.openAdd(initialTab);
+      document.getElementById('fTitle').focus();
+    }
+  }
 
   reload();
 });

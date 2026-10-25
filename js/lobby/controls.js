@@ -224,6 +224,8 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
     if (dom.cardTag) dom.cardTag.textContent = info.tag || '';
     dom.cardTitle.textContent = info.title;
     dom.cardBody.textContent = info.body;
+    // 빈 카테고리면 "첫 책 기록하기" 등(onboarding.js가 roomInfo를 고쳐 둠).
+    dom.cardEnter.textContent = info.enter || '입장하기';
     dom.card.classList.add('show');
     setCTAState(room);
   }
