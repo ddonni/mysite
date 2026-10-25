@@ -130,7 +130,7 @@ describe('안내 문구', () => {
   });
 
   it('header는 후보 위에 붙음', async () => {
-    setup([BAMYANGGANG], { header: () => "'잔나비'(으)로는 결과가 없어 제목만으로 찾았어요" });
+    setup([BAMYANGGANG], { header: () => "'잔나비'까지 넣으면 결과가 없어 제목만으로 찾았어요" });
     type('밤양');
     await settle();
     expect(listEl.firstElementChild.className).toBe('preset-head');

@@ -47,7 +47,7 @@ export function createModal({ onSaved }) {
       markMine: true, // 내 방에 이미 있는 제목 → "이미 기록함"
       onPick: (s) => { if (s.pick) fillFromPick(s.pick); },
       footer: titleFooter,
-      header: titleHeader,
+      header: (items) => searchHeader('title', items),
       pendingText: (q) => (searchesWeb(currentCat, q) ? '검색 중…' : ''),
       emptyText: (q) => emptyText('title', q),
       // 제목 결과를 보면서 작가 칸을 눌러도 안 닫힘 — 작가 칸에 입력을 시작하면 닫음(아래).
@@ -70,6 +70,7 @@ export function createModal({ onSaved }) {
         fillFromPick(s.pick);
       },
       footer: creatorFooter,
+      header: (items) => searchHeader('creator', items),
       pendingText: (q) => (searchesWeb(currentCat, q) ? '검색 중…' : ''),
       emptyText: (q) => emptyText('creator', q),
       keepOpenOn: [fTitle],
@@ -87,25 +88,34 @@ export function createModal({ onSaved }) {
   // 작가 칸에서 검색 결과를 고를 땐 아래 change 리스너의 "제목 칸 다시 검색"을 건너뜀.
   let skipCreatorRefresh = false;
 
-  // 책·음악이면 이 방·공개 방들의 제목 후보 뒤에 검색 결과를 붙임. 한 글자로는
-  // 검색 결과가 너무 넓어서 두 글자부터. 어느 한쪽이 실패해도 나머지만으로 보여줌.
-  //   - 책(카카오): 같은 제목이 둘 다에 있으면 검색 결과 쪽만 남기고("이미 기록함"
-  //     표시는 옮겨 붙임) — 같은 줄이 두 번 보이지 않게.
-  //   - 음악(유튜브 뮤직): 로그인 없이는 앨범만 찾아져서(백엔드 music_search.py),
-  //     노래 제목만으론 남의 커버곡이 먼저 나오기 쉬움 — 가수 칸에 **직접 쓴** 가수가
-  //     있으면 "가수 제목"으로 검색함(앞서 고른 결과로 자동으로 채워진 가수는 제목을
-  //     바꾼 뒤엔 엉뚱한 가수일 수 있어서 안 씀). 그걸로 0건이면 제목만으로 한 번 더.
-  //     고르면 제목은 입력한 그대로 둠(대개 노래 제목이라 앨범 이름으로 덮으면 틀어짐).
+  // 책·음악이면 이 방·공개 방들의 후보 뒤에 검색 결과를 붙임. 한 글자로는 검색 결과가
+  // 너무 넓어서 두 글자부터. 어느 한쪽이 실패해도 나머지만으로 보여줌.
   //
-  // searchState: 칸마다 방금 끝난 검색이 실패했는지·가수를 빼고 다시 찾았는지 — 목록
-  // 위·아래 문구와 "결과 없음" 문구가 봄. 새 입력으로 취소된(abort) 옛 검색은 안 적음.
+  // 두 칸이 다 차 있으면 어느 칸에서 치든 둘을 합쳐 찾음(webSearch) — 책은 "제목 작가"
+  // (카카오가 제목·작가 둘 다 맞는 책을 앞에 둠), 음악은 "가수 제목"(유튜브 뮤직은
+  // 로그인 없이 앨범만 찾아져서 노래 제목만으론 남의 커버곡이 먼저 나오기 쉬움 —
+  // 백엔드 music_search.py). 다른 칸 값은 **직접 쓴** 것만 씀 — 앞서 고른 결과로
+  // 자동으로 채워진 값은 이쪽 칸을 바꾼 뒤엔 엉뚱할 수 있어서. 합쳐서 0건이면 지금
+  // 칸만으로 한 번 더 찾고 목록 위에 알림.
+  //   - 책 제목 칸: 같은 제목이 이 방 후보와 검색 결과 둘 다에 있으면 검색 결과 쪽만
+  //     남기고("이미 기록함" 표시는 옮겨 붙임) — 같은 줄이 두 번 보이지 않게.
+  //   - 음악: 고르면 제목은 입력한 그대로 둠(대개 노래 제목이라 앨범 이름으로 덮으면
+  //     틀어짐).
+  //
+  // searchState: 칸마다 방금 끝난 검색이 실패했는지·다른 칸 값을 빼고 다시 찾았는지 —
+  // 목록 위·아래 문구와 "결과 없음" 문구가 봄. 새 입력으로 취소된(abort) 옛 검색은 안 적음.
   const searchState = {
-    title: { failed: false, droppedArtist: '' },
-    creator: { failed: false, droppedArtist: '' },
+    title: { failed: false, dropped: '' },
+    creator: { failed: false, dropped: '' },
   };
 
   function searchesWeb(cat, q) {
     return (cat === 'book' || cat === 'music') && q.length >= 2;
+  }
+
+  function typedTitle() {
+    const v = fTitle.value.trim();
+    return v && v !== autoTitle ? v : '';
   }
 
   function typedArtist() {
@@ -125,6 +135,27 @@ export function createModal({ onSaved }) {
     if (!(signal && signal.aborted)) searchState[field] = state;
   }
 
+  // field 칸에 q를 친 것 — 다른 칸에 직접 쓴 값이 있으면 합쳐서, 0건이면 q만으로.
+  // → { found: 결과 배열|null(실패), dropped: 합쳤다가 뺀 다른 칸 값 }
+  function webSearch(cat, field, q, signal) {
+    const other = field === 'title' ? typedArtist() : typedTitle();
+    const alone = () => (cat === 'music'
+      ? searchMusic(q, signal)
+      : searchBooks(q, signal, field === 'creator' ? 'author' : 'title'));
+    if (!other) return tryWeb(alone(), signal).then((found) => ({ found, dropped: '' }));
+    const title = field === 'title' ? q : other;
+    const person = field === 'title' ? other : q;
+    // 합친 검색은 책도 by=title(카카오 기본 — 제목·작가 등 전부에서 찾음).
+    const both = cat === 'music' ? searchMusic(`${person} ${title}`, signal) : searchBooks(`${title} ${person}`, signal);
+    return tryWeb(both, signal).then((found) => {
+      if (found && found.length) return { found, dropped: '' };
+      return tryWeb(alone(), signal).then((again) => ({
+        found: again,
+        dropped: again && again.length ? other : '',
+      }));
+    });
+  }
+
   const bookMeta = (b) => [b.creator, b.publisher, b.year].filter(Boolean).join(' · ');
   const albumCard = (m) => ({
     title: m.song || m.album,
@@ -136,64 +167,46 @@ export function createModal({ onSaved }) {
   function titleSuggestions(cat, q, signal) {
     const own = fetchSuggestions(cat, 'title', q, signal);
     if (!searchesWeb(cat, q)) {
-      record('title', signal, { failed: false, droppedArtist: '' });
+      record('title', signal, { failed: false, dropped: '' });
       return own;
     }
-    if (cat === 'book') {
-      return Promise.all([
-        own.catch(() => []),
-        tryWeb(searchBooks(q, signal), signal),
-      ]).then(([mine, found]) => {
-        record('title', signal, { failed: found === null, droppedArtist: '' });
-        const books = found || [];
+    return Promise.all([own.catch(() => []), webSearch(cat, 'title', q, signal)]).then(([mine, { found, dropped }]) => {
+      record('title', signal, { failed: found === null, dropped });
+      const results = found || [];
+      if (cat === 'book') {
         const mineTitles = new Set(mine.filter((s) => s.mine).map((s) => s.value.trim()));
-        const bookTitles = new Set(books.map((b) => b.title.trim()));
+        const bookTitles = new Set(results.map((b) => b.title.trim()));
         const rest = mine.filter((s) => !bookTitles.has(s.value.trim()));
-        return rest.slice(0, 3).concat(books.map((b) => ({
+        return rest.slice(0, 3).concat(results.map((b) => ({
           value: b.title,
           mine: mineTitles.has(b.title.trim()),
           card: { title: b.full_title, meta: bookMeta(b), cover: b.cover },
           pick: { creator: b.creator, cover: b.cover },
           source: 'book',
         })));
-      });
-    }
-    if (cat === 'music') {
-      const artist = typedArtist();
-      const music = tryWeb(searchMusic(artist ? `${artist} ${q}` : q, signal), signal).then((found) => {
-        if (!artist || (found && found.length)) return { found, droppedArtist: '' };
-        // 가수까지 붙여서는 0건(또는 실패) — 제목만으로 다시.
-        return tryWeb(searchMusic(q, signal), signal).then((again) => ({
-          found: again,
-          droppedArtist: again && again.length ? artist : '',
-        }));
-      });
-      return Promise.all([own.catch(() => []), music]).then(([mine, { found, droppedArtist }]) => {
-        record('title', signal, { failed: found === null, droppedArtist });
-        return mine.slice(0, 3).concat((found || []).map((m) => ({
-          // 로그인 검색이 노래까지 돌려주면 그 노래 제목, 아니면 입력한 그대로.
-          value: m.song || q,
-          card: albumCard(m),
-          pick: { creator: m.creator, cover: m.cover },
-          source: 'music',
-        })));
-      });
-    }
-    return own;
+      }
+      return mine.slice(0, 3).concat(results.map((m) => ({
+        // 로그인 검색이 노래까지 돌려주면 그 노래 제목, 아니면 입력한 그대로.
+        value: m.song || q,
+        card: albumCard(m),
+        pick: { creator: m.creator, cover: m.cover },
+        source: 'music',
+      })));
+    });
   }
 
-  // 만든 사람 칸 — 작가·가수 이름으로 찾음. 고르면 칸엔 결과의 이름(예: "헤세" →
-  // "헤르만 헤세"), 표지도 채움. 책은 제목이 비어 있으면 제목까지 채우고, 음악은
-  // 제목을 안 채움(결과가 앨범이라 노래 제목과 다름 — 제목 칸은 사용자가 씀).
+  // 만든 사람 칸 — 작가·가수 이름으로 찾음(제목 칸에 직접 쓴 제목이 있으면 합쳐서).
+  // 고르면 칸엔 결과의 이름(예: "헤세" → "헤르만 헤세"), 표지도 채움. 책은 제목이
+  // 비었거나 자동으로 채운 것이면 제목까지, 음악은 제목을 안 채움(결과가 앨범이라
+  // 노래 제목과 다름 — 제목 칸은 사용자가 씀).
   function creatorSuggestions(cat, q, signal) {
     const own = fetchSuggestions(cat, 'creator', q, signal);
     if (!searchesWeb(cat, q)) {
-      record('creator', signal, { failed: false, droppedArtist: '' });
+      record('creator', signal, { failed: false, dropped: '' });
       return own;
     }
-    const web = cat === 'book' ? searchBooks(q, signal, 'author') : searchMusic(q, signal);
-    return Promise.all([own.catch(() => []), tryWeb(web, signal)]).then(([mine, found]) => {
-      record('creator', signal, { failed: found === null, droppedArtist: '' });
+    return Promise.all([own.catch(() => []), webSearch(cat, 'creator', q, signal)]).then(([mine, { found, dropped }]) => {
+      record('creator', signal, { failed: found === null, dropped });
       const results = (found || []).map((r) => (cat === 'book'
         ? {
           value: r.creator || q,
@@ -228,11 +241,12 @@ export function createModal({ onSaved }) {
     return '';
   }
 
-  // 목록 맨 위 — 가수를 붙여서는 0건이라 제목만으로 다시 찾은 결과일 때.
-  function titleHeader(items) {
-    const dropped = searchState.title.droppedArtist;
-    if (!dropped || !items.some((s) => s.source === 'music')) return '';
-    return `'${dropped}'(으)로는 결과가 없어 제목만으로 찾았어요`;
+  // 목록 맨 위 — 다른 칸 값까지 합쳐서는 0건이라 이 칸만으로 다시 찾은 결과일 때.
+  function searchHeader(field, items) {
+    const dropped = searchState[field].dropped;
+    if (!dropped || !items.some((s) => s.source)) return '';
+    const alone = field === 'title' ? '제목' : '이름';
+    return `'${dropped}'까지 넣으면 결과가 없어 ${alone}만으로 찾았어요`;
   }
 
   // 검색까지 했는데 후보가 하나도 없을 때. 검색 자체가 실패한 것(서버·카카오·유튜브
@@ -273,14 +287,14 @@ export function createModal({ onSaved }) {
   fTitle.addEventListener('input', () => { autoTitle = null; creatorAutocomplete.hide(); });
   fCreator.addEventListener('input', () => { autoCreator = null; presetAutocomplete.hide(); });
 
-  // 음악은 가수를 제목보다 나중에 써도 되게 — 가수 칸을 고치고 나가면 제목 칸의
-  // 검색 결과를 "가수 제목"으로 다시 찾아 보여줌. 작가 칸 목록에서 결과를 고르며
-  // 나갈 때는 안 함 — 고르는 클릭에 칸이 blur되며 change가 onPick보다 먼저 오므로
-  // 다음 틱에 판단.
+  // 작가·가수를 제목보다 나중에 써도 되게 — 작가 칸을 고치고 나가면 제목 칸의
+  // 검색 결과를 두 칸을 합친 검색으로 다시 찾아 보여줌(webSearch). 작가 칸 목록에서
+  // 결과를 고르며 나갈 때는 안 함 — 고르는 클릭에 칸이 blur되며 change가 onPick보다
+  // 먼저 오므로 다음 틱에 판단.
   fCreator.addEventListener('change', () => {
     setTimeout(() => {
       if (skipCreatorRefresh) { skipCreatorRefresh = false; return; }
-      if (currentCat === 'music' && fTitle.value.trim()) presetAutocomplete.refresh();
+      if (searchesWeb(currentCat, fTitle.value.trim())) presetAutocomplete.refresh();
     }, 0);
   });
 

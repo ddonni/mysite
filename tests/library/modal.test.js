@@ -72,7 +72,7 @@ describe('음악 탭 제목 검색', () => {
     typeTitle('주저하는 연인들을 위해');
     await settle();
     expect(searchMusic.mock.calls.map((c) => c[0])).toEqual(['엉뚱 주저하는 연인들을 위해', '주저하는 연인들을 위해']);
-    expect($('presetList').querySelector('.preset-head').textContent).toBe("'엉뚱'(으)로는 결과가 없어 제목만으로 찾았어요");
+    expect($('presetList').querySelector('.preset-head').textContent).toBe("'엉뚱'까지 넣으면 결과가 없어 제목만으로 찾았어요");
   });
 
   it('앞서 고른 결과로 자동으로 채워진 가수는 다음 검색에 안 씀', async () => {
@@ -197,6 +197,37 @@ describe('만든 사람 칸 검색', () => {
     await settle();
     $('creatorList').querySelector('.preset-item.rich').click();
     expect($('fTitle').value).toBe('채식주의자');
+  });
+
+  it('책: 제목 칸에 직접 쓴 제목이 있으면 "제목 작가"로 합쳐 찾음', async () => {
+    modal.openAdd('book');
+    searchBooks.mockResolvedValue([HAN]);
+    typeTitle('소년이 온다');
+    await settle();
+    typeCreator('한강');
+    await settle();
+    expect(searchBooks).toHaveBeenLastCalledWith('소년이 온다 한강', expect.anything());
+  });
+
+  it('책: 제목 칸 검색도 작가 칸에 직접 쓴 작가가 있으면 합쳐 찾음', async () => {
+    modal.openAdd('book');
+    searchBooks.mockResolvedValue([HAN]);
+    typeCreator('한강');
+    await settle();
+    typeTitle('소년이 온다');
+    await settle();
+    expect(searchBooks).toHaveBeenLastCalledWith('소년이 온다 한강', expect.anything());
+  });
+
+  it('책: 합쳐서 0건이면 작가 이름만으로 다시 찾고 맨 위에 알림', async () => {
+    modal.openAdd('book');
+    searchBooks.mockImplementation((q, signal, by) => Promise.resolve(by === 'author' ? [HAN] : []));
+    typeTitle('없는 제목');
+    await settle();
+    typeCreator('한강');
+    await settle();
+    expect(searchBooks.mock.calls.slice(-2).map((c) => [c[0], c[2]])).toEqual([['없는 제목 한강', undefined], ['한강', 'author']]);
+    expect($('creatorList').querySelector('.preset-head').textContent).toBe("'없는 제목'까지 넣으면 결과가 없어 이름만으로 찾았어요");
   });
 
   it('음악: 가수로 찾은 앨범을 고르면 가수·커버만, 제목 칸은 그대로 비워 둠', async () => {
