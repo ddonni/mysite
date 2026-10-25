@@ -299,12 +299,47 @@ describe('영화·애니 탭', () => {
     expect($('fCreator').value).toBe('내가 쓴 감독');
   });
 
-  it('감독 칸에서는 검색하지 않음', async () => {
+  const PARASITE = { id: 496243, media: 'movie', title: '기생충', original_title: '', year: '2019', cover: 'https://image.tmdb.org/t/p/w342/p.jpg', creator: '봉준호' };
+  const OKJA = { ...PARASITE, id: 387426, title: '옥자', year: '2017' };
+
+  it('감독 칸: 감독의 연출작을 찾고, 고르면 제목·포스터(감독은 따로 안 물음)', async () => {
     modal.openAdd('movie');
+    searchScreen.mockResolvedValue([PARASITE, OKJA]);
     $('fCreator').value = '봉준호';
     $('fCreator').dispatchEvent(new Event('input'));
     await settle();
-    expect(searchScreen).not.toHaveBeenCalled();
+    expect(searchScreen).toHaveBeenCalledWith('봉준호', 'movie', expect.anything(), 'director');
+    $('creatorList').querySelectorAll('.preset-item.rich')[1].click();
+    expect($('fTitle').value).toBe('옥자');
+    expect($('fCreator').value).toBe('봉준호');
+    await settle();
+    expect(fetchScreenCreator).not.toHaveBeenCalled();
+  });
+
+  it('두 칸 다 차 있으면 감독의 연출작 중 제목이 맞는 것만', async () => {
+    modal.openAdd('movie');
+    searchScreen.mockResolvedValue([PARASITE, OKJA]);
+    $('fCreator').value = '봉준호';
+    $('fCreator').dispatchEvent(new Event('input'));
+    typeTitle('기생');
+    await settle();
+    expect(searchScreen).toHaveBeenLastCalledWith('봉준호', 'movie', expect.anything(), 'director');
+    const titles = [...$('presetList').querySelectorAll('.preset-title')].map((e) => e.textContent);
+    expect(titles).toEqual(['기생충']);
+    $('presetList').querySelector('.preset-item.rich').click();
+    await settle();
+    expect(fetchScreenCreator).not.toHaveBeenCalled(); // 감독은 이미 앎
+  });
+
+  it('감독 연출작에 맞는 제목이 없으면 제목만으로 다시 찾고 알림', async () => {
+    modal.openAdd('movie');
+    searchScreen.mockImplementation((q, kind, signal, by) => Promise.resolve(by === 'director' ? [PARASITE] : [{ ...OKJA, creator: '', title: '인터스텔라' }]));
+    $('fCreator').value = '봉준호';
+    $('fCreator').dispatchEvent(new Event('input'));
+    typeTitle('인터스텔라');
+    await settle();
+    expect($('presetList').querySelector('.preset-head').textContent).toBe("'봉준호'까지 넣으면 결과가 없어 제목만으로 찾았어요");
+    expect($('presetList').querySelector('.preset-title').textContent).toBe('인터스텔라');
   });
 });
 

@@ -86,10 +86,11 @@ export function searchMusic(q, signal) {
 
 // 영화·애니 검색(백엔드가 TMDB에서 한국어 제목·포스터를 찾아 줌) —
 // [{ id, media: 'movie'|'tv', title, original_title, year, cover }]. kind는 'movie'
-// (영화 전체) 또는 'anime'(영화·TV 중 애니메이션만). 감독은 안 들어 있어서 고른
-// 작품만 fetchScreenCreator로 따로 물어봄.
-export function searchScreen(q, kind, signal) {
-  return fetch(API_BASE + '/api/search/screen?' + new URLSearchParams({ q, kind }), { signal }).then((res) => {
+// (영화 전체) 또는 'anime'(영화·TV 중 애니메이션만). by='title'이면 감독은 안 들어
+// 있어서 고른 작품만 fetchScreenCreator로 따로 물어봄. by='director'면 q를 감독 이름으로
+// 보고 그 사람의 연출작을 줌(각 결과의 creator에 감독 이름).
+export function searchScreen(q, kind, signal, by = 'title') {
+  return fetch(API_BASE + '/api/search/screen?' + new URLSearchParams({ q, kind, by }), { signal }).then((res) => {
     if (!res.ok) throw new Error('screen search failed');
     return res.json();
   });

@@ -73,7 +73,7 @@ export function createModal({ onSaved }) {
       },
       footer: creatorFooter,
       header: (items) => searchHeader('creator', items),
-      pendingText: (q) => (searchesWeb(currentCat, q, 'creator') ? '검색 중…' : ''),
+      pendingText: (q) => (searchesWeb(currentCat, q) ? '검색 중…' : ''),
       emptyText: (q) => emptyText('creator', q),
       keepOpenOn: [fTitle],
       openOnFocus: () => !presetAutocomplete.isOpen(),
@@ -114,12 +114,33 @@ export function createModal({ onSaved }) {
     creator: { failed: false, dropped: '' },
   };
 
-  // 제목 칸은 네 탭 모두 검색, 만든 사람 칸은 책·음악만(영화·애니는 감독 이름으로
-  // 작품을 찾는 검색을 안 붙임 — 제목으로 고르면 감독은 자동으로 채워짐).
+  // 네 탭 모두 두 칸에서 검색함(영화·애니의 만든 사람 칸은 감독 이름으로 연출작을 찾음).
   const isScreen = (cat) => cat === 'movie' || cat === 'anime';
-  function searchesWeb(cat, q, field = 'title') {
-    const web = cat === 'book' || cat === 'music' || (field === 'title' && isScreen(cat));
-    return web && q.length >= 2;
+  function searchesWeb(cat, q) {
+    return (cat === 'book' || cat === 'music' || isScreen(cat)) && q.length >= 2;
+  }
+
+  // 영화·애니에서 감독의 연출작 중 제목이 맞는 것만 — 띄어쓰기·대소문자는 무시하고,
+  // 원제로 쓴 경우도 맞춰 줌.
+  const squash = (s) => (s || '').replace(/\s+/g, '').toLowerCase();
+  const titled = (works, title) => works.filter((w) => squash(w.title).includes(squash(title))
+    || squash(w.original_title).includes(squash(title)));
+
+  // 영화·애니 버전의 webSearch. TMDB는 "제목 감독"을 한 번에 찾는 검색이 없어서, 두 칸이
+  // 다 차 있으면 감독의 연출작(by=director)을 받아 제목으로 걸러냄. 걸러서 0건이면
+  // 지금 칸만으로(제목 칸이면 제목 검색, 감독 칸이면 거르기 전 연출작 전체).
+  function screenSearch(cat, field, q, signal) {
+    const director = field === 'title' ? typedArtist() : q;
+    const title = field === 'title' ? q : typedTitle();
+    const byTitle = () => tryWeb(searchScreen(q, cat, signal), signal);
+    if (field === 'title' && !director) return byTitle().then((found) => ({ found, dropped: '' }));
+    return tryWeb(searchScreen(director, cat, signal, 'director'), signal).then((works) => {
+      if (!title) return { found: works, dropped: '' };
+      const hit = works ? titled(works, title) : [];
+      if (hit.length) return { found: hit, dropped: '' };
+      if (field === 'creator') return { found: works, dropped: works && works.length ? title : '' };
+      return byTitle().then((again) => ({ found: again, dropped: again && again.length ? director : '' }));
+    });
   }
 
   function typedTitle() {
@@ -147,8 +168,7 @@ export function createModal({ onSaved }) {
   // field 칸에 q를 친 것 — 다른 칸에 직접 쓴 값이 있으면 합쳐서, 0건이면 q만으로.
   // → { found: 결과 배열|null(실패), dropped: 합쳤다가 뺀 다른 칸 값 }
   function webSearch(cat, field, q, signal) {
-    // 영화·애니(TMDB)는 제목으로만 — 감독을 섞으면 TMDB 검색이 오히려 못 찾음.
-    if (isScreen(cat)) return tryWeb(searchScreen(q, cat, signal), signal).then((found) => ({ found, dropped: '' }));
+    if (isScreen(cat)) return screenSearch(cat, field, q, signal);
     const other = field === 'title' ? typedArtist() : typedTitle();
     const alone = () => (cat === 'music'
       ? searchMusic(q, signal)
@@ -203,7 +223,10 @@ export function createModal({ onSaved }) {
             }
             : {
               card: { title: r.title, meta: screenMeta(cat, r), cover: r.cover },
-              pick: { cover: r.cover, screen: { media: r.media, id: r.id } },
+              // 감독으로 걸러 찾은 결과면 감독을 이미 앎 — 아니면 고른 뒤 따로 물어봄.
+              pick: r.creator
+                ? { creator: r.creator, cover: r.cover }
+                : { cover: r.cover, screen: { media: r.media, id: r.id } },
               source: 'screen',
             }),
         })));
@@ -224,25 +247,37 @@ export function createModal({ onSaved }) {
   // 노래 제목과 다름 — 제목 칸은 사용자가 씀).
   function creatorSuggestions(cat, q, signal) {
     const own = fetchSuggestions(cat, 'creator', q, signal);
-    if (!searchesWeb(cat, q, 'creator')) {
+    if (!searchesWeb(cat, q)) {
       record('creator', signal, { failed: false, dropped: '' });
       return own;
     }
     return Promise.all([own.catch(() => []), webSearch(cat, 'creator', q, signal)]).then(([mine, { found, dropped }]) => {
       record('creator', signal, { failed: found === null, dropped });
-      const results = (found || []).map((r) => (cat === 'book'
-        ? {
-          value: r.creator || q,
-          card: { title: r.full_title, meta: bookMeta(r), cover: r.cover },
-          pick: { title: r.title, cover: r.cover },
-          source: 'book',
+      const results = (found || []).map((r) => {
+        if (cat === 'book') {
+          return {
+            value: r.creator || q,
+            card: { title: r.full_title, meta: bookMeta(r), cover: r.cover },
+            pick: { title: r.title, cover: r.cover },
+            source: 'book',
+          };
         }
-        : {
+        if (isScreen(cat)) {
+          // 감독의 연출작 — 고르면 제목(비었거나 자동으로 채운 것일 때)·포스터.
+          return {
+            value: r.creator || q,
+            card: { title: r.title, meta: screenMeta(cat, r), cover: r.cover },
+            pick: { title: r.title, cover: r.cover },
+            source: 'screen',
+          };
+        }
+        return {
           value: r.creator || q,
           card: albumCard(r),
           pick: { cover: r.cover },
           source: 'music',
-        }));
+        };
+      });
       return mine.slice(0, 3).concat(results);
     });
   }
@@ -262,6 +297,7 @@ export function createModal({ onSaved }) {
 
   function creatorFooter(items) {
     if (items.some((s) => s.source === 'book')) return '책 정보 제공: Kakao';
+    if (items.some((s) => s.source === 'screen')) return '고르면 제목·포스터를 채워요 · 정보 제공: TMDB(TMDB의 보증을 받은 서비스는 아니에요)';
     if (items.some((s) => s.source === 'music')) return '고르면 가수·앨범 커버를 채워요';
     return '';
   }
@@ -277,7 +313,7 @@ export function createModal({ onSaved }) {
   // 검색까지 했는데 후보가 하나도 없을 때. 검색 자체가 실패한 것(서버·카카오·유튜브
   // 오류)과 정말 결과가 없는 것을 구분해서 알려줌.
   function emptyText(field, q) {
-    if (!searchesWeb(currentCat, q, field)) return '';
+    if (!searchesWeb(currentCat, q)) return '';
     if (searchState[field].failed) return '지금은 검색할 수 없어요. 직접 입력해 주세요.';
     const tip = field === 'title' && currentCat === 'music' && !typedArtist() ? ' 가수를 함께 써 보세요.' : '';
     return `'${q}' 검색 결과가 없어요.${tip}`;
@@ -334,8 +370,7 @@ export function createModal({ onSaved }) {
   fCreator.addEventListener('change', () => {
     setTimeout(() => {
       if (skipCreatorRefresh) { skipCreatorRefresh = false; return; }
-      // 영화·애니는 감독을 검색에 안 써서(webSearch) 다시 찾을 이유가 없음.
-      if (!isScreen(currentCat) && searchesWeb(currentCat, fTitle.value.trim())) presetAutocomplete.refresh();
+      if (searchesWeb(currentCat, fTitle.value.trim())) presetAutocomplete.refresh();
     }, 0);
   });
 
