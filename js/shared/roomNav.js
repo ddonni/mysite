@@ -14,6 +14,34 @@ function trackNavHeight(navEl) {
   else window.addEventListener('resize', set);
 }
 
+// 폰에선 메뉴가 한 줄로 옆으로 밀리는데(nav.css), 그냥 잘려 보이면 더 있다는 걸 모름 —
+// 가려진 쪽 끝을 흐리게(can-left/can-right 클래스 → CSS 마스크) 하고, 이 브라우저에서
+// 처음 한 번은 살짝 밀었다가 되돌려서 "옆으로 밀린다"는 걸 보여줌.
+const NAV_PEEK_KEY = 'untitled-canvas.nav-peeked';
+
+function trackNavScroll(navEl) {
+  const update = () => {
+    const max = navEl.scrollWidth - navEl.clientWidth;
+    navEl.classList.toggle('can-left', navEl.scrollLeft > 2);
+    navEl.classList.toggle('can-right', max > 2 && navEl.scrollLeft < max - 2);
+  };
+  update();
+  navEl.addEventListener('scroll', update, { passive: true });
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(update).observe(navEl);
+  else window.addEventListener('resize', update);
+
+  const overflowing = navEl.scrollWidth - navEl.clientWidth > 2;
+  const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let peeked = false;
+  try { peeked = localStorage.getItem(NAV_PEEK_KEY) === '1'; } catch (e) {}
+  if (!overflowing || reduced || peeked || typeof navEl.scrollTo !== 'function') return;
+  try { localStorage.setItem(NAV_PEEK_KEY, '1'); } catch (e) {}
+  setTimeout(() => {
+    navEl.scrollTo({ left: Math.min(60, navEl.scrollWidth - navEl.clientWidth), behavior: 'smooth' });
+    setTimeout(() => navEl.scrollTo({ left: 0, behavior: 'smooth' }), 700);
+  }, 900);
+}
+
 // currentPage: 지금 페이지 자신의 파일명(예: 'sketchbook.html') — 코드
 // 입력창에서 "이동"을 누르면 같은 페이지를 그 방 코드로 다시 여는 데 씀.
 export function initRoomNav({ navEl, currentPage }) {
@@ -78,6 +106,7 @@ export function initRoomNav({ navEl, currentPage }) {
     });
     navEl.appendChild(visitForm);
     trackNavHeight(navEl);
+    trackNavScroll(navEl);
 
     return { mine, viewingCode, readOnly };
   });

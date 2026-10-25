@@ -58,6 +58,25 @@
 }
 .site-nav a:hover { background: var(--nav-hover); color: var(--nav-ink); }
 .site-nav a.active { background: var(--nav-ink); color: var(--nav-paper); }
+/* 폰: 여러 줄로 접히면 화면 위쪽을 크게 차지해서(로비에선 3D 방을 가림) 한 줄로 두고
+   옆으로 밀어서 봄. 스크롤 막대는 숨김. */
+@media (max-width: 560px) {
+  .site-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-radius: 999px;
+  }
+  .site-nav::-webkit-scrollbar { display: none; }
+  .site-nav > * { flex: none; }
+  /* 가려진 쪽 끝을 흐리게 — 뒤에 더 있다는 표시(roomNav.js의 trackNavScroll이 클래스를 붙임). */
+  .site-nav.can-right { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 44px), transparent); }
+  .site-nav.can-left { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 44px), transparent); }
+  .site-nav.can-left.can-right {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 44px, #000 calc(100% - 44px), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 44px, #000 calc(100% - 44px), transparent);
+  }
+}
 /* --- 방 코드 UI --- */
 .site-nav .room-box { display: flex; align-items: center; gap: 4px; padding: 2px 4px 2px 10px; }
 .site-nav .room-tag { font-size: 11px; color: var(--nav-dim); white-space: nowrap; }
