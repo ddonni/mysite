@@ -18,7 +18,7 @@ import { initHelpDialog } from './helpDialog.js';
 import { initEmptyRoom } from './onboarding.js';
 import { forgetMyRoom } from '../shared/room.js';
 import { initRoomNav } from '../shared/roomNav.js';
-import { watchForSlowWake, WAKE_MESSAGE } from '../shared/wake.js';
+import { watchForSlow, SLOW_MESSAGE } from '../shared/slow.js';
 
 const PAGES = {
   sketchbook: 'sketchbook',
@@ -73,10 +73,10 @@ if (typeof THREE === 'undefined' || !webglAvailable()) {
 // 오가며 테스트했거나 방이 실제로 사라진 경우) 낡은 방 정보를 지우고
 // 새로고침해서 새 방을 만들게 함.
 function boot() {
-  // 서버가 잠들어 있으면 이 대기가 길어질 수 있음 — 3초가 지나도 안
-  // 끝나면 "그냥 느린 게 아니라 서버가 깨는 중"이라고 로딩 문구를 바꿔줌.
+  // 연결이 느리면 이 대기가 길어질 수 있음 — 3초가 지나도 안 끝나면
+  // "멈춘 게 아니라 기다리는 중"이라고 로딩 문구를 바꿔줌(shared/slow.js).
   const loadingEl = document.getElementById('loading');
-  const stopWatch = watchForSlowWake(() => { loadingEl.textContent = WAKE_MESSAGE; });
+  const stopWatch = watchForSlow(() => { loadingEl.textContent = SLOW_MESSAGE; });
   return Promise.all([roomContext, roomInfo])
     .then(([ctx, info]) => {
       if (info && info.missing) {

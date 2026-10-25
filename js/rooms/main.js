@@ -7,7 +7,7 @@ import { initRoomNav } from '../shared/roomNav.js';
 import { roomLink } from '../shared/room.js';
 import { escapeHtml } from '../shared/dom.js';
 import { renderVisibilityToggle } from '../shared/visibilityToggle.js';
-import { watchForSlowWake, WAKE_MESSAGE } from '../shared/wake.js';
+import { watchForSlow, SLOW_MESSAGE } from '../shared/slow.js';
 
 const CATS = [
   { key: 'book', label: '책' },
@@ -73,7 +73,7 @@ function render(rooms, mine) {
 }
 
 initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: './' }).then(({ mine }) => {
-  const stopWatch = watchForSlowWake(() => { metaEl.textContent = WAKE_MESSAGE; });
+  const stopWatch = watchForSlow(() => { metaEl.textContent = SLOW_MESSAGE; });
   const load = () => fetchPublicRooms()
     .then((rooms) => render(rooms, mine))
     .catch(() => {

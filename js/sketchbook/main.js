@@ -10,7 +10,7 @@ import { createPager } from './pager.js';
 import { initDock } from './dock.js';
 import { createToast } from './toast.js';
 import { initRoomNav } from '../shared/roomNav.js';
-import { watchForSlowWake, WAKE_MESSAGE } from '../shared/wake.js';
+import { watchForSlow, SLOW_MESSAGE } from '../shared/slow.js';
 
 async function main() {
   const toast = createToast();
@@ -25,17 +25,17 @@ async function main() {
   document.body.classList.toggle('read-only', readOnly);
   const ownerToken = readOnly ? undefined : mine.token;
 
-  // 서버가 45초 안에 응답하면 서버(=여러 기기 공유) 저장소를, 아니면
+  // 서버가 10초 안에 응답하면 서버(=여러 기기 공유) 저장소를, 아니면
   // 이 기기에서만 쓰는 로컬 저장소를 씀. 어느 쪽이든 store.js가 정해둔
   // 똑같은 인터페이스를 따르기 때문에 아래 코드는 신경 쓸 필요 없음.
   // (로컬 폴백은 내 방일 때만 의미가 있음 — 남의 방을 로컬로 대신할 순 없어서
   // 읽기 전용일 때 서버가 안 닿으면 그냥 빈 캔버스를 보여줌.)
-  // Render 무료 플랜은 서버가 잠들어 있으면 깨는 데 오래 걸리는데, 예전엔
-  // 2.5초만 기다리고 바로 로컬로 넘어가버려서 그 사이에 그린 그림이 서버에
-  // 저장되지 않았음 — 훨씬 오래 기다리되, 3초가 지나도 응답이 없으면 그냥
-  // 느린 게 아니라 서버가 깨는 중이라고 알려줌.
-  const stopWatch = watchForSlowWake(() => toast(WAKE_MESSAGE, 0));
-  const reachable = await checkApi(viewingCode, 45000);
+  // 너무 빨리(예전 2.5초) 로컬로 넘어가면 느린 망에서 그린 그림이 서버에 안 남음 —
+  // 넉넉히 10초 기다리되, 3초가 지나면 "연결이 느려요"라고 알려줌. (예전 Render 무료
+  // 서버는 깨는 데 1분 가까이 걸려 45초를 기다렸는데, EC2는 잠들지 않아서 그만큼
+  // 기다리면 서버가 꺼졌을 때 사용자만 45초를 멈춰 있게 됨.)
+  const stopWatch = watchForSlow(() => toast(SLOW_MESSAGE, 0));
+  const reachable = await checkApi(viewingCode, 10000);
   stopWatch();
   toast.hide();
   // 남의 방을 보는 중인데 서버가 안 닿으면 로컬로 대신할 방법이 없음

@@ -5,18 +5,18 @@ import { createList } from './list.js';
 import { createModal } from './modal.js';
 import { initRoomNav } from '../shared/roomNav.js';
 import { featureLabel, withEunNeun, withEulReul } from './list/itemFormat.js';
-import { watchForSlowWake, WAKE_MESSAGE } from '../shared/wake.js';
+import { watchForSlow, SLOW_MESSAGE } from '../shared/slow.js';
 
 // 서버에서 기록을 다시 불러와 목록을 새로 그림. 추가/수정/삭제가 성공한
 // 뒤에는 항상 이 함수를 불러서 화면을 최신 상태로 맞춤. 처음 불러올 때는
 // library.html이 넣어둔 "불러오는 중…" placeholder가 그대로 보이다가,
-// 3초가 지나도 안 끝나면(서버가 잠들어 있던 경우) 안내를 바꿔줌 — list.render가
+// 3초가 지나도 안 끝나면(연결이 느린 경우) 안내를 바꿔줌 — list.render가
 // 끝내 그 자리를 덮어쓰므로 별도로 치울 필요는 없음.
 function reload() {
   const listEl = document.getElementById('list');
   const isPlaceholder = () => listEl.children.length === 1 && listEl.firstElementChild.classList.contains('empty');
-  const stopWatch = watchForSlowWake(() => {
-    if (isPlaceholder()) listEl.firstElementChild.textContent = WAKE_MESSAGE;
+  const stopWatch = watchForSlow(() => {
+    if (isPlaceholder()) listEl.firstElementChild.textContent = SLOW_MESSAGE;
   });
   return fetchRecords()
     .then((items) => { stopWatch(); list.render(items); })

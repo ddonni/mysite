@@ -75,12 +75,12 @@ export function makeApiStore(roomCode, ownerToken) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ strokes }),
     }, ownerToken),
-    // 연결이 끊기면(서버 재배포, Render가 잠듦, 폰 화면 꺼짐 등) 간격을 늘려
+    // 연결이 끊기면(서버 재시작, 망 끊김, 폰 화면 꺼짐 등) 간격을 늘려
     // 가며 다시 붙음 — 예전엔 한 번 끊기면 새로고침 전까지 실시간 반영이 멈췄음.
     // 다시 붙었을 땐 끊겨 있던 동안의 변경을 놓쳤을 수 있으니 페이지를 한 번
     // 새로 받아와서 cb로 넘김. 방이 없다고(4404) 닫히면 재시도하지 않음.
     // 탭이 안 보이는 동안엔 다시 붙지 않고 기다렸다가, 다시 보이면 바로 붙음 —
-    // 잊고 열어둔 탭이 재연결 시도로 잠든 서버(Render 무료)를 계속 깨우지 않게.
+    // 잊고 열어둔 탭이 보이지도 않는데 서버에 계속 재연결을 시도하지 않게.
     subscribePage: (n, cb) => {
       if (typeof WebSocket === 'undefined') return () => {};
       let ws = null;
