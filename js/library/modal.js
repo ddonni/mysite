@@ -9,7 +9,7 @@
 import {
   CATS, uploadPhoto, saveRecord, fetchSuggestions, searchBooks, searchMusic, searchScreen, fetchScreenCreator,
 } from './records.js';
-import { CREATOR_FIELD } from './modal/categoryFields.js';
+import { CREATOR_FIELD, TITLE_PLACEHOLDER } from './modal/categoryFields.js';
 import { createStarPicker } from './modal/starPicker.js';
 import { createPhotoPicker } from './modal/photoPicker.js';
 import { createPresetAutocomplete } from './modal/presetAutocomplete.js';
@@ -292,7 +292,7 @@ export function createModal({ onSaved }) {
     if (items.some((s) => s.source === 'screen')) return '고르면 감독·포스터를 채워요 · 정보 제공: TMDB(TMDB의 보증을 받은 서비스는 아니에요)';
     if (items.some((s) => s.source === 'music')) {
       const tip = typedArtist() ? '' : ' · 가수를 함께 쓰면 더 정확해요';
-      return '고르면 가수·앨범 커버를 채워요' + tip;
+      return '고르면 가수·앨범 커버를 채워요 · 제목은 쓴 그대로 남아요' + tip;
     }
     return '';
   }
@@ -305,11 +305,19 @@ export function createModal({ onSaved }) {
   }
 
   // 목록 맨 위 — 다른 칸 값까지 합쳐서는 0건이라 이 칸만으로 다시 찾은 결과일 때.
+  // 음악 제목 칸에선 항상 맨 위에 "노래는 실린 앨범으로 나온다"는 안내도 붙임 —
+  // "뉴질랜드"를 쳤는데 앨범 "원래"만 보이면 노래가 없는 줄 알게 돼서(로그인 없는
+  // 유튜브 뮤직 검색은 노래를 안 줌, music_search.py).
   function searchHeader(field, items) {
+    const lines = [];
     const dropped = searchState[field].dropped;
-    if (!dropped || !items.some((s) => s.source)) return '';
-    const alone = field === 'title' ? '제목' : '이름';
-    return `'${dropped}'까지 넣으면 결과가 없어 ${alone}만으로 찾았어요`;
+    if (dropped && items.some((s) => s.source)) {
+      lines.push(`'${dropped}'까지 넣으면 결과가 없어 ${field === 'title' ? '제목' : '이름'}만으로 찾았어요`);
+    }
+    if (field === 'title' && items.some((s) => s.source === 'music')) {
+      lines.push('노래는 그 노래가 실린 앨범으로 나와요 — 앨범을 고르면 돼요');
+    }
+    return lines.join('\n');
   }
 
   // 검색까지 했는데 후보가 하나도 없을 때. 검색 자체가 실패한 것(서버·카카오·유튜브
@@ -371,9 +379,11 @@ export function createModal({ onSaved }) {
     }, 0);
   });
 
+  // 카테고리 탭이 바뀔 때마다 만든 사람 칸 라벨과 제목 칸 안내 글씨를 그 탭에 맞춤.
   function updateCreatorField() {
     const field = CREATOR_FIELD[currentCat] || CREATOR_FIELD.book;
     creatorLabel.textContent = field.label;
+    fTitle.placeholder = TITLE_PLACEHOLDER[currentCat] || TITLE_PLACEHOLDER.book;
   }
 
   // ---- 카테고리 탭(책/애니/영화/음악) ----

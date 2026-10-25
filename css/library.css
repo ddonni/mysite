@@ -285,7 +285,7 @@ body.read-only #addTabBtn{ display:none; }
 .preset-foot{ padding:6px 12px; font-size:10.5px; color:var(--paper-dim); text-align:right; }
 /* 목록 맨 위 안내("…로는 결과가 없어 제목만으로 찾았어요")와, 후보 대신 뜨는 한 줄
    ("검색 중…", "검색 결과가 없어요"). */
-.preset-head{ padding:7px 12px; font-size:11.5px; color:var(--gold); border-bottom:1px solid var(--line); }
+.preset-head{ padding:7px 12px; font-size:11.5px; line-height:1.5; color:var(--gold); border-bottom:1px solid var(--line); white-space:pre-line; }
 .preset-message{ padding:10px 12px; font-size:12.5px; color:var(--paper-dim); }
 
 .stars{ display:flex; gap:4px; }

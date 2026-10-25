@@ -77,7 +77,9 @@ describe('음악 탭 제목 검색', () => {
     typeTitle('주저하는 연인들을 위해');
     await settle();
     expect(searchMusic.mock.calls.map((c) => c[0])).toEqual(['엉뚱 주저하는 연인들을 위해', '주저하는 연인들을 위해']);
-    expect($('presetList').querySelector('.preset-head').textContent).toBe("'엉뚱'까지 넣으면 결과가 없어 제목만으로 찾았어요");
+    expect($('presetList').querySelector('.preset-head').textContent).toBe(
+      "'엉뚱'까지 넣으면 결과가 없어 제목만으로 찾았어요\n노래는 그 노래가 실린 앨범으로 나와요 — 앨범을 고르면 돼요",
+    );
   });
 
   it('앞서 고른 결과로 자동으로 채워진 가수는 다음 검색에 안 씀', async () => {
@@ -116,6 +118,20 @@ describe('음악 탭 제목 검색', () => {
     await settle();
     $('presetList').querySelector('.preset-item.rich').click();
     expect($('fCreator').value).toBe('다른 가수');
+  });
+
+  it('노래는 실린 앨범으로 나온다고 목록 위·아래와 제목 칸에서 알려줌', async () => {
+    expect($('fTitle').placeholder).toBe('노래 제목 — 검색하면 실린 앨범이 나와요');
+    searchMusic.mockResolvedValue([{ ...ALBUM, album: '원래', creator: '래원' }]);
+    typeTitle('뉴질랜드');
+    await settle();
+    expect($('presetList').querySelector('.preset-head').textContent).toBe('노래는 그 노래가 실린 앨범으로 나와요 — 앨범을 고르면 돼요');
+    expect($('presetList').querySelector('.preset-foot').textContent).toContain('제목은 쓴 그대로 남아요');
+    $('presetList').querySelector('.preset-item.rich').click();
+    expect($('fTitle').value).toBe('뉴질랜드');
+
+    modal.openAdd('book'); // 다른 탭은 원래 안내 글씨
+    expect($('fTitle').placeholder).toBe('제목을 입력해 보세요');
   });
 
   it('결과가 없으면 검색어와 함께 알려줌', async () => {

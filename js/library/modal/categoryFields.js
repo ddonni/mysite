@@ -4,6 +4,15 @@
 
 // 카테고리마다 "만든 사람" 칸의 라벨이 다름 — 음악은 그 자리에 가수 이름을
 // 받음.
+// 제목 칸 안내 글씨 — 음악은 검색 결과가 노래가 아니라 그 노래가 실린 앨범으로 나와서
+// (백엔드 music_search.py), "뉴질랜드"를 쳤는데 앨범 "원래"만 보여도 헷갈리지 않게 미리 알림.
+export const TITLE_PLACEHOLDER = {
+  book: '제목을 입력해 보세요',
+  anime: '제목을 입력해 보세요',
+  movie: '제목을 입력해 보세요',
+  music: '노래 제목 — 검색하면 실린 앨범이 나와요',
+};
+
 export const CREATOR_FIELD = {
   book: { label: '작가' },
   anime: { label: '감독 / 제작사' },
