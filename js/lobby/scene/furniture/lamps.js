@@ -34,7 +34,7 @@ export function buildFloorLamp() {
   shade.position.y = 1.62;
   group.add(shade);
 
-  const light = new THREE.PointLight(WARM, 1.0, 5, 2);
+  const light = new THREE.PointLight(WARM, 0.6, 5, 2); // 2026-10-25 방 한 단계 어둡게(×0.6, lighting.js)
   light.position.y = 1.55;
   group.add(light);
 

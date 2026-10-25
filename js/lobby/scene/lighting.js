@@ -7,12 +7,14 @@
 // 멀리서(첫 화면) 봐도 벽 가구와 인생작이 어둡게 묻히지 않을 만큼 전체를
 // 밝히되, 색은 중립적으로 둬서 방 전체가 한 가지 주황빛으로 뭉개지지 않게 함.
 // main.js의 ACES 톤매핑/노출값과 짝을 이룬 값이라, 둘 중 하나를 바꾸면 같이 봐야 함.
+// (2026-10-25 한 단계 어둡게: 반구 0.8 → 0.44, 스포트 3.2 → 1.92, 포인트 조명은
+// roomLayout.js·lamps.js에서 ×0.6 — 여러 조합을 같은 화면으로 비교해서 고른 값, main.js 설명.)
 export function addLighting(scene, lights) {
-  const hemi = new THREE.HemisphereLight(0x4a443d, 0x100d0a, 0.8);
+  const hemi = new THREE.HemisphereLight(0x4a443d, 0x100d0a, 0.44);
   scene.add(hemi);
 
   // 둥근 방 앞쪽 높은 곳에서 방 가운데를 향해 — 원뿔을 넓혀 네 벽을 한 번에 비춤.
-  const spot = new THREE.SpotLight(0xfff3e6, 3.2, 34, 1.1, 0.75, 1.0);
+  const spot = new THREE.SpotLight(0xfff3e6, 1.92, 34, 1.1, 0.75, 1.0);
   spot.position.set(0, 9.2, 6.2);
   spot.target.position.set(0, 0.5, -2.2);
   spot.castShadow = true;

@@ -51,15 +51,16 @@ export function arrangeRoom(p) {
   //  - 벽마다 그 기록의 색을 띤 은은한 빛(accent) — "무슨 기록인지"만 살짝.
   const colors = { anime: 0xd97aa0, book: 0xc79a4b, movie: 0xc9564a };
   const mc = p.recordConsole.position;
+  // 세기는 2026-10-25에 전부 ×0.6(방 한 단계 어둡게 — lighting.js 설명).
   const lights = [
-    [0xd9793a, 0.55, 0.3, 2.2, 2.2], // 이젤
-    [0x4a9fc9, 0.5, mc.x - 0.9, 2.0, mc.z + 0.7], // 음악 코너
+    [0xd9793a, 0.33, 0.3, 2.2, 2.2], // 이젤
+    [0x4a9fc9, 0.3, mc.x - 0.9, 2.0, mc.z + 0.7], // 음악 코너
   ];
   Object.keys(FACES).forEach((k) => {
     const wash = wallPoint(FACES[k], 0, 2.4, 3.4);
-    lights.push([0xfff0dc, 0.85, wash.x, wash.y, wash.z]);
+    lights.push([0xfff0dc, 0.51, wash.x, wash.y, wash.z]);
     const accent = wallPoint(FACES[k], 0, 1.4, 1.6);
-    lights.push([colors[k], 0.45, accent.x, accent.y, accent.z]);
+    lights.push([colors[k], 0.27, accent.x, accent.y, accent.z]);
   });
 
   // 벽 가구는 전부 같은 거리·높이에서, 방 가운데 쪽에서 그 벽을 정면으로 봄 —

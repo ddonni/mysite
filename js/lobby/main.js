@@ -108,8 +108,11 @@ function bootWithTheme(theme, ctx) {
   // 영화 같은 색 보정 — 밝은 곳(램프 주변)이 하얗게 날아가지 않고 부드럽게
   // 눌리고, 방 전체가 한 가지 색으로 쏠리지 않음. scene/lighting.js의
   // 조명 세기는 이 톤매핑/노출값에 맞춰 잡은 것.
+  // 2026-10-25 노출·조명 세기를 바꿔 가며 같은 화면을 비교해서 한 단계 어둡게(노출 1.4 →
+  // 0.85, 조명도 함께 낮춤) — 크림색 벽이 덜 번쩍여서 사진이 더 진해 보이고 방이 아늑해짐.
+  // (노출만·조명 하나만 바꿨을 땐 사진이 거의 그대로였음 — 방 전체를 같이 낮춰야 효과가 남.)
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.4;
+  renderer.toneMappingExposure = 0.85;
 
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 60);
 
