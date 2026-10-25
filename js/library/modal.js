@@ -169,9 +169,12 @@ export function createModal({ onSaved }) {
   function webSearch(cat, field, q, signal) {
     if (isScreen(cat)) return screenSearch(cat, field, q, signal);
     const other = field === 'title' ? typedArtist() : typedTitle();
+    // 만든 사람 칸만으로 찾을 땐 이름 전용 검색 — 책은 작가 이름, 음악은 그 가수의
+    // 앨범·싱글 목록(일반 검색은 앨범을 3개까지만 줌).
+    const byPerson = field === 'creator';
     const alone = () => (cat === 'music'
-      ? searchMusic(q, signal)
-      : searchBooks(q, signal, field === 'creator' ? 'author' : 'title'));
+      ? searchMusic(q, signal, byPerson ? 'artist' : 'title')
+      : searchBooks(q, signal, byPerson ? 'author' : 'title'));
     if (!other) return tryWeb(alone(), signal).then((found) => ({ found, dropped: '' }));
     const title = field === 'title' ? q : other;
     const person = field === 'title' ? other : q;

@@ -12,7 +12,8 @@
 import { escapeHtml, escapeAttr } from '../../shared/dom.js';
 import { photoSrc } from '../../shared/photoSrc.js';
 
-const MAX_ITEMS = 8;
+// 이 방 후보 3개 + 검색 결과(책 8개, 가수의 앨범·싱글 최대 12개)가 들어가도록.
+const MAX_ITEMS = 12;
 const DEBOUNCE_MS = 180;
 
 // fetchSuggestions(cat, q, signal) → Promise<[{ value, mine, card? }]>

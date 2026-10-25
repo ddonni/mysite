@@ -90,7 +90,7 @@ describe('음악 탭 제목 검색', () => {
 
     typeTitle('밤양갱');
     await settle();
-    expect(searchMusic).toHaveBeenLastCalledWith('밤양갱', expect.anything());
+    expect(searchMusic).toHaveBeenLastCalledWith('밤양갱', expect.anything(), 'title');
   });
 
   it('자동으로 채워진 가수도 한 번 손대면 직접 쓴 것 — 같은 글자로 되돌려도', async () => {
@@ -249,7 +249,7 @@ describe('만든 사람 칸 검색', () => {
     searchMusic.mockResolvedValue([{ ...ALBUM, album: 'TEAM BABY', creator: '검정치마' }]);
     typeCreator('검정치마');
     await settle();
-    expect(searchMusic).toHaveBeenCalledWith('검정치마', expect.anything());
+    expect(searchMusic).toHaveBeenCalledWith('검정치마', expect.anything(), 'artist'); // 가수 칸만이면 그 가수의 앨범·싱글 목록
     $('creatorList').querySelector('.preset-item.rich').click();
     expect($('fCreator').value).toBe('검정치마');
     expect($('fTitle').value).toBe('');
