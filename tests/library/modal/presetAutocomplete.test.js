@@ -103,3 +103,37 @@ describe('검색 결과 후보(card)', () => {
     expect(listEl.querySelector('.preset-foot')).toBeNull();
   });
 });
+
+describe('안내 문구', () => {
+  it('서버 응답을 기다리는 동안 pendingText, 결과가 없으면 emptyText', async () => {
+    let resolve;
+    setup([], {
+      fetchSuggestions: () => new Promise((r) => { resolve = r; }),
+      pendingText: () => '검색 중…',
+      emptyText: (q) => `'${q}' 검색 결과가 없어요.`,
+    });
+    type('없는노래');
+    expect(listEl.querySelector('.preset-message').textContent).toBe('검색 중…');
+    expect(listEl.style.display).toBe('block');
+    await settle();
+    resolve([]);
+    await settle();
+    expect(listEl.querySelector('.preset-message').textContent).toBe("'없는노래' 검색 결과가 없어요.");
+    expect(listEl.querySelector('.preset-item')).toBeNull();
+  });
+
+  it('emptyText가 빈 문자열이면 지금처럼 목록을 닫음', async () => {
+    setup([], { emptyText: () => '' });
+    type('xx');
+    await settle();
+    expect(listEl.style.display).toBe('none');
+  });
+
+  it('header는 후보 위에 붙음', async () => {
+    setup([BAMYANGGANG], { header: () => "'잔나비'(으)로는 결과가 없어 제목만으로 찾았어요" });
+    type('밤양');
+    await settle();
+    expect(listEl.firstElementChild.className).toBe('preset-head');
+    expect(listEl.firstElementChild.textContent).toContain('제목만으로 찾았어요');
+  });
+});

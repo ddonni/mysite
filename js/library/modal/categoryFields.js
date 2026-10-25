@@ -2,11 +2,11 @@
 // 폼 필드 라벨을 어떻게 바꿀지 판단하는 쪽(modal.js)이 이 설정만
 // 보고 정하고, 실제 DOM 조작은 안 함.
 
-// 카테고리마다 "작가/감독/제작" 칸의 라벨이 다름 — 음악은 그 자리에
-// 가수 이름을 받음.
+// 카테고리마다 "만든 사람" 칸의 라벨이 다름 — 음악은 그 자리에 가수 이름을
+// 받음. 제목 칸 옆 좁은 칸에 들어가서(library.html의 .field-row) 짧게 씀.
 export const CREATOR_FIELD = {
-  book: { label: '작가 / 감독 / 제작' },
-  anime: { label: '작가 / 감독 / 제작' },
-  movie: { label: '작가 / 감독 / 제작' },
+  book: { label: '작가' },
+  anime: { label: '감독 / 제작사' },
+  movie: { label: '감독' },
   music: { label: '가수' },
 };

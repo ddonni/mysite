@@ -20,7 +20,13 @@ const norm = (s) => (s || '').replace(/\s+/g, ' ').trim().toLowerCase();
 // presets(cat) → 서버 후보가 모자랄 때 채울 문자열 목록(없으면 안 채움)
 // onPick(후보) → 목록에서 하나를 고른 직후(입력칸 값은 이미 바뀐 뒤)
 // footer(후보들) → 목록 맨 아래 작은 글씨(없으면 빈 문자열) — 출처 표기·검색 요령
-export function createPresetAutocomplete({ input, listEl }, { getCat, fetchSuggestions, presets, markMine = false, onPick, footer }) {
+// header(후보들) → 목록 맨 위 작은 글씨(없으면 빈 문자열) — "가수 없이 찾은 결과" 등
+// pendingText(입력값) → 서버 응답을 기다리는 동안 보여줄 문구(빈 문자열이면 안 보임)
+// emptyText(입력값) → 서버 응답까지 왔는데 후보가 하나도 없을 때 문구(빈 문자열이면
+//   지금처럼 목록을 닫음) — 검색 결과가 없다는 걸 알려주려고
+export function createPresetAutocomplete({ input, listEl }, {
+  getCat, fetchSuggestions, presets, markMine = false, onPick, footer, header, pendingText, emptyText,
+}) {
   let timer = null;
   let ctrl = null; // 진행 중인 서버 요청 — 새로 치면 이전 것은 취소
   let seq = 0;
@@ -35,10 +41,27 @@ export function createPresetAutocomplete({ input, listEl }, { getCat, fetchSugge
     return (presets(getCat()) || []).filter((t) => norm(t).includes(f)).map((value) => ({ value }));
   }
 
+  function note(className, text) {
+    const el = document.createElement('div');
+    el.className = className;
+    el.textContent = text;
+    listEl.appendChild(el);
+  }
+
+  // 후보 대신 안내 문구 한 줄만 보여줌("검색 중…", "결과가 없어요"). 빈 문구면 닫음.
+  function drawMessage(text) {
+    listEl.innerHTML = '';
+    if (!text) { hide(); return; }
+    listEl.style.display = 'block';
+    note('preset-message', text);
+  }
+
   function draw(items) {
     listEl.innerHTML = '';
     if (!items.length) { hide(); return; }
     listEl.style.display = 'block';
+    const top = header ? header(items) : '';
+    if (top) note('preset-head', top);
     items.forEach((s) => {
       const el = document.createElement('div');
       el.className = 'preset-item';
@@ -77,13 +100,8 @@ export function createPresetAutocomplete({ input, listEl }, { getCat, fetchSugge
       });
       listEl.appendChild(el);
     });
-    const note = footer ? footer(items) : '';
-    if (note) {
-      const foot = document.createElement('div');
-      foot.className = 'preset-foot';
-      foot.textContent = note;
-      listEl.appendChild(foot);
-    }
+    const bottom = footer ? footer(items) : '';
+    if (bottom) note('preset-foot', bottom);
   }
 
   // 서버 후보 먼저, 모자라면 같은 값이 아닌 PRESETS로 채움.
@@ -97,15 +115,23 @@ export function createPresetAutocomplete({ input, listEl }, { getCat, fetchSugge
     clearTimeout(timer);
     if (ctrl) { ctrl.abort(); ctrl = null; }
     if (!filter) { hide(); return; }
-    // 서버 응답을 기다리는 동안에도 비어 보이지 않게 PRESETS부터 그려둠.
-    draw(merge([], filter));
+    // 서버 응답을 기다리는 동안에도 비어 보이지 않게 PRESETS부터 그려둠 — 그것도
+    // 없으면 "검색 중…"(pendingText가 있을 때만).
+    const first = merge([], filter);
+    if (first.length || !fetchSuggestions || !pendingText) draw(first);
+    else drawMessage(pendingText(filter));
     if (!fetchSuggestions) return;
     const my = ++seq;
     timer = setTimeout(() => {
       ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
       fetchSuggestions(getCat(), filter, ctrl && ctrl.signal)
-        .then((server) => { if (my === seq) draw(merge(server || [], filter)); })
-        .catch(() => {}); // 서버가 안 닿으면 PRESETS 그대로
+        .then((server) => {
+          if (my !== seq) return;
+          const items = merge(server || [], filter);
+          if (!items.length && emptyText) drawMessage(emptyText(filter));
+          else draw(items);
+        })
+        .catch(() => { if (my === seq && !first.length) hide(); }); // 서버가 안 닿으면 PRESETS 그대로
     }, DEBOUNCE_MS);
   }
 

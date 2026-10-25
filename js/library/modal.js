@@ -46,6 +46,9 @@ export function createModal({ onSaved }) {
       markMine: true, // 내 방에 이미 있는 제목 → "이미 기록함"
       onPick: (s) => { if (s.pick) fillFromPick(s.pick); },
       footer: titleFooter,
+      header: titleHeader,
+      pendingText: (q) => (searchesWeb(currentCat, q) ? '검색 중…' : ''),
+      emptyText: titleEmptyText,
     },
   );
   const creatorAutocomplete = createPresetAutocomplete(
@@ -65,17 +68,49 @@ export function createModal({ onSaved }) {
   //   - 책(카카오): 같은 제목이 둘 다에 있으면 검색 결과 쪽만 남기고("이미 기록함"
   //     표시는 옮겨 붙임) — 같은 줄이 두 번 보이지 않게.
   //   - 음악(유튜브 뮤직): 로그인 없이는 앨범만 찾아져서(백엔드 music_search.py),
-  //     노래 제목만으론 남의 커버곡이 먼저 나오기 쉬움 — 가수 칸이 채워져 있으면
-  //     "가수 제목"으로 검색함. 고르면 제목은 입력한 그대로 둠(대개 노래 제목이라
-  //     앨범 이름으로 덮으면 틀어짐).
+  //     노래 제목만으론 남의 커버곡이 먼저 나오기 쉬움 — 가수 칸에 **직접 쓴** 가수가
+  //     있으면 "가수 제목"으로 검색함(앞서 고른 결과로 자동으로 채워진 가수는 제목을
+  //     바꾼 뒤엔 엉뚱한 가수일 수 있어서 안 씀). 그걸로 0건이면 제목만으로 한 번 더.
+  //     고르면 제목은 입력한 그대로 둠(대개 노래 제목이라 앨범 이름으로 덮으면 틀어짐).
+  //
+  // lastSearch: 방금 끝난 검색이 실패했는지·가수를 빼고 다시 찾았는지 — 목록 위·아래
+  // 문구와 "결과 없음" 문구가 봄. 새 입력으로 취소된(abort) 옛 검색은 기록하지 않음.
+  let lastSearch = { failed: false, droppedArtist: '' };
+
+  function searchesWeb(cat, q) {
+    return (cat === 'book' || cat === 'music') && q.length >= 2;
+  }
+
+  function typedArtist() {
+    const v = fCreator.value.trim();
+    return v && v !== autoCreator ? v : '';
+  }
+
+  // 검색 결과 배열 또는 실패(null). 취소된 요청은 abort 에러 그대로 넘김.
+  function tryWeb(promise, signal) {
+    return promise.catch((err) => {
+      if (signal && signal.aborted) throw err;
+      return null;
+    });
+  }
+
+  function record(signal, state) {
+    if (!(signal && signal.aborted)) lastSearch = state;
+  }
+
   function titleSuggestions(cat, q, signal) {
     const own = fetchSuggestions(cat, 'title', q, signal);
-    if (q.length < 2) return own;
+    if (!searchesWeb(cat, q)) {
+      record(signal, { failed: false, droppedArtist: '' });
+      return own;
+    }
     if (cat === 'book') {
       return Promise.all([
         own.catch(() => []),
-        searchBooks(q, signal).catch(() => []),
-      ]).then(([mine, books]) => {
+        tryWeb(searchBooks(q, signal), signal),
+      ]).then(([mine, found]) => {
+        record(signal, { failed: found === null, droppedArtist: '' });
+        const books = found || [];
         const mineTitles = new Set(mine.filter((s) => s.mine).map((s) => s.value.trim()));
         const bookTitles = new Set(books.map((b) => b.title.trim()));
         const rest = mine.filter((s) => !bookTitles.has(s.value.trim()));
@@ -89,35 +124,58 @@ export function createModal({ onSaved }) {
       });
     }
     if (cat === 'music') {
-      const artist = fCreator.value.trim();
-      return Promise.all([
-        own.catch(() => []),
-        searchMusic(artist ? `${artist} ${q}` : q, signal).catch(() => []),
-      ]).then(([mine, albums]) => mine.slice(0, 3).concat(albums.map((m) => ({
-        // 로그인 검색이 노래까지 돌려주면 그 노래 제목, 아니면 입력한 그대로.
-        value: m.song || q,
-        card: {
-          title: m.song || m.album,
-          meta: [m.creator, m.song ? m.album : m.kind, m.year].filter(Boolean).join(' · '),
-          cover: m.cover,
-          square: true,
-        },
-        pick: { creator: m.creator, cover: m.cover },
-        source: 'music',
-      }))));
+      const artist = typedArtist();
+      const music = tryWeb(searchMusic(artist ? `${artist} ${q}` : q, signal), signal).then((found) => {
+        if (!artist || (found && found.length)) return { found, droppedArtist: '' };
+        // 가수까지 붙여서는 0건(또는 실패) — 제목만으로 다시.
+        return tryWeb(searchMusic(q, signal), signal).then((again) => ({
+          found: again,
+          droppedArtist: again && again.length ? artist : '',
+        }));
+      });
+      return Promise.all([own.catch(() => []), music]).then(([mine, { found, droppedArtist }]) => {
+        record(signal, { failed: found === null, droppedArtist });
+        return mine.slice(0, 3).concat((found || []).map((m) => ({
+          // 로그인 검색이 노래까지 돌려주면 그 노래 제목, 아니면 입력한 그대로.
+          value: m.song || q,
+          card: {
+            title: m.song || m.album,
+            meta: [m.creator, m.song ? m.album : m.kind, m.year].filter(Boolean).join(' · '),
+            cover: m.cover,
+            square: true,
+          },
+          pick: { creator: m.creator, cover: m.cover },
+          source: 'music',
+        })));
+      });
     }
     return own;
   }
 
   // 목록 맨 아래 작은 글씨 — 검색 결과가 섞여 있을 때만. 책은 카카오 검색 API
-  // 약관의 출처 표기, 음악은 고르면 무엇이 채워지는지 + 가수 칸이 비었으면 요령.
+  // 약관의 출처 표기, 음악은 고르면 무엇이 채워지는지 + 가수를 안 썼으면 요령.
   function titleFooter(items) {
     if (items.some((s) => s.source === 'book')) return '책 정보 제공: Kakao';
     if (items.some((s) => s.source === 'music')) {
-      const tip = fCreator.value.trim() ? '' : ' · 가수를 함께 쓰면 더 정확해요';
+      const tip = typedArtist() ? '' : ' · 가수를 함께 쓰면 더 정확해요';
       return '고르면 가수·앨범 커버를 채워요' + tip;
     }
     return '';
+  }
+
+  // 목록 맨 위 — 가수를 붙여서는 0건이라 제목만으로 다시 찾은 결과일 때.
+  function titleHeader(items) {
+    if (!lastSearch.droppedArtist || !items.some((s) => s.source === 'music')) return '';
+    return `'${lastSearch.droppedArtist}'(으)로는 결과가 없어 제목만으로 찾았어요`;
+  }
+
+  // 검색까지 했는데 후보가 하나도 없을 때. 검색 자체가 실패한 것(서버·카카오·유튜브
+  // 오류)과 정말 결과가 없는 것을 구분해서 알려줌.
+  function titleEmptyText(q) {
+    if (!searchesWeb(currentCat, q)) return '';
+    if (lastSearch.failed) return '지금은 검색할 수 없어요. 직접 입력해 주세요.';
+    const tip = currentCat === 'music' && !typedArtist() ? ' 가수를 함께 써 보세요.' : '';
+    return `'${q}' 검색 결과가 없어요.${tip}`;
   }
 
   function fillFromPick(pick) {
