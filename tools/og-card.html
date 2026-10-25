@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;width:1200px;height:630px;overflow:hidden;background:#120f0c;}
+body{font-family:'Manrope','Malgun Gothic',sans-serif;color:#f3ece0;position:relative;}
+.glow{position:absolute;inset:0;background:
+  radial-gradient(ellipse 620px 420px at 78% 58%, rgba(217,121,58,0.30), transparent 70%),
+  radial-gradient(ellipse 500px 300px at 15% 10%, rgba(199,154,75,0.10), transparent 70%);}
+.wrap{position:absolute;left:96px;top:110px;}
+.eyebrow{font-family:'Fraunces',serif;font-size:28px;letter-spacing:0.18em;text-transform:uppercase;color:#c79a4b;}
+h1{margin:18px 0 0;font-size:108px;font-weight:800;letter-spacing:-0.02em;line-height:1;}
+p{margin:30px 0 0;font-size:34px;font-weight:500;color:#b7ac98;line-height:1.45;}
+.cats{position:absolute;left:96px;bottom:92px;display:flex;gap:14px;}
+.cat{display:flex;align-items:center;gap:12px;padding:14px 24px;border:1.5px solid rgba(243,236,224,0.16);border-radius:999px;background:#1d1812;font-size:26px;font-weight:700;}
+.dot{width:14px;height:14px;border-radius:50%;}
+/* 오른쪽: 선반 위 책·포스터·레코드 실루엣 */
+.shelf{position:absolute;right:96px;top:150px;width:380px;height:330px;}
+.board{position:absolute;left:0;right:0;height:10px;background:#3a2c1f;border-radius:3px;}
+.book{position:absolute;bottom:0;border-radius:3px 3px 0 0;}
+.poster{position:absolute;border-radius:4px;box-shadow:0 10px 30px rgba(0,0,0,0.5);}
+.lp{position:absolute;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,#d9793a 0 14%,#111 15% 100%);box-shadow:0 0 0 2px #2a221a, 0 10px 30px rgba(0,0,0,0.5);}
+</style></head><body>
+<div class="glow"></div>
+<div class="wrap">
+  <div class="eyebrow">Archive Room</div>
+  <h1>내 방</h1>
+  <p>읽고, 보고, 들은 것들을<br>3D 방에 모아두는 곳</p>
+</div>
+<div class="shelf">
+  <div class="poster" style="left:30px;top:0;width:120px;height:170px;background:linear-gradient(160deg,#4a9fc9,#1f4a63);"></div>
+  <div class="poster" style="left:170px;top:20px;width:110px;height:150px;background:linear-gradient(160deg,#d97aa0,#6b2f47);"></div>
+  <div style="position:absolute;left:0;right:0;top:190px;height:130px;">
+    <div class="book" style="left:20px;width:34px;height:118px;background:#c9564a;"></div>
+    <div class="book" style="left:58px;width:28px;height:104px;background:#c79a4b;"></div>
+    <div class="book" style="left:90px;width:38px;height:124px;background:#4a9fc9;"></div>
+    <div class="book" style="left:132px;width:26px;height:96px;background:#f3ece0;"></div>
+    <div class="book" style="left:162px;width:32px;height:112px;background:#d97aa0;"></div>
+    <div class="lp" style="left:222px;top:-30px;"></div>
+    <div class="board" style="bottom:-10px;"></div>
+  </div>
+</div>
+<div class="cats">
+  <div class="cat"><span class="dot" style="background:#c79a4b"></span>책</div>
+  <div class="cat"><span class="dot" style="background:#d97aa0"></span>애니</div>
+  <div class="cat"><span class="dot" style="background:#c9564a"></span>영화</div>
+  <div class="cat"><span class="dot" style="background:#4a9fc9"></span>음악</div>
+  <div class="cat"><span class="dot" style="background:#d9793a"></span>캔버스</div>
+</div>
+</body></html>
