@@ -128,6 +128,59 @@ describe('음악 탭 제목 검색', () => {
   });
 });
 
+describe('만든 사람 칸 검색', () => {
+  const HAN = { title: '소년이 온다', full_title: '소년이 온다', creator: '한강', publisher: '창비', year: '2014', cover: 'https://t1.daumcdn.net/lbook/image/1' };
+
+  function typeCreator(v) {
+    $('fCreator').value = v;
+    $('fCreator').dispatchEvent(new Event('input'));
+  }
+
+  it('책: 작가 이름으로 찾고, 고르면 이름·제목·표지를 채움', async () => {
+    modal.openAdd('book');
+    searchBooks.mockResolvedValue([HAN]);
+    typeCreator('한강');
+    await settle();
+    expect(searchBooks).toHaveBeenCalledWith('한강', expect.anything(), 'author');
+    $('creatorList').querySelector('.preset-item.rich').click();
+    expect($('fCreator').value).toBe('한강');
+    expect($('fTitle').value).toBe('소년이 온다');
+    expect($('photoPreview').getAttribute('src')).toContain('/api/cover?url=');
+  });
+
+  it('책: 이미 쓴 제목은 덮어쓰지 않음', async () => {
+    modal.openAdd('book');
+    searchBooks.mockResolvedValue([HAN]);
+    typeTitle('채식주의자');
+    $('fTitle').dispatchEvent(new Event('input'));
+    typeCreator('한강');
+    await settle();
+    $('creatorList').querySelector('.preset-item.rich').click();
+    expect($('fTitle').value).toBe('채식주의자');
+  });
+
+  it('음악: 가수로 찾은 앨범을 고르면 가수·커버만, 제목 칸은 그대로 비워 둠', async () => {
+    searchMusic.mockResolvedValue([{ ...ALBUM, album: 'TEAM BABY', creator: '검정치마' }]);
+    typeCreator('검정치마');
+    await settle();
+    expect(searchMusic).toHaveBeenCalledWith('검정치마', expect.anything());
+    $('creatorList').querySelector('.preset-item.rich').click();
+    expect($('fCreator').value).toBe('검정치마');
+    expect($('fTitle').value).toBe('');
+    expect($('photoPreview').getAttribute('src')).toBe(ALBUM.cover);
+  });
+
+  it('음악: 가수 칸에서 고른 이름은 직접 쓴 가수로 — 다음 제목 검색에 들어감', async () => {
+    searchMusic.mockResolvedValue([{ ...ALBUM, creator: '검정치마' }]);
+    typeCreator('검정');
+    await settle();
+    $('creatorList').querySelector('.preset-item.rich').click();
+    typeTitle('Everything');
+    await settle();
+    expect(searchMusic).toHaveBeenLastCalledWith('검정치마 Everything', expect.anything());
+  });
+});
+
 describe('책 탭', () => {
   it('결과 없음 문구에 가수 요령은 안 붙음', async () => {
     modal.openAdd('book');
