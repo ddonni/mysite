@@ -1,6 +1,7 @@
 // 기록(책/애니/영화)의 사진을 캔버스 텍스처에 그리는 공용 로직 — 벽 액자,
 // 영화 포스터, 애니 아크릴 스탠드가 전부 "사진이 있으면 꽉 채워 그리고,
 // 없거나 못 불러오면 제목 카드로 대신"이라는 같은 규칙을 씀.
+import { photoSrc } from '../../shared/photoSrc.js';
 
 // img를 (x, y, w, h) 칸에 비율 유지한 채 꽉 채워(object-fit: cover) 그림.
 export function drawCover(ctx, img, x, y, w, h) {
@@ -69,7 +70,7 @@ export function paintRecordImage(ctx, record, { drawImage, drawFallback, onDone 
   if (!url) { drawFallback(); onDone(); return; }
   const img = new Image();
   img.crossOrigin = 'anonymous';
-  img.src = url;
+  img.src = photoSrc(url);
   const stillLatest = () => latestPaint.get(ctx) === token;
   img.decode()
     .then(() => { if (stillLatest()) drawImage(img); })

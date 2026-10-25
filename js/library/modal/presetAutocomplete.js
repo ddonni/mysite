@@ -4,14 +4,23 @@
 // 기록에서 골라 줌. 제목 칸은 코드에 적어둔 PRESETS로 모자란 걸 채우고(서버가
 // 안 닿아도), 내 방에 이미 있는 제목엔 "이미 기록함" 표시(markMine).
 // getCat()으로 지금 카테고리를 매번 물어봄(카테고리 탭이 바뀔 수 있어서).
+//
+// 후보에 book({ full_title, creator, publisher, year, cover })이 붙어 있으면 책 검색
+// 결과라서 표지 썸네일과 "작가 · 출판사 · 연도"를 같이 그리고, 고르면 onPick(후보)을
+// 불러 부르는 쪽(modal.js)이 작가·표지까지 채우게 함.
+import { escapeHtml, escapeAttr } from '../../shared/dom.js';
+import { photoSrc } from '../../shared/photoSrc.js';
+
 const MAX_ITEMS = 8;
 const DEBOUNCE_MS = 180;
 
 const norm = (s) => (s || '').replace(/\s+/g, ' ').trim().toLowerCase();
 
-// fetchSuggestions(cat, q, signal) → Promise<[{ value, mine }]>
+// fetchSuggestions(cat, q, signal) → Promise<[{ value, mine, book? }]>
 // presets(cat) → 서버 후보가 모자랄 때 채울 문자열 목록(없으면 안 채움)
-export function createPresetAutocomplete({ input, listEl }, { getCat, fetchSuggestions, presets, markMine = false }) {
+// onPick(후보) → 목록에서 하나를 고른 직후(입력칸 값은 이미 바뀐 뒤)
+// footer(후보들) → 목록 맨 아래 작은 글씨(없으면 빈 문자열) — 책 정보 출처 표기용
+export function createPresetAutocomplete({ input, listEl }, { getCat, fetchSuggestions, presets, markMine = false, onPick, footer }) {
   let timer = null;
   let ctrl = null; // 진행 중인 서버 요청 — 새로 치면 이전 것은 취소
   let seq = 0;
@@ -33,9 +42,23 @@ export function createPresetAutocomplete({ input, listEl }, { getCat, fetchSugge
     items.forEach((s) => {
       const el = document.createElement('div');
       el.className = 'preset-item';
-      const name = document.createElement('span');
-      name.textContent = s.value;
-      el.appendChild(name);
+      if (s.book) {
+        el.classList.add('book');
+        const b = s.book;
+        const meta = [b.creator, b.publisher, b.year].filter(Boolean).join(' · ');
+        // 썸네일도 기록 사진과 같은 CORS 방식으로(photoSrc 설명) — 고른 표지가
+        // 미리보기·목록에서 같은 캐시를 씀.
+        el.innerHTML = `
+          ${b.cover ? `<img class="preset-cover" src="${escapeAttr(photoSrc(b.cover))}" alt="" loading="lazy" crossorigin="anonymous">` : '<span class="preset-cover"></span>'}
+          <span class="preset-text">
+            <span class="preset-title">${escapeHtml(b.full_title || s.value)}</span>
+            ${meta ? `<span class="preset-meta">${escapeHtml(meta)}</span>` : ''}
+          </span>`;
+      } else {
+        const name = document.createElement('span');
+        name.textContent = s.value;
+        el.appendChild(name);
+      }
       if (markMine && s.mine) {
         const badge = document.createElement('span');
         badge.className = 'preset-mine';
@@ -50,9 +73,17 @@ export function createPresetAutocomplete({ input, listEl }, { getCat, fetchSugge
         input.blur();
         input.value = s.value;
         hide();
+        if (onPick) onPick(s);
       });
       listEl.appendChild(el);
     });
+    const note = footer ? footer(items) : '';
+    if (note) {
+      const foot = document.createElement('div');
+      foot.className = 'preset-foot';
+      foot.textContent = note;
+      listEl.appendChild(foot);
+    }
   }
 
   // 서버 후보 먼저, 모자라면 같은 값이 아닌 PRESETS로 채움.

@@ -1,5 +1,6 @@
 import { CATS } from '../records.js';
 import { escapeHtml, escapeAttr } from '../../shared/dom.js';
+import { photoSrc } from '../../shared/photoSrc.js';
 
 export function catLabel(key) {
   const cat = CATS.find((c) => c.key === key);
@@ -66,7 +67,7 @@ export function coverHtml(it, { playing = false } = {}) {
   ].join('');
   const badge = tags ? `<span class="badges">${tags}</span>` : '';
   if (it.photo_url) {
-    const src = escapeAttr(it.photo_url);
+    const src = escapeAttr(photoSrc(it.photo_url));
     // crossorigin: 로비(coverImage.js)는 같은 사진을 CORS로 받아 WebGL 텍스처로 씀.
     // 여기서 CORS 없이 먼저 받으면 ACAO 헤더 없는 응답이 1년(immutable) 캐시에 남아
     // 로비가 그 캐시를 쓰다 실패함(2026-10-25 실제로 겪음) — 두 곳의 요청 방식을 맞춤.

@@ -46,6 +46,12 @@
   `data-feedback-open` 버튼 + `css/feedback.css` + 이 스크립트를 따로 불러옴.
   받은 의견은 서버에서 psql로 봄(`mysite-backend/CLAUDE.md`).
 - `GOOGLE_CLIENT_ID`: `js/shared/config.js` ↔ 백엔드 환경 변수(같은 값이어야 함).
+- 책 검색: 백엔드 `GET /api/search/book`(카카오, 키는 백엔드 `KAKAO_REST_KEY`) ↔
+  `js/library/records.js`의 `searchBooks` + `modal.js`의 `titleSuggestions`/`fillFromBook`
+  (책 탭·두 글자부터, 고르면 작가·표지까지 채움, 직접 쓴 값은 안 덮어씀).
+  표지 중계: 백엔드 `GET /api/cover` + `book_search.COVER_HOSTS` ↔ `js/shared/photoSrc.js`의
+  `RELAY_HOSTS`(같아야 함). 사진을 띄우는 곳(로비 `coverImage.js`, 목록 `itemFormat.js`,
+  추가 창 `photoPicker.js`, 검색 목록)은 전부 `photoSrc()`를 거침.
 - 구글 방 복구: `POST /api/auth/google` 응답의 `current_empty`(지금 브라우저의 방이
   비었는지, 다른 방을 복구할 때만 true/false) ↔ `js/shared/googleAuth.js`(빈 방이면
   묻지 않고 넘어가고, 아니면 확인 창 → 취소 시 안내).

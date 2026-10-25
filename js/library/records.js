@@ -62,6 +62,18 @@ export function fetchSuggestions(cat, field, q, signal) {
   });
 }
 
+// 책 검색(백엔드가 카카오 책 검색을 대신 불러 다듬어 줌) —
+// [{ title, full_title, creator, publisher, year, cover }]. title은 폼에 넣기 좋게
+// 판본 표시·부제를 뗀 것, full_title은 목록에서 판본을 구분해 보여줄 원래 제목.
+// 서버에 키가 없거나 카카오가 응답을 못 하면(503) 실패로 끝남 — 부르는 쪽은
+// 그때 검색 결과 없이 기존 자동 완성만 보여줌.
+export function searchBooks(q, signal) {
+  return fetch(API_BASE + '/api/search/book?' + new URLSearchParams({ q }), { signal }).then((res) => {
+    if (!res.ok) throw new Error('book search failed');
+    return res.json();
+  });
+}
+
 // 기록 하나를 삭제.
 export function deleteRecord(id) {
   return fetch(API_BASE + '/api/rooms/' + roomCode + '/records/' + id, {

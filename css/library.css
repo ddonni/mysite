@@ -259,6 +259,18 @@ body.read-only #addTabBtn{ display:none; }
 }
 .preset-item:hover{ background:rgba(243,236,224,0.08); }
 .preset-item:last-child{ border-bottom:none; }
+/* 책 검색 결과(카카오) — 표지 썸네일 + 원래 제목 + "작가 · 출판사 · 연도". 줄이
+   높아서 목록도 더 길게 열어 둠. */
+.preset-list:has(.preset-item.book){ max-height:min(340px, 55vh); }
+.preset-item.book{ justify-content:flex-start; }
+.preset-cover{
+  flex:none; width:34px; height:49px; object-fit:cover; border-radius:3px;
+  background:rgba(243,236,224,0.08);
+}
+.preset-text{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.preset-title{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.preset-meta{ font-size:11.5px; color:var(--paper-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.preset-foot{ padding:6px 12px; font-size:10.5px; color:var(--paper-dim); text-align:right; }
 
 .stars{ display:flex; gap:4px; }
 .stars .star{ position:relative; width:22px; height:21px; cursor:pointer; }

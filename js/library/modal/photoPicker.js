@@ -5,6 +5,8 @@
 // 방금 고른(아직 업로드 전인) File과 서버에 이미 올라가 있는 URL(수정
 // 모드)을 이 위젯이 직접 들고 있음 — modal.js는 getFile()/getUrl()로만
 // 물어보면 됨.
+import { photoSrc } from '../../shared/photoSrc.js';
+
 export function createPhotoPicker({ input, preview, removeBtn, dropZone, dropText }) {
   let file = null;
   let url = null;
@@ -13,7 +15,7 @@ export function createPhotoPicker({ input, preview, removeBtn, dropZone, dropTex
     if (existingUrl) {
       // 목록(itemFormat.js)·로비와 같은 CORS 방식으로 받아 캐시가 섞이지 않게.
       preview.crossOrigin = 'anonymous';
-      preview.src = existingUrl;
+      preview.src = photoSrc(existingUrl);
       preview.style.display = 'block';
       removeBtn.style.display = 'inline-block';
       dropText.textContent = '새 사진으로 바꾸려면 클릭';

@@ -6,7 +6,7 @@
 // 결과만 모아서 폼을 채우고 비우고 저장하는 오케스트레이션만 함.
 //
 // 실제 서버 저장은 records.js의 uploadPhoto/saveRecord를 불러 씀.
-import { CATS, PRESETS, uploadPhoto, saveRecord, fetchSuggestions } from './records.js';
+import { CATS, PRESETS, uploadPhoto, saveRecord, fetchSuggestions, searchBooks } from './records.js';
 import { CREATOR_FIELD } from './modal/categoryFields.js';
 import { createStarPicker } from './modal/starPicker.js';
 import { createPhotoPicker } from './modal/photoPicker.js';
@@ -32,16 +32,20 @@ export function createModal({ onSaved }) {
     dropZone: document.getElementById('photoDrop'),
     dropText: document.getElementById('photoDropText'),
   });
-  // 제목 칸·만든 사람 칸 자동 완성 — 서로 독립(제목을 골라도 만든 사람은 안 채움:
-  // 동명의 다른 작품이 흔하고, 만든 사람을 모르고 기록하는 경우도 많아서).
+  // 제목 칸·만든 사람 칸 자동 완성 — 서로 독립(제목만 고른 후보로는 만든 사람을 안
+  // 채움: 동명의 다른 작품이 흔하고, 만든 사람을 모르고 기록하는 경우도 많아서).
+  // 예외는 책 검색 결과 — 특정 판본 하나를 고른 것이라 작가·표지까지 채움(fillFromBook).
   const getCat = () => currentCat;
   const presetAutocomplete = createPresetAutocomplete(
     { input: fTitle, listEl: document.getElementById('presetList') },
     {
       getCat,
-      fetchSuggestions: (cat, q, signal) => fetchSuggestions(cat, 'title', q, signal),
+      fetchSuggestions: titleSuggestions,
       presets: (cat) => PRESETS[cat],
       markMine: true, // 내 방에 이미 있는 제목 → "이미 기록함"
+      onPick: (s) => { if (s.book) fillFromBook(s.book); },
+      // 카카오 검색 API 약관의 출처 표기.
+      footer: (items) => (items.some((s) => s.book) ? '책 정보 제공: Kakao' : ''),
     },
   );
   const creatorAutocomplete = createPresetAutocomplete(
@@ -51,6 +55,47 @@ export function createModal({ onSaved }) {
 
   let currentCat = 'book';
   let editingId = null;
+  // 책 검색 결과로 채워 넣은 작가·표지 — 사용자가 그 뒤 직접 바꾸지 않았으면
+  // 다른 판본을 다시 골랐을 때 새 값으로 바꿔도 됨(직접 쓴/올린 건 안 덮어씀).
+  let autoCreator = null;
+  let autoCover = null;
+
+  // 책이면 이 방·공개 방들의 제목 후보에 카카오 책 검색 결과를 붙임. 같은 제목이
+  // 둘 다에 있으면 검색 결과 쪽만 남기고("이미 기록함" 표시는 옮겨 붙임) — 같은
+  // 줄이 두 번 보이지 않게. 한 글자로는 검색 결과가 너무 넓어서 두 글자부터.
+  // 어느 한쪽이 실패해도 나머지만으로 보여줌.
+  function titleSuggestions(cat, q, signal) {
+    const own = fetchSuggestions(cat, 'title', q, signal);
+    if (cat !== 'book' || q.length < 2) return own;
+    return Promise.all([
+      own.catch(() => []),
+      searchBooks(q, signal).catch(() => []),
+    ]).then(([mine, books]) => {
+      const mineTitles = new Set(mine.filter((s) => s.mine).map((s) => s.value.trim()));
+      const bookTitles = new Set(books.map((b) => b.title.trim()));
+      const rest = mine.filter((s) => !bookTitles.has(s.value.trim()));
+      return rest.slice(0, 3).concat(books.map((b) => ({
+        value: b.title,
+        mine: mineTitles.has(b.title.trim()),
+        book: b,
+      })));
+    });
+  }
+
+  function fillFromBook(book) {
+    const creator = fCreator.value.trim();
+    if (book.creator && (!creator || creator === autoCreator)) {
+      fCreator.value = book.creator;
+      autoCreator = book.creator;
+    }
+    // 사진은 아직 없거나, 전에 검색 결과로 채운 표지일 때만 바꿈 — 직접 고른
+    // 파일이나 수정 중인 기록의 원래 사진은 그대로 둠.
+    const current = photoPicker.getFile() ? 'file' : photoPicker.getUrl();
+    if (book.cover && (!current || current === autoCover)) {
+      photoPicker.setExisting(book.cover);
+      autoCover = book.cover;
+    }
+  }
 
   function updateCreatorField() {
     const field = CREATOR_FIELD[currentCat] || CREATOR_FIELD.book;
@@ -85,6 +130,8 @@ export function createModal({ onSaved }) {
     fTitle.value = '';
     fCreator.value = '';
     fMemo.value = '';
+    autoCreator = null;
+    autoCover = null;
     photoPicker.reset();
     starPicker.setValue(0);
     presetAutocomplete.hide();
@@ -162,6 +209,8 @@ export function createModal({ onSaved }) {
       fTitle.value = item.title || '';
       fCreator.value = item.creator || '';
       fMemo.value = item.memo || '';
+      autoCreator = null;
+      autoCover = null;
       photoPicker.setExisting(item.photo_url || null);
       starPicker.setValue(item.rating || 0);
       presetAutocomplete.hide();
