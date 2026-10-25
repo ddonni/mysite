@@ -242,19 +242,12 @@ body.read-only #addTabBtn{ display:none; }
 .field input:focus, .field textarea:focus{ outline:none; border-color:var(--ember); }
 .field-error{ color:#e58a7c; font-size:12px; margin-top:6px; }
 
-/* 제목(넓게)·만든 사람(좁게)을 한 줄에 — 추천 목록(.preset-list)은 이 줄을 기준으로
-   두 칸 아래 전체 폭에 뜸(library.html 주석). */
-.field-row{ position:relative; display:flex; gap:10px; margin-bottom:14px; }
-.field-row .field{ margin-bottom:0; min-width:0; }
-.field-row .title-field{ flex:3 1 0; }
-.field-row .creator-field{ flex:2 1 0; }
+/* 제목·만든 사람 두 칸을 한 묶음으로 — 추천 목록(.preset-list)은 이 묶음을 기준으로
+   두 칸 아래에 뜸(library.html 주석). 두 칸은 위아래로(긴 제목이 잘리지 않게 제목
+   칸은 전체 폭). */
+.title-group{ position:relative; display:flex; flex-direction:column; gap:14px; margin-bottom:14px; }
+.title-group .field{ margin-bottom:0; }
 .field-error.title-error{ margin:-8px 0 12px; }
-/* 폰에선 두 칸이 너무 좁아져서 두 줄로 — 추천 목록은 여전히 줄(.field-row) 아래라
-   가수 칸 밑에 뜨고 가수 칸을 가리지 않음. */
-@media (max-width:480px){
-  .field-row{ flex-direction:column; gap:14px; }
-  .field-row .title-field, .field-row .creator-field{ flex:none; }
-}
 .preset-list{
   max-height:160px; overflow-y:auto; border:1px solid var(--line-strong); border-radius:10px;
   position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--void-2); z-index:10;
@@ -281,7 +274,11 @@ body.read-only #addTabBtn{ display:none; }
   background:rgba(243,236,224,0.08);
 }
 .preset-text{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
-.preset-title{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* 판본·앨범을 가르는 말("(1919년 초판본 …)")이 제목 뒤쪽에 붙는 일이 많아 두 줄까지. */
+.preset-title{
+  overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2;
+  line-clamp:2; overflow-wrap:anywhere;
+}
 .preset-meta{ font-size:11.5px; color:var(--paper-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .preset-foot{ padding:6px 12px; font-size:10.5px; color:var(--paper-dim); text-align:right; }
 /* 목록 맨 위 안내("…로는 결과가 없어 제목만으로 찾았어요")와, 후보 대신 뜨는 한 줄

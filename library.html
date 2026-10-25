@@ -6,7 +6,7 @@
 <title>기록 보관소</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/library.css?v=8">
+<link rel="stylesheet" href="css/library.css?v=9">
 <link rel="stylesheet" href="css/nav.css">
 <link rel="stylesheet" href="css/feedback.css">
 <link rel="stylesheet" href="css/inapp.css">
@@ -53,9 +53,10 @@
 
     <div class="cat-tabs" id="catTabs"></div>
 
-    <!-- 제목·만든 사람을 한 줄에 두고, 두 칸의 추천 목록은 그 줄 전체 폭으로 아래에
-         펼침 — 제목 칸 목록이 바로 밑의 가수 칸을 덮어서 가수를 고쳐 쓰기 어려웠음. -->
-    <div class="field-row">
+    <!-- 제목·만든 사람을 한 묶음으로 두고, 두 칸의 추천 목록은 묶음 아래(가수 칸
+         밑)에 펼침 — 제목 칸 목록이 바로 밑의 가수 칸을 덮어서 가수를 고쳐 쓰기
+         어려웠음. -->
+    <div class="title-group">
       <div class="field title-field">
         <label for="fTitle">제목</label>
         <input type="text" id="fTitle" autocomplete="off" placeholder="제목을 입력해 보세요">
