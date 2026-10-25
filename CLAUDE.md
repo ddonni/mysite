@@ -40,7 +40,7 @@
 - 방 둘러보기: 백엔드 `rooms.is_public` + `GET /api/rooms`(공개·기록 있는 방만) +
   `PUT .../visibility` ↔ `rooms.html`/`js/rooms/main.js`, `js/shared/visibilityToggle.js`.
 - 자동 완성(제목 칸·만든 사람 칸, 서로 독립): 백엔드 `GET .../suggestions?field=title|creator`
-  (`crud.suggestions`) ↔ `js/library/modal/presetAutocomplete.js`(제목 칸만 "이미 기록함"). 코드에 박아 둔 추천 제목
+  (`crud.suggestions`) ↔ `js/library/modal/autocomplete.js`(제목 칸만 "이미 기록함"). 코드에 박아 둔 추천 제목
   (`PRESETS`)은 책·음악·영화·애니 검색이 생겨서 지움.
 - 의견 보내기: 백엔드 `POST /api/feedback`(`schemas.FeedbackIn` 길이 제한, 429 제한) ↔
   `js/shared/feedback.js`(`MESSAGE_MAX`·`NAME_MAX`). 네 html 모두 메뉴의
@@ -81,7 +81,7 @@
   칸 밑)에 뜸 — 목록이 가수 칸을 가리지 않게. 한 줄 배치는 긴 제목이 잘려서 되돌림.
   고르면 가수·커버만 채우고 **제목은 입력한 그대로**(대개 노래 제목이라). 커버 서버
   (yt3.googleusercontent.com)는 CORS를 줘서 중계 안 거침. 목록 그리기는 책·음악 모두
-  `presetAutocomplete.js`의 후보 `card`({title, meta, cover, square}) 하나로.
+  `autocomplete.js`의 후보 `card`({title, meta, cover, square}) 하나로.
   표지 중계: 백엔드 `GET /api/cover` + `book_search.COVER_HOSTS` ↔ `js/shared/photoSrc.js`의
   `RELAY_HOSTS`(같아야 함). 사진을 띄우는 곳(로비 `coverImage.js`, 목록 `itemFormat.js`,
   추가 창 `photoPicker.js`, 검색 목록)은 전부 `photoSrc()`를 거침.

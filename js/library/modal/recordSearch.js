@@ -22,7 +22,7 @@
 //   - 음악: 고르면 제목은 입력한 그대로 둠(대개 노래 제목이라 앨범 이름으로 덮으면
 //     틀어짐).
 import { fetchSuggestions, searchBooks, searchMusic, searchScreen, fetchScreenCreator } from '../records.js';
-import { createPresetAutocomplete } from './presetAutocomplete.js';
+import { createAutocomplete } from './autocomplete.js';
 import { isSearchCover } from '../../shared/photoSrc.js';
 
 const isScreen = (cat) => cat === 'movie' || cat === 'anime';
@@ -296,7 +296,7 @@ export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, p
   }
 
   const pendingText = (q) => (searchesWeb(getCat(), q) ? '검색 중…' : '');
-  const titleAutocomplete = createPresetAutocomplete(
+  const titleAutocomplete = createAutocomplete(
     { input: fTitle, listEl: titleList },
     {
       getCat,
@@ -313,7 +313,7 @@ export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, p
       openOnFocus: () => !creatorAutocomplete.isOpen(),
     },
   );
-  const creatorAutocomplete = createPresetAutocomplete(
+  const creatorAutocomplete = createAutocomplete(
     { input: fCreator, listEl: creatorList },
     {
       getCat,

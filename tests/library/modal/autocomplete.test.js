@@ -1,4 +1,4 @@
-// presetAutocomplete.js — 검색 결과 후보(card)가 표지·설명과 함께 그려지고, 고르면
+// autocomplete.js — 검색 결과 후보(card)가 표지·설명과 함께 그려지고, 고르면
 // onPick으로 그 후보를 넘기는지. footer가 후보에 따라 붙는지.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -8,7 +8,7 @@ vi.mock('../../../js/shared/config.js', () => ({
   DEVELOPER_ROOM_CODE: '',
 }));
 
-const { createPresetAutocomplete } = await import('../../../js/library/modal/presetAutocomplete.js');
+const { createAutocomplete } = await import('../../../js/library/modal/autocomplete.js');
 
 const KAKAO_COVER = 'https://t1.daumcdn.net/lbook/image/540810';
 const DEMIAN = {
@@ -39,7 +39,7 @@ beforeEach(() => {
 const settle = () => new Promise((r) => setTimeout(r, 250));
 
 function setup(server, opts = {}) {
-  return createPresetAutocomplete({ input, listEl }, {
+  return createAutocomplete({ input, listEl }, {
     getCat: () => 'book',
     fetchSuggestions: () => Promise.resolve(server),
     markMine: true,
@@ -58,19 +58,19 @@ describe('검색 결과 후보(card)', () => {
     setup([DEMIAN]);
     type('데미');
     await settle();
-    const item = listEl.querySelector('.preset-item.rich');
-    expect(item.querySelector('.preset-title').textContent).toBe('데미안(양장본)');
-    expect(item.querySelector('.preset-meta').textContent).toBe('헤르만 헤세 · 민음사 · 2009');
-    expect(item.querySelector('img.preset-cover').getAttribute('src'))
+    const item = listEl.querySelector('.ac-item.rich');
+    expect(item.querySelector('.ac-title').textContent).toBe('데미안(양장본)');
+    expect(item.querySelector('.ac-meta').textContent).toBe('헤르만 헤세 · 민음사 · 2009');
+    expect(item.querySelector('img.ac-cover').getAttribute('src'))
       .toBe('http://api.test/api/cover?url=' + encodeURIComponent(KAKAO_COVER));
-    expect(listEl.querySelector('.preset-foot').textContent).toBe('책 정보 제공: Kakao');
+    expect(listEl.querySelector('.ac-foot').textContent).toBe('책 정보 제공: Kakao');
   });
 
   it('앨범 커버는 정사각형, 유튜브 커버 주소는 그대로', async () => {
     setup([BAMYANGGANG]);
     type('밤양');
     await settle();
-    const img = listEl.querySelector('img.preset-cover');
+    const img = listEl.querySelector('img.ac-cover');
     expect(img.classList.contains('square')).toBe(true);
     expect(img.getAttribute('src')).toBe(YTM_COVER);
   });
@@ -80,7 +80,7 @@ describe('검색 결과 후보(card)', () => {
     setup([DEMIAN], { onPick });
     type('데미');
     await settle();
-    listEl.querySelector('.preset-item.rich').click();
+    listEl.querySelector('.ac-item.rich').click();
     expect(input.value).toBe('데미안');
     expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ pick: DEMIAN.pick }));
     expect(listEl.style.display).toBe('none');
@@ -90,7 +90,7 @@ describe('검색 결과 후보(card)', () => {
     setup([{ ...DEMIAN, card: { ...DEMIAN.card, title: '<img src=x onerror=alert(1)>' } }]);
     type('xx');
     await settle();
-    expect(listEl.querySelector('.preset-title').textContent).toBe('<img src=x onerror=alert(1)>');
+    expect(listEl.querySelector('.ac-title').textContent).toBe('<img src=x onerror=alert(1)>');
     expect(listEl.querySelectorAll('img').length).toBe(1); // 표지 하나뿐
   });
 
@@ -98,9 +98,9 @@ describe('검색 결과 후보(card)', () => {
     setup([{ value: '데미안', mine: true }]);
     type('데미');
     await settle();
-    expect(listEl.querySelector('.preset-item.rich')).toBeNull();
-    expect(listEl.querySelector('.preset-mine').textContent).toBe('이미 기록함');
-    expect(listEl.querySelector('.preset-foot')).toBeNull();
+    expect(listEl.querySelector('.ac-item.rich')).toBeNull();
+    expect(listEl.querySelector('.ac-mine').textContent).toBe('이미 기록함');
+    expect(listEl.querySelector('.ac-foot')).toBeNull();
   });
 });
 
@@ -113,13 +113,13 @@ describe('안내 문구', () => {
       emptyText: (q) => `'${q}' 검색 결과가 없어요.`,
     });
     type('없는노래');
-    expect(listEl.querySelector('.preset-message').textContent).toBe('검색 중…');
+    expect(listEl.querySelector('.ac-message').textContent).toBe('검색 중…');
     expect(listEl.style.display).toBe('block');
     await settle();
     resolve([]);
     await settle();
-    expect(listEl.querySelector('.preset-message').textContent).toBe("'없는노래' 검색 결과가 없어요.");
-    expect(listEl.querySelector('.preset-item')).toBeNull();
+    expect(listEl.querySelector('.ac-message').textContent).toBe("'없는노래' 검색 결과가 없어요.");
+    expect(listEl.querySelector('.ac-item')).toBeNull();
   });
 
   it('emptyText가 빈 문자열이면 지금처럼 목록을 닫음', async () => {
@@ -133,7 +133,7 @@ describe('안내 문구', () => {
     setup([BAMYANGGANG], { header: () => "'잔나비'까지 넣으면 결과가 없어 제목만으로 찾았어요" });
     type('밤양');
     await settle();
-    expect(listEl.firstElementChild.className).toBe('preset-head');
+    expect(listEl.firstElementChild.className).toBe('ac-head');
     expect(listEl.firstElementChild.textContent).toContain('제목만으로 찾았어요');
   });
 });

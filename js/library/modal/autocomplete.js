@@ -27,7 +27,7 @@ const DEBOUNCE_MS = 180;
 //   작가 칸을 누를 때). 그 칸에 입력을 시작하면 닫는 건 부르는 쪽 몫(hide()).
 // openOnFocus() → 칸에 포커스가 올 때 이미 쓰인 값으로 목록을 다시 열지(기본: 연다)
 //   — 다른 칸의 목록이 열려 있으면 그걸 덮지 않게 부르는 쪽이 false를 줌.
-export function createPresetAutocomplete({ input, listEl }, {
+export function createAutocomplete({ input, listEl }, {
   getCat, fetchSuggestions, markMine = false, onPick, footer, header, pendingText, emptyText,
   keepOpenOn = [], openOnFocus = () => true,
 }) {
@@ -51,7 +51,7 @@ export function createPresetAutocomplete({ input, listEl }, {
     listEl.innerHTML = '';
     if (!text) { hide(); return; }
     listEl.style.display = 'block';
-    note('preset-message', text);
+    note('ac-message', text);
   }
 
   function draw(items) {
@@ -59,21 +59,21 @@ export function createPresetAutocomplete({ input, listEl }, {
     if (!items.length) { hide(); return; }
     listEl.style.display = 'block';
     const top = header ? header(items) : '';
-    if (top) note('preset-head', top);
+    if (top) note('ac-head', top);
     items.forEach((s) => {
       const el = document.createElement('div');
-      el.className = 'preset-item';
+      el.className = 'ac-item';
       if (s.card) {
         el.classList.add('rich');
         const c = s.card;
-        const coverClass = 'preset-cover' + (c.square ? ' square' : ''); // 앨범 커버는 정사각형
+        const coverClass = 'ac-cover' + (c.square ? ' square' : ''); // 앨범 커버는 정사각형
         // 썸네일도 기록 사진과 같은 CORS 방식으로(photoSrc 설명) — 고른 표지가
         // 미리보기·목록에서 같은 캐시를 씀.
         el.innerHTML = `
           ${c.cover ? `<img class="${coverClass}" src="${escapeAttr(photoSrc(c.cover))}" alt="" loading="lazy" crossorigin="anonymous">` : `<span class="${coverClass}"></span>`}
-          <span class="preset-text">
-            <span class="preset-title">${escapeHtml(c.title || s.value)}</span>
-            ${c.meta ? `<span class="preset-meta">${escapeHtml(c.meta)}</span>` : ''}
+          <span class="ac-text">
+            <span class="ac-title">${escapeHtml(c.title || s.value)}</span>
+            ${c.meta ? `<span class="ac-meta">${escapeHtml(c.meta)}</span>` : ''}
           </span>`;
       } else {
         const name = document.createElement('span');
@@ -82,7 +82,7 @@ export function createPresetAutocomplete({ input, listEl }, {
       }
       if (markMine && s.mine) {
         const badge = document.createElement('span');
-        badge.className = 'preset-mine';
+        badge.className = 'ac-mine';
         badge.textContent = '이미 기록함';
         el.appendChild(badge);
       }
@@ -99,7 +99,7 @@ export function createPresetAutocomplete({ input, listEl }, {
       listEl.appendChild(el);
     });
     const bottom = footer ? footer(items) : '';
-    if (bottom) note('preset-foot', bottom);
+    if (bottom) note('ac-foot', bottom);
   }
 
   function render(filter) {

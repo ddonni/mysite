@@ -34,7 +34,7 @@ function mountDom() {
   document.body.innerHTML = `
     <div id="overlay"><h2 id="modalTitle"></h2><div id="catTabs"></div>
       <input id="fTitle"><input id="fCreator"><label id="creatorLabel"></label>
-      <div id="presetList" style="display:none"></div><div id="creatorList" style="display:none"></div>
+      <div id="titleList" style="display:none"></div><div id="creatorList" style="display:none"></div>
       <div id="titleError"></div><div id="starPicker"></div>
       <div id="photoDrop"><span id="photoDropText"></span><input type="file" id="fPhoto"></div>
       <img id="photoPreview"><span id="removePhoto"></span>
@@ -68,7 +68,7 @@ describe('음악 탭 제목 검색', () => {
     typeTitle('주저하는 연인들을 위해');
     await settle();
     expect(searchMusic).toHaveBeenCalledWith('잔나비 주저하는 연인들을 위해', expect.anything());
-    expect($('presetList').querySelector('.preset-title').textContent).toBe('LEGEND(전설)');
+    expect($('titleList').querySelector('.ac-title').textContent).toBe('LEGEND(전설)');
   });
 
   it('가수를 붙여서 0건이면 제목만으로 다시 찾고 맨 위에 알려줌', async () => {
@@ -77,7 +77,7 @@ describe('음악 탭 제목 검색', () => {
     typeTitle('주저하는 연인들을 위해');
     await settle();
     expect(searchMusic.mock.calls.map((c) => c[0])).toEqual(['엉뚱 주저하는 연인들을 위해', '주저하는 연인들을 위해']);
-    expect($('presetList').querySelector('.preset-head').textContent).toBe(
+    expect($('titleList').querySelector('.ac-head').textContent).toBe(
       "'엉뚱'까지 넣으면 결과가 없어 제목만으로 찾았어요\n노래는 그 노래가 실린 앨범으로 나와요 — 앨범을 고르면 돼요",
     );
   });
@@ -86,7 +86,7 @@ describe('음악 탭 제목 검색', () => {
     searchMusic.mockResolvedValue([ALBUM]);
     typeTitle('주저하는 연인들을 위해');
     await settle();
-    $('presetList').querySelector('.preset-item.rich').click();
+    $('titleList').querySelector('.ac-item.rich').click();
     expect($('fCreator').value).toBe('JANNABI');
     expect($('fTitle').value).toBe('주저하는 연인들을 위해'); // 제목은 입력한 그대로
 
@@ -99,7 +99,7 @@ describe('음악 탭 제목 검색', () => {
     searchMusic.mockResolvedValue([ALBUM]);
     typeTitle('주저하는 연인들을 위해');
     await settle();
-    $('presetList').querySelector('.preset-item.rich').click();
+    $('titleList').querySelector('.ac-item.rich').click();
     expect($('fCreator').value).toBe('JANNABI');
 
     // 한 글자 지웠다가 다시 써서 원래 값으로 되돌림
@@ -116,7 +116,7 @@ describe('음악 탭 제목 검색', () => {
     searchMusic.mockResolvedValue([{ ...ALBUM, creator: '다른 가수' }]);
     typeTitle('밤양갱');
     await settle();
-    $('presetList').querySelector('.preset-item.rich').click();
+    $('titleList').querySelector('.ac-item.rich').click();
     expect($('fCreator').value).toBe('다른 가수');
   });
 
@@ -125,9 +125,9 @@ describe('음악 탭 제목 검색', () => {
     searchMusic.mockResolvedValue([{ ...ALBUM, album: '원래', creator: '래원' }]);
     typeTitle('뉴질랜드');
     await settle();
-    expect($('presetList').querySelector('.preset-head').textContent).toBe('노래는 그 노래가 실린 앨범으로 나와요 — 앨범을 고르면 돼요');
-    expect($('presetList').querySelector('.preset-foot').textContent).toContain('제목은 쓴 그대로 남아요');
-    $('presetList').querySelector('.preset-item.rich').click();
+    expect($('titleList').querySelector('.ac-head').textContent).toBe('노래는 그 노래가 실린 앨범으로 나와요 — 앨범을 고르면 돼요');
+    expect($('titleList').querySelector('.ac-foot').textContent).toContain('제목은 쓴 그대로 남아요');
+    $('titleList').querySelector('.ac-item.rich').click();
     expect($('fTitle').value).toBe('뉴질랜드');
 
     modal.openAdd('book'); // 다른 탭은 원래 안내 글씨
@@ -138,14 +138,14 @@ describe('음악 탭 제목 검색', () => {
     searchMusic.mockResolvedValue([]);
     typeTitle('없는노래');
     await settle();
-    expect($('presetList').querySelector('.preset-message').textContent).toBe("'없는노래' 검색 결과가 없어요. 가수를 함께 써 보세요.");
+    expect($('titleList').querySelector('.ac-message').textContent).toBe("'없는노래' 검색 결과가 없어요. 가수를 함께 써 보세요.");
   });
 
   it('검색이 실패하면 결과 없음과 다르게 알려줌', async () => {
     searchMusic.mockRejectedValue(new Error('music search failed'));
     typeTitle('밤양갱');
     await settle();
-    expect($('presetList').querySelector('.preset-message').textContent).toBe('지금은 검색할 수 없어요. 직접 입력해 주세요.');
+    expect($('titleList').querySelector('.ac-message').textContent).toBe('지금은 검색할 수 없어요. 직접 입력해 주세요.');
   });
 });
 
@@ -154,28 +154,28 @@ describe('두 칸의 목록', () => {
     searchMusic.mockResolvedValue([ALBUM]);
     typeTitle('주저하는 연인들을 위해');
     await settle();
-    expect($('presetList').style.display).toBe('block');
+    expect($('titleList').style.display).toBe('block');
 
     $('fCreator').click();
-    expect($('presetList').style.display).toBe('block');
+    expect($('titleList').style.display).toBe('block');
 
     $('fCreator').value = '잔';
     $('fCreator').dispatchEvent(new Event('input'));
-    expect($('presetList').style.display).toBe('none');
+    expect($('titleList').style.display).toBe('none');
   });
 
   it('작가 칸에 값이 있어도, 제목 결과가 열려 있으면 포커스만으로 덮지 않음', async () => {
     searchMusic.mockResolvedValue([ALBUM]);
     typeTitle('주저하는 연인들을 위해');
     await settle();
-    $('presetList').querySelector('.preset-item.rich').click(); // 가수 JANNABI 자동 채움
+    $('titleList').querySelector('.ac-item.rich').click(); // 가수 JANNABI 자동 채움
     typeTitle('LEGEND');
     await settle();
     const calls = searchMusic.mock.calls.length;
 
     $('fCreator').dispatchEvent(new Event('focus'));
     await settle();
-    expect($('presetList').style.display).toBe('block');
+    expect($('titleList').style.display).toBe('block');
     expect($('creatorList').style.display).toBe('none');
     expect(searchMusic.mock.calls.length).toBe(calls); // 작가 검색이 안 나감
   });
@@ -185,7 +185,7 @@ describe('두 칸의 목록', () => {
     typeTitle('주저하는 연인들을 위해');
     await settle();
     $('fMemo').click();
-    expect($('presetList').style.display).toBe('none');
+    expect($('titleList').style.display).toBe('none');
   });
 });
 
@@ -203,7 +203,7 @@ describe('만든 사람 칸 검색', () => {
     typeCreator('한강');
     await settle();
     expect(searchBooks).toHaveBeenCalledWith('한강', expect.anything(), 'author');
-    $('creatorList').querySelector('.preset-item.rich').click();
+    $('creatorList').querySelector('.ac-item.rich').click();
     expect($('fCreator').value).toBe('한강');
     expect($('fTitle').value).toBe('소년이 온다');
     expect($('photoPreview').getAttribute('src')).toContain('/api/cover?url=');
@@ -215,7 +215,7 @@ describe('만든 사람 칸 검색', () => {
     typeTitle('채식주의자');
     typeCreator('한강');
     await settle();
-    $('creatorList').querySelector('.preset-item.rich').click();
+    $('creatorList').querySelector('.ac-item.rich').click();
     expect($('fTitle').value).toBe('소년이 온다');
   });
 
@@ -224,7 +224,7 @@ describe('만든 사람 칸 검색', () => {
     searchBooks.mockResolvedValue([HAN]);
     typeCreator('한강');
     await settle();
-    $('creatorList').querySelector('.preset-item.rich').click();
+    $('creatorList').querySelector('.ac-item.rich').click();
     typeTitle('소년이 온다 (내 메모판)');
     expect($('fTitle').value).toBe('소년이 온다 (내 메모판)');
     expect($('fCreator').value).toBe('한강');
@@ -258,7 +258,7 @@ describe('만든 사람 칸 검색', () => {
     typeCreator('한강');
     await settle();
     expect(searchBooks.mock.calls.slice(-2).map((c) => [c[0], c[2]])).toEqual([['없는 제목 한강', undefined], ['한강', 'author']]);
-    expect($('creatorList').querySelector('.preset-head').textContent).toBe("'없는 제목'까지 넣으면 결과가 없어 이름만으로 찾았어요");
+    expect($('creatorList').querySelector('.ac-head').textContent).toBe("'없는 제목'까지 넣으면 결과가 없어 이름만으로 찾았어요");
   });
 
   it('음악: 가수로 찾은 앨범을 고르면 가수·커버만, 제목 칸은 그대로 비워 둠', async () => {
@@ -266,7 +266,7 @@ describe('만든 사람 칸 검색', () => {
     typeCreator('검정치마');
     await settle();
     expect(searchMusic).toHaveBeenCalledWith('검정치마', expect.anything(), 'artist'); // 가수 칸만이면 그 가수의 앨범·싱글 목록
-    $('creatorList').querySelector('.preset-item.rich').click();
+    $('creatorList').querySelector('.ac-item.rich').click();
     expect($('fCreator').value).toBe('검정치마');
     expect($('fTitle').value).toBe('');
     expect($('photoPreview').getAttribute('src')).toBe(ALBUM.cover);
@@ -276,7 +276,7 @@ describe('만든 사람 칸 검색', () => {
     searchMusic.mockResolvedValue([{ ...ALBUM, creator: '검정치마' }]);
     typeCreator('검정');
     await settle();
-    $('creatorList').querySelector('.preset-item.rich').click();
+    $('creatorList').querySelector('.ac-item.rich').click();
     typeTitle('Everything');
     await settle();
     expect(searchMusic).toHaveBeenLastCalledWith('검정치마 Everything', expect.anything());
@@ -292,9 +292,9 @@ describe('영화·애니 탭', () => {
     typeTitle('신세계');
     await settle();
     expect(searchScreen).toHaveBeenCalledWith('신세계', 'anime', expect.anything());
-    const item = $('presetList').querySelector('.preset-item.rich');
-    expect(item.querySelector('.preset-meta').textContent).toBe('新世界より · 2012 · TV');
-    expect($('presetList').querySelector('.preset-foot').textContent).toContain('정보 제공: TMDB');
+    const item = $('titleList').querySelector('.ac-item.rich');
+    expect(item.querySelector('.ac-meta').textContent).toBe('新世界より · 2012 · TV');
+    expect($('titleList').querySelector('.ac-foot').textContent).toContain('정보 제공: TMDB');
   });
 
   it('고르면 포스터를 채우고, 감독은 따로 물어봐서 빈 칸에 채움', async () => {
@@ -303,7 +303,7 @@ describe('영화·애니 탭', () => {
     fetchScreenCreator.mockResolvedValue('이시하마 마사시');
     typeTitle('신세계');
     await settle();
-    $('presetList').querySelector('.preset-item.rich').click();
+    $('titleList').querySelector('.ac-item.rich').click();
     expect($('fTitle').value).toBe('신세계에서');
     expect($('photoPreview').getAttribute('src')).toBe(SHINSEKAI.cover);
     await settle();
@@ -318,7 +318,7 @@ describe('영화·애니 탭', () => {
     typeTitle('기생충');
     await settle();
     $('fCreator').value = '틀린 감독';
-    $('presetList').querySelector('.preset-item.rich').click();
+    $('titleList').querySelector('.ac-item.rich').click();
     await settle();
     expect($('fCreator').value).toBe('봉준호');
   });
@@ -330,7 +330,7 @@ describe('영화·애니 탭', () => {
     fetchScreenCreator.mockReturnValue(new Promise((r) => { answer = r; }));
     typeTitle('기생충');
     await settle();
-    $('presetList').querySelector('.preset-item.rich').click();
+    $('titleList').querySelector('.ac-item.rich').click();
     $('fCreator').value = '내가 고친 감독';
     $('fCreator').dispatchEvent(new Event('input'));
     answer('봉준호');
@@ -345,14 +345,14 @@ describe('영화·애니 탭', () => {
     fetchScreenCreator.mockResolvedValue('봉준호');
     typeTitle('기생충');
     await settle();
-    $('presetList').querySelector('.preset-item.rich').click();
+    $('titleList').querySelector('.ac-item.rich').click();
     expect($('photoPreview').getAttribute('src')).toContain('records/mine.jpg');
 
     modal.openEdit({ id: 2, cat: 'movie', title: '옥자', creator: '', memo: '', rating: 0,
       photo_url: 'https://image.tmdb.org/t/p/w342/old.jpg' });
     typeTitle('기생충');
     await settle();
-    $('presetList').querySelector('.preset-item.rich').click();
+    $('titleList').querySelector('.ac-item.rich').click();
     expect($('photoPreview').getAttribute('src')).toBe(SHINSEKAI.cover);
   });
 
@@ -366,7 +366,7 @@ describe('영화·애니 탭', () => {
     $('fCreator').dispatchEvent(new Event('input'));
     await settle();
     expect(searchScreen).toHaveBeenCalledWith('봉준호', 'movie', expect.anything(), 'director');
-    $('creatorList').querySelectorAll('.preset-item.rich')[1].click();
+    $('creatorList').querySelectorAll('.ac-item.rich')[1].click();
     expect($('fTitle').value).toBe('옥자');
     expect($('fCreator').value).toBe('봉준호');
     await settle();
@@ -381,9 +381,9 @@ describe('영화·애니 탭', () => {
     typeTitle('기생');
     await settle();
     expect(searchScreen).toHaveBeenLastCalledWith('봉준호', 'movie', expect.anything(), 'director');
-    const titles = [...$('presetList').querySelectorAll('.preset-title')].map((e) => e.textContent);
+    const titles = [...$('titleList').querySelectorAll('.ac-title')].map((e) => e.textContent);
     expect(titles).toEqual(['기생충']);
-    $('presetList').querySelector('.preset-item.rich').click();
+    $('titleList').querySelector('.ac-item.rich').click();
     await settle();
     expect(fetchScreenCreator).not.toHaveBeenCalled(); // 감독은 이미 앎
   });
@@ -395,8 +395,8 @@ describe('영화·애니 탭', () => {
     $('fCreator').dispatchEvent(new Event('input'));
     typeTitle('인터스텔라');
     await settle();
-    expect($('presetList').querySelector('.preset-head').textContent).toBe("'봉준호'까지 넣으면 결과가 없어 제목만으로 찾았어요");
-    expect($('presetList').querySelector('.preset-title').textContent).toBe('인터스텔라');
+    expect($('titleList').querySelector('.ac-head').textContent).toBe("'봉준호'까지 넣으면 결과가 없어 제목만으로 찾았어요");
+    expect($('titleList').querySelector('.ac-title').textContent).toBe('인터스텔라');
   });
 });
 
@@ -406,6 +406,6 @@ describe('책 탭', () => {
     searchBooks.mockResolvedValue([]);
     typeTitle('없는책');
     await settle();
-    expect($('presetList').querySelector('.preset-message').textContent).toBe("'없는책' 검색 결과가 없어요.");
+    expect($('titleList').querySelector('.ac-message').textContent).toBe("'없는책' 검색 결과가 없어요.");
   });
 });

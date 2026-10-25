@@ -37,7 +37,7 @@ export function createModal({ onSaved }) {
   const search = createRecordSearch({
     fTitle,
     fCreator,
-    titleList: document.getElementById('presetList'),
+    titleList: document.getElementById('titleList'),
     creatorList: document.getElementById('creatorList'),
     photoPicker,
     getCat: () => currentCat,
