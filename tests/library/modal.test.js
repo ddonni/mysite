@@ -17,7 +17,6 @@ vi.mock('../../js/library/records.js', () => ({
     { key: 'book', label: '책' }, { key: 'anime', label: '애니' },
     { key: 'movie', label: '영화' }, { key: 'music', label: '음악' },
   ],
-  PRESETS: {},
   uploadPhoto: vi.fn(),
   saveRecord: vi.fn(),
   fetchSuggestions: () => Promise.resolve([]),

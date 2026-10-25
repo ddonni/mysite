@@ -7,7 +7,7 @@
 //
 // 실제 서버 저장은 records.js의 uploadPhoto/saveRecord를 불러 씀.
 import {
-  CATS, PRESETS, uploadPhoto, saveRecord, fetchSuggestions, searchBooks, searchMusic, searchScreen, fetchScreenCreator,
+  CATS, uploadPhoto, saveRecord, fetchSuggestions, searchBooks, searchMusic, searchScreen, fetchScreenCreator,
 } from './records.js';
 import { CREATOR_FIELD } from './modal/categoryFields.js';
 import { createStarPicker } from './modal/starPicker.js';
@@ -46,7 +46,6 @@ export function createModal({ onSaved }) {
     {
       getCat,
       fetchSuggestions: titleSuggestions,
-      presets: (cat) => PRESETS[cat],
       markMine: true, // 내 방에 이미 있는 제목 → "이미 기록함"
       onPick: (s) => { if (s.pick) fillFromPick(s.pick); },
       footer: titleFooter,

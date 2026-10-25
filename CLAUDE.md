@@ -40,7 +40,8 @@
 - 방 둘러보기: 백엔드 `rooms.is_public` + `GET /api/rooms`(공개·기록 있는 방만) +
   `PUT .../visibility` ↔ `rooms.html`/`js/rooms/main.js`, `js/shared/visibilityToggle.js`.
 - 자동 완성(제목 칸·만든 사람 칸, 서로 독립): 백엔드 `GET .../suggestions?field=title|creator`
-  (`crud.suggestions`) ↔ `js/library/modal/presetAutocomplete.js`(제목 칸만 "이미 기록함"·PRESETS).
+  (`crud.suggestions`) ↔ `js/library/modal/presetAutocomplete.js`(제목 칸만 "이미 기록함"). 코드에 박아 둔 추천 제목
+  (`PRESETS`)은 책·음악·영화·애니 검색이 생겨서 지움.
 - 의견 보내기: 백엔드 `POST /api/feedback`(`schemas.FeedbackIn` 길이 제한, 429 제한) ↔
   `js/shared/feedback.js`(`MESSAGE_MAX`·`NAME_MAX`). 네 html 모두 메뉴의
   `data-feedback-open` 버튼 + `css/feedback.css` + 이 스크립트를 따로 불러옴.

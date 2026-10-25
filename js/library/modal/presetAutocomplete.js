@@ -1,8 +1,9 @@
 // 입력칸 아래에 뜨는 "혹시 이거 아니에요?" 목록 — 제목 칸과 만든 사람 칸이
 // 각자 하나씩 씀(서로 독립: 하나를 골라도 다른 칸은 안 바뀜).
-// 후보는 서버(fetchSuggestions → GET .../suggestions)가 이 방 + 공개된 방들의
-// 기록에서 골라 줌. 제목 칸은 코드에 적어둔 PRESETS로 모자란 걸 채우고(서버가
-// 안 닿아도), 내 방에 이미 있는 제목엔 "이미 기록함" 표시(markMine).
+// 후보는 부르는 쪽(modal.js)의 fetchSuggestions가 줌 — 이 방 + 공개된 방들의 기록에서
+// 서버가 고른 것(GET .../suggestions)과 책·음악·영화·애니 검색 결과. 내 방에 이미 있는
+// 제목엔 "이미 기록함" 표시(markMine). (예전엔 코드에 적어 둔 추천 제목 PRESETS로
+// 모자란 걸 채웠는데, 검색이 생겨서 뺌.)
 // getCat()으로 지금 카테고리를 매번 물어봄(카테고리 탭이 바뀔 수 있어서).
 //
 // 후보에 card({ title, meta, cover })가 붙어 있으면 책·음악 검색 결과라서 표지
@@ -14,10 +15,7 @@ import { photoSrc } from '../../shared/photoSrc.js';
 const MAX_ITEMS = 8;
 const DEBOUNCE_MS = 180;
 
-const norm = (s) => (s || '').replace(/\s+/g, ' ').trim().toLowerCase();
-
 // fetchSuggestions(cat, q, signal) → Promise<[{ value, mine, card? }]>
-// presets(cat) → 서버 후보가 모자랄 때 채울 문자열 목록(없으면 안 채움)
 // onPick(후보) → 목록에서 하나를 고른 직후(입력칸 값은 이미 바뀐 뒤)
 // footer(후보들) → 목록 맨 아래 작은 글씨(없으면 빈 문자열) — 출처 표기·검색 요령
 // header(후보들) → 목록 맨 위 작은 글씨(없으면 빈 문자열) — "가수 없이 찾은 결과" 등
@@ -29,7 +27,7 @@ const norm = (s) => (s || '').replace(/\s+/g, ' ').trim().toLowerCase();
 // openOnFocus() → 칸에 포커스가 올 때 이미 쓰인 값으로 목록을 다시 열지(기본: 연다)
 //   — 다른 칸의 목록이 열려 있으면 그걸 덮지 않게 부르는 쪽이 false를 줌.
 export function createPresetAutocomplete({ input, listEl }, {
-  getCat, fetchSuggestions, presets, markMine = false, onPick, footer, header, pendingText, emptyText,
+  getCat, fetchSuggestions, markMine = false, onPick, footer, header, pendingText, emptyText,
   keepOpenOn = [], openOnFocus = () => true,
 }) {
   let timer = null;
@@ -38,12 +36,6 @@ export function createPresetAutocomplete({ input, listEl }, {
 
   function hide() {
     listEl.style.display = 'none';
-  }
-
-  function presetMatches(filter) {
-    if (!presets) return [];
-    const f = norm(filter);
-    return (presets(getCat()) || []).filter((t) => norm(t).includes(f)).map((value) => ({ value }));
   }
 
   function note(className, text) {
@@ -109,22 +101,12 @@ export function createPresetAutocomplete({ input, listEl }, {
     if (bottom) note('preset-foot', bottom);
   }
 
-  // 서버 후보 먼저, 모자라면 같은 값이 아닌 PRESETS로 채움.
-  function merge(server, filter) {
-    const seen = new Set(server.map((s) => norm(s.value)));
-    const extra = presetMatches(filter).filter((p) => !seen.has(norm(p.value)));
-    return server.concat(extra).slice(0, MAX_ITEMS);
-  }
-
   function render(filter) {
     clearTimeout(timer);
     if (ctrl) { ctrl.abort(); ctrl = null; }
     if (!filter) { hide(); return; }
-    // 서버 응답을 기다리는 동안에도 비어 보이지 않게 PRESETS부터 그려둠 — 그것도
-    // 없으면 "검색 중…"(pendingText가 있을 때만).
-    const first = merge([], filter);
-    if (first.length || !fetchSuggestions || !pendingText) draw(first);
-    else drawMessage(pendingText(filter));
+    // 서버 응답을 기다리는 동안엔 "검색 중…"(pendingText가 빈 문자열이면 닫아 둠).
+    drawMessage(pendingText ? pendingText(filter) : '');
     if (!fetchSuggestions) return;
     const my = ++seq;
     timer = setTimeout(() => {
@@ -132,11 +114,11 @@ export function createPresetAutocomplete({ input, listEl }, {
       fetchSuggestions(getCat(), filter, ctrl && ctrl.signal)
         .then((server) => {
           if (my !== seq) return;
-          const items = merge(server || [], filter);
+          const items = (server || []).slice(0, MAX_ITEMS);
           if (!items.length && emptyText) drawMessage(emptyText(filter));
           else draw(items);
         })
-        .catch(() => { if (my === seq && !first.length) hide(); }); // 서버가 안 닿으면 PRESETS 그대로
+        .catch(() => { if (my === seq) hide(); }); // 서버가 안 닿으면 닫음
     }, DEBOUNCE_MS);
   }
 
