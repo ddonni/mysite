@@ -128,6 +128,46 @@ describe('음악 탭 제목 검색', () => {
   });
 });
 
+describe('두 칸의 목록', () => {
+  it('제목 결과가 뜬 채로 작가 칸을 눌러도 안 닫히고, 작가 칸에 입력하면 닫힘', async () => {
+    searchMusic.mockResolvedValue([ALBUM]);
+    typeTitle('주저하는 연인들을 위해');
+    await settle();
+    expect($('presetList').style.display).toBe('block');
+
+    $('fCreator').click();
+    expect($('presetList').style.display).toBe('block');
+
+    $('fCreator').value = '잔';
+    $('fCreator').dispatchEvent(new Event('input'));
+    expect($('presetList').style.display).toBe('none');
+  });
+
+  it('작가 칸에 값이 있어도, 제목 결과가 열려 있으면 포커스만으로 덮지 않음', async () => {
+    searchMusic.mockResolvedValue([ALBUM]);
+    typeTitle('주저하는 연인들을 위해');
+    await settle();
+    $('presetList').querySelector('.preset-item.rich').click(); // 가수 JANNABI 자동 채움
+    typeTitle('LEGEND');
+    await settle();
+    const calls = searchMusic.mock.calls.length;
+
+    $('fCreator').dispatchEvent(new Event('focus'));
+    await settle();
+    expect($('presetList').style.display).toBe('block');
+    expect($('creatorList').style.display).toBe('none');
+    expect(searchMusic.mock.calls.length).toBe(calls); // 작가 검색이 안 나감
+  });
+
+  it('두 칸 바깥을 누르면 닫힘', async () => {
+    searchMusic.mockResolvedValue([ALBUM]);
+    typeTitle('주저하는 연인들을 위해');
+    await settle();
+    $('fMemo').click();
+    expect($('presetList').style.display).toBe('none');
+  });
+});
+
 describe('만든 사람 칸 검색', () => {
   const HAN = { title: '소년이 온다', full_title: '소년이 온다', creator: '한강', publisher: '창비', year: '2014', cover: 'https://t1.daumcdn.net/lbook/image/1' };
 

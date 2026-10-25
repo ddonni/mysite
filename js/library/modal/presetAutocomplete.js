@@ -24,8 +24,13 @@ const norm = (s) => (s || '').replace(/\s+/g, ' ').trim().toLowerCase();
 // pendingText(입력값) → 서버 응답을 기다리는 동안 보여줄 문구(빈 문자열이면 안 보임)
 // emptyText(입력값) → 서버 응답까지 왔는데 후보가 하나도 없을 때 문구(빈 문자열이면
 //   지금처럼 목록을 닫음) — 검색 결과가 없다는 걸 알려주려고
+// keepOpenOn → 눌러도 목록을 닫지 않을 다른 요소들(예: 제목 목록을 보면서 바로 옆
+//   작가 칸을 누를 때). 그 칸에 입력을 시작하면 닫는 건 부르는 쪽 몫(hide()).
+// openOnFocus() → 칸에 포커스가 올 때 이미 쓰인 값으로 목록을 다시 열지(기본: 연다)
+//   — 다른 칸의 목록이 열려 있으면 그걸 덮지 않게 부르는 쪽이 false를 줌.
 export function createPresetAutocomplete({ input, listEl }, {
   getCat, fetchSuggestions, presets, markMine = false, onPick, footer, header, pendingText, emptyText,
+  keepOpenOn = [], openOnFocus = () => true,
 }) {
   let timer = null;
   let ctrl = null; // 진행 중인 서버 요청 — 새로 치면 이전 것은 취소
@@ -136,14 +141,17 @@ export function createPresetAutocomplete({ input, listEl }, {
   }
 
   input.addEventListener('input', () => render(input.value.trim()));
-  input.addEventListener('focus', () => { if (input.value.trim()) render(input.value.trim()); });
+  input.addEventListener('focus', () => { if (input.value.trim() && openOnFocus()) render(input.value.trim()); });
   document.addEventListener('click', (e) => {
-    if (e.target !== input && !listEl.contains(e.target)) hide();
+    if (e.target === input || listEl.contains(e.target)) return;
+    if (keepOpenOn.some((el) => el && el.contains(e.target))) return;
+    hide();
   });
 
   return {
     // 카테고리 탭을 바꿨을 때 등, 지금 입력값 기준으로 목록을 다시 그림.
     refresh() { render(input.value.trim()); },
     hide() { clearTimeout(timer); seq++; hide(); },
+    isOpen: () => listEl.style.display !== 'none',
   };
 }

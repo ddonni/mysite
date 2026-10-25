@@ -50,6 +50,10 @@ export function createModal({ onSaved }) {
       header: titleHeader,
       pendingText: (q) => (searchesWeb(currentCat, q) ? '검색 중…' : ''),
       emptyText: (q) => emptyText('title', q),
+      // 제목 결과를 보면서 작가 칸을 눌러도 안 닫힘 — 작가 칸에 입력을 시작하면 닫음(아래).
+      // 작가 칸 목록이 열려 있을 땐 제목 칸을 눌러도 그 위를 덮지 않음(반대도 같음).
+      keepOpenOn: [fCreator],
+      openOnFocus: () => !creatorAutocomplete.isOpen(),
     },
   );
   const creatorAutocomplete = createPresetAutocomplete(
@@ -68,6 +72,8 @@ export function createModal({ onSaved }) {
       footer: creatorFooter,
       pendingText: (q) => (searchesWeb(currentCat, q) ? '검색 중…' : ''),
       emptyText: (q) => emptyText('creator', q),
+      keepOpenOn: [fTitle],
+      openOnFocus: () => !presetAutocomplete.isOpen(),
     },
   );
 
@@ -262,8 +268,10 @@ export function createModal({ onSaved }) {
   // 칸에 한 번이라도 직접 손대면 그 값은 사용자가 쓴 것 — 자동으로 채운 값이었다는
   // 표시를 지워서, 검색어에 넣고(typedArtist) 다음 결과를 골라도 안 덮어씀
   // (fillFromPick). 고쳤다가 같은 글자로 되돌려도 마찬가지.
-  fTitle.addEventListener('input', () => { autoTitle = null; });
-  fCreator.addEventListener('input', () => { autoCreator = null; });
+  // 한쪽 칸에 입력을 시작하면 다른 칸의 목록은 닫음 — 두 목록이 같은 자리(묶음 아래)에
+  // 떠서 겹치지 않게(keepOpenOn으로 눌렀을 때는 열어 둠).
+  fTitle.addEventListener('input', () => { autoTitle = null; creatorAutocomplete.hide(); });
+  fCreator.addEventListener('input', () => { autoCreator = null; presetAutocomplete.hide(); });
 
   // 음악은 가수를 제목보다 나중에 써도 되게 — 가수 칸을 고치고 나가면 제목 칸의
   // 검색 결과를 "가수 제목"으로 다시 찾아 보여줌. 작가 칸 목록에서 결과를 고르며
