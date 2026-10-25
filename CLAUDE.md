@@ -48,14 +48,14 @@
   받은 의견은 서버에서 psql로 봄(`mysite-backend/CLAUDE.md`).
 - `GOOGLE_CLIENT_ID`: `js/shared/config.js` ↔ 백엔드 환경 변수(같은 값이어야 함).
 - 책 검색: 백엔드 `GET /api/search/book`(카카오, 키는 백엔드 `KAKAO_REST_KEY`) ↔
-  `js/library/records.js`의 `searchBooks` + `modal.js`의 `titleSuggestions`/`fillFromPick`
+  `js/library/records.js`의 `searchBooks` + `modal/recordSearch.js`의 `titleSuggestions`/`fillFromPick`
   (책 탭·두 글자부터, 고르면 작가·표지까지 채움).
   **고르는 건 "이걸로 하겠다"는 선택**이라 결과가 가진 제목·작가는 전에 직접 쓴 값이 있어도 바꿈
   (`fillFromPick`). 고른 뒤에 고친 값은 다음에 또 고르기 전까지 그대로. 사진만 예외 — 직접 올린
   사진(새 파일, S3에 올려 둔 사진)은 안 바꾸고 검색 표지(`photoSrc.js`의 `isSearchCover`)만 바꿈.
 - 음악 검색: 백엔드 `GET /api/search/music`(유튜브 뮤직, 비공식 ytmusicapi — 로그인 없이는
   **앨범만**, 일반 검색은 3개까지. 가수 칸만으로 찾을 땐 `by=artist`로 그 가수의 앨범·싱글 최대
-  12개) ↔ `records.js`의 `searchMusic` + `modal.js`의 `titleSuggestions`
+  12개) ↔ `records.js`의 `searchMusic` + `modal/recordSearch.js`의 `titleSuggestions`
   (가수 칸에 **직접 쓴** 가수가 있으면 "가수 제목"으로 검색 — 앞서 고른 결과로 자동으로
   채워진 가수는 안 씀, 그걸로 0건이면 제목만으로 다시 찾고 목록 위에 알림, 가수 칸을
   나중에 고쳐도 다시 검색). 검색 중엔 "검색 중…", 결과가 없으면 "'검색어' 검색 결과가
@@ -64,7 +64,7 @@
   'author')`로 작가 이름만, 음악은 가수 이름으로 앨범). 고르면 이름·표지, 책·영화·애니는 제목까지
   (음악은 제목 안 채움 — 결과가 앨범). 칸에 손대거나 작가 칸 결과를 고른 값은 "직접 쓴 값"
   (`autoTitle`/`autoCreator`가 null)이라 두 칸을 합친 검색에 씀.
-  **두 칸이 다 차 있으면 어느 칸에서 치든 합쳐 검색**(`modal.js`의 `webSearch` — 책은
+  **두 칸이 다 차 있으면 어느 칸에서 치든 합쳐 검색**(`modal/recordSearch.js`의 `webSearch` — 책은
   "제목 작가"를 카카오 기본 검색으로, 음악은 "가수 제목"). 다른 칸 값은 직접 쓴 것만 쓰고,
   합쳐서 0건이면 지금 칸만으로 다시 찾아 목록 위에 "'…'까지 넣으면 결과가 없어 …만으로
   찾았어요". 작가 칸을 고치고 나가면 제목 칸 목록도 합친 검색으로 다시(책·음악 모두).
@@ -130,6 +130,7 @@
   전체 URL로 저장돼 있어서 계속 보임. 병행 운영이 끝나면 새 버킷으로 복사하고
   `photo_url`을 바꿀 예정. 업로드 전 줄이기(1200px)와 캐시 헤더는 새로 올리는 사진부터 적용됨.
 - Render 서비스와 Neon은 2026-10-25에 삭제함(병행 운영 종료). 그래서 `API_BASE`를 revert해도
-  돌아갈 곳이 없음. `js/shared/wake.js`, `sketchbook/main.js`, `store.js`의 "Render가 잠듦"
-  대비 코드·주석은 아직 남아 있음(EC2는 잠들지 않아 필요 없을 수 있음 — 정리는 따로). 예전 Render 자동 배포
+  돌아갈 곳이 없음. "Render가 잠듦" 대비는 2026-10-25에 정리함: `js/shared/wake.js` →
+  `slow.js`("서버를 깨우는 중" → "연결이 느려요"), 캔버스의 서버 대기 45초 → 10초(그 뒤엔 이 기기
+  저장으로 — 서버 장애 대비라 이 폴백 자체는 유지). 예전 Render 자동 배포
   문제(2026-10-15, 원인 미확인)는 더 이상 운영에 영향 없음.
