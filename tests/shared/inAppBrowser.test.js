@@ -1,0 +1,93 @@
+// inAppBrowser.js — 어떤 UA를 앱 안 브라우저로 보는지, 바깥 브라우저로 여는
+// 주소가 맞게 만들어지는지, 안내 띠가 언제 뜨고 카톡 자동 이동이 한 번만 되는지.
+import { beforeEach, describe, expect, it, vi } from 'vitest'; // vi: 모듈 캐시 초기화(resetModules)
+
+const UA = {
+  kakaoIos: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 KAKAOTALK 10.8.5',
+  instaIos: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/21F90 Instagram 340.0.0.22.109 (iPhone15,2; iOS 17_5; ko_KR)',
+  instaAndroid: 'Mozilla/5.0 (Linux; Android 14; SM-S918N Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/126.0.6478.71 Mobile Safari/537.36 Instagram 340.0.0.22.109 Android',
+  safari: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+  chromeAndroid: 'Mozilla/5.0 (Linux; Android 14; SM-S918N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.6478.71 Mobile Safari/537.36',
+};
+
+const HERE = 'https://ex.com/mysite/?room=AB12CD';
+let hrefSet;
+let mod;
+
+// 모듈은 jsdom 기본 UA(앱 안 브라우저 아님)로 불러와서 자동 실행은 아무것도
+// 안 하고, 각 테스트가 UA·주소·이동 함수를 넣어 initInAppBrowser를 직접 부름.
+// (jsdom에선 location.href에 kakaotalk:// 같은 주소를 넣으면 이동하려다 에러가 남.)
+function load(ua) {
+  document.body.innerHTML = '';
+  mod.initInAppBrowser({ ua, href: HERE, go: (url) => hrefSet.push(url) });
+}
+
+beforeEach(async () => {
+  vi.resetModules();
+  sessionStorage.clear();
+  hrefSet = [];
+  mod = await import('../../js/shared/inAppBrowser.js');
+});
+
+describe('detectInApp', () => {
+  it('카톡은 kakao, 인스타는 other, 일반 브라우저는 null', () => {
+    const { detectInApp } = mod;
+    expect(detectInApp(UA.kakaoIos)).toBe('kakao');
+    expect(detectInApp(UA.instaIos)).toBe('other');
+    expect(detectInApp(UA.instaAndroid)).toBe('other');
+    expect(detectInApp(UA.safari)).toBeNull();
+    expect(detectInApp(UA.chromeAndroid)).toBeNull();
+  });
+});
+
+describe('바깥 브라우저 주소', () => {
+  it('카톡 openExternal에 지금 주소를 인코딩해서 넣음', () => {
+    expect(mod.kakaoExternalUrl('https://ex.com/?room=AB12CD')).toBe('kakaotalk://web/openExternal?url=https%3A%2F%2Fex.com%2F%3Froom%3DAB12CD');
+  });
+
+  it('안드로이드는 크롬 intent 주소', () => {
+    expect(mod.androidChromeUrl('https://ex.com/library?cat=book')).toBe(
+      'intent://ex.com/library?cat=book#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=https%3A%2F%2Fex.com%2Flibrary%3Fcat%3Dbook;end',
+    );
+  });
+});
+
+describe('안내 띠', () => {
+  it('일반 브라우저에선 아무것도 안 함', () => {
+    load(UA.safari);
+    load(UA.chromeAndroid);
+    expect(document.querySelector('.inapp-banner')).toBeNull();
+    expect(hrefSet).toEqual([]);
+  });
+
+  it('카톡이면 처음 한 번만 자동으로 바깥 브라우저로 보냄', () => {
+    load(UA.kakaoIos);
+    expect(hrefSet).toEqual([mod.kakaoExternalUrl(HERE)]);
+    expect(document.querySelector('.inapp-open')).not.toBeNull();
+
+    load(UA.kakaoIos); // 웹뷰에서 다른 페이지로 옮긴 경우
+    expect(hrefSet).toHaveLength(1);
+  });
+
+  it('아이폰 인스타는 메뉴 안내 + 링크 복사', () => {
+    load(UA.instaIos);
+    expect(hrefSet).toEqual([]);
+    expect(document.querySelector('.inapp-how')).not.toBeNull();
+    expect(document.querySelector('.inapp-copy')).not.toBeNull();
+    expect(document.querySelector('.inapp-open')).toBeNull();
+  });
+
+  it('안드로이드 인스타는 크롬으로 열기 버튼', () => {
+    load(UA.instaAndroid);
+    document.querySelector('.inapp-open').click();
+    expect(hrefSet).toEqual([mod.androidChromeUrl(HERE)]);
+  });
+
+  it('"여기서 볼게요"를 누르면 닫히고 이번 세션엔 다시 안 뜸', () => {
+    load(UA.instaIos);
+    document.querySelector('.inapp-close').click();
+    expect(document.querySelector('.inapp-banner')).toBeNull();
+    load(UA.instaIos);
+    expect(document.querySelector('.inapp-banner')).toBeNull();
+  });
+});

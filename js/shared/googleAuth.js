@@ -7,12 +7,19 @@
 import { API_BASE, GOOGLE_CLIENT_ID } from './config.js';
 import { getStoredRoom, adoptRoom } from './room.js';
 import { escapeHtml } from './dom.js';
+import { isInAppBrowser } from './inAppBrowser.js';
 
 // index.html이 <script src=".../gsi/client">를 THREE.js처럼 모듈
 // 스크립트보다 먼저 (async/defer 없이) 불러와서, 이 모듈이 실행되는
 // 시점엔 전역 google이 이미 준비돼 있음.
 function renderGoogleButton(containerEl) {
   if (!GOOGLE_CLIENT_ID || typeof google === 'undefined' || !containerEl) return; // 설정 안 했으면 버튼 자체를 안 띄움
+  // 카톡·인스타 웹뷰에선 구글이 로그인을 막아서 눌러도 오류 화면만 뜸 —
+  // 버튼 대신 어디서 하면 되는지 알려줌.
+  if (isInAppBrowser()) {
+    containerEl.innerHTML = '<span class="google-linked">구글 계정 연결은 크롬·사파리에서 할 수 있어요</span>';
+    return;
+  }
 
   google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleCredential });
   google.accounts.id.renderButton(containerEl, { type: 'standard', theme: 'outline', size: 'medium', text: 'signin_with' });
