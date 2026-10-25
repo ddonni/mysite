@@ -6,7 +6,7 @@
 // 결과만 모아서 폼을 채우고 비우고 저장하는 오케스트레이션만 함.
 //
 // 실제 서버 저장은 records.js의 uploadPhoto/saveRecord를 불러 씀.
-import { CATS, PRESETS, uploadPhoto, saveRecord, fetchSuggestions, searchBooks } from './records.js';
+import { CATS, PRESETS, uploadPhoto, saveRecord, fetchSuggestions, searchBooks, searchMusic } from './records.js';
 import { CREATOR_FIELD } from './modal/categoryFields.js';
 import { createStarPicker } from './modal/starPicker.js';
 import { createPhotoPicker } from './modal/photoPicker.js';
@@ -34,7 +34,8 @@ export function createModal({ onSaved }) {
   });
   // 제목 칸·만든 사람 칸 자동 완성 — 서로 독립(제목만 고른 후보로는 만든 사람을 안
   // 채움: 동명의 다른 작품이 흔하고, 만든 사람을 모르고 기록하는 경우도 많아서).
-  // 예외는 책 검색 결과 — 특정 판본 하나를 고른 것이라 작가·표지까지 채움(fillFromBook).
+  // 예외는 책·음악 검색 결과 — 특정 판본·앨범 하나를 고른 것이라 작가(가수)·표지까지
+  // 채움(fillFromPick).
   const getCat = () => currentCat;
   const presetAutocomplete = createPresetAutocomplete(
     { input: fTitle, listEl: document.getElementById('presetList') },
@@ -43,9 +44,8 @@ export function createModal({ onSaved }) {
       fetchSuggestions: titleSuggestions,
       presets: (cat) => PRESETS[cat],
       markMine: true, // 내 방에 이미 있는 제목 → "이미 기록함"
-      onPick: (s) => { if (s.book) fillFromBook(s.book); },
-      // 카카오 검색 API 약관의 출처 표기.
-      footer: (items) => (items.some((s) => s.book) ? '책 정보 제공: Kakao' : ''),
+      onPick: (s) => { if (s.pick) fillFromPick(s.pick); },
+      footer: titleFooter,
     },
   );
   const creatorAutocomplete = createPresetAutocomplete(
@@ -60,42 +60,86 @@ export function createModal({ onSaved }) {
   let autoCreator = null;
   let autoCover = null;
 
-  // 책이면 이 방·공개 방들의 제목 후보에 카카오 책 검색 결과를 붙임. 같은 제목이
-  // 둘 다에 있으면 검색 결과 쪽만 남기고("이미 기록함" 표시는 옮겨 붙임) — 같은
-  // 줄이 두 번 보이지 않게. 한 글자로는 검색 결과가 너무 넓어서 두 글자부터.
-  // 어느 한쪽이 실패해도 나머지만으로 보여줌.
+  // 책·음악이면 이 방·공개 방들의 제목 후보 뒤에 검색 결과를 붙임. 한 글자로는
+  // 검색 결과가 너무 넓어서 두 글자부터. 어느 한쪽이 실패해도 나머지만으로 보여줌.
+  //   - 책(카카오): 같은 제목이 둘 다에 있으면 검색 결과 쪽만 남기고("이미 기록함"
+  //     표시는 옮겨 붙임) — 같은 줄이 두 번 보이지 않게.
+  //   - 음악(유튜브 뮤직): 로그인 없이는 앨범만 찾아져서(백엔드 music_search.py),
+  //     노래 제목만으론 남의 커버곡이 먼저 나오기 쉬움 — 가수 칸이 채워져 있으면
+  //     "가수 제목"으로 검색함. 고르면 제목은 입력한 그대로 둠(대개 노래 제목이라
+  //     앨범 이름으로 덮으면 틀어짐).
   function titleSuggestions(cat, q, signal) {
     const own = fetchSuggestions(cat, 'title', q, signal);
-    if (cat !== 'book' || q.length < 2) return own;
-    return Promise.all([
-      own.catch(() => []),
-      searchBooks(q, signal).catch(() => []),
-    ]).then(([mine, books]) => {
-      const mineTitles = new Set(mine.filter((s) => s.mine).map((s) => s.value.trim()));
-      const bookTitles = new Set(books.map((b) => b.title.trim()));
-      const rest = mine.filter((s) => !bookTitles.has(s.value.trim()));
-      return rest.slice(0, 3).concat(books.map((b) => ({
-        value: b.title,
-        mine: mineTitles.has(b.title.trim()),
-        book: b,
-      })));
-    });
+    if (q.length < 2) return own;
+    if (cat === 'book') {
+      return Promise.all([
+        own.catch(() => []),
+        searchBooks(q, signal).catch(() => []),
+      ]).then(([mine, books]) => {
+        const mineTitles = new Set(mine.filter((s) => s.mine).map((s) => s.value.trim()));
+        const bookTitles = new Set(books.map((b) => b.title.trim()));
+        const rest = mine.filter((s) => !bookTitles.has(s.value.trim()));
+        return rest.slice(0, 3).concat(books.map((b) => ({
+          value: b.title,
+          mine: mineTitles.has(b.title.trim()),
+          card: { title: b.full_title, meta: [b.creator, b.publisher, b.year].filter(Boolean).join(' · '), cover: b.cover },
+          pick: { creator: b.creator, cover: b.cover },
+          source: 'book',
+        })));
+      });
+    }
+    if (cat === 'music') {
+      const artist = fCreator.value.trim();
+      return Promise.all([
+        own.catch(() => []),
+        searchMusic(artist ? `${artist} ${q}` : q, signal).catch(() => []),
+      ]).then(([mine, albums]) => mine.slice(0, 3).concat(albums.map((m) => ({
+        // 로그인 검색이 노래까지 돌려주면 그 노래 제목, 아니면 입력한 그대로.
+        value: m.song || q,
+        card: {
+          title: m.song || m.album,
+          meta: [m.creator, m.song ? m.album : m.kind, m.year].filter(Boolean).join(' · '),
+          cover: m.cover,
+          square: true,
+        },
+        pick: { creator: m.creator, cover: m.cover },
+        source: 'music',
+      }))));
+    }
+    return own;
   }
 
-  function fillFromBook(book) {
+  // 목록 맨 아래 작은 글씨 — 검색 결과가 섞여 있을 때만. 책은 카카오 검색 API
+  // 약관의 출처 표기, 음악은 고르면 무엇이 채워지는지 + 가수 칸이 비었으면 요령.
+  function titleFooter(items) {
+    if (items.some((s) => s.source === 'book')) return '책 정보 제공: Kakao';
+    if (items.some((s) => s.source === 'music')) {
+      const tip = fCreator.value.trim() ? '' : ' · 가수를 함께 쓰면 더 정확해요';
+      return '고르면 가수·앨범 커버를 채워요' + tip;
+    }
+    return '';
+  }
+
+  function fillFromPick(pick) {
     const creator = fCreator.value.trim();
-    if (book.creator && (!creator || creator === autoCreator)) {
-      fCreator.value = book.creator;
-      autoCreator = book.creator;
+    if (pick.creator && (!creator || creator === autoCreator)) {
+      fCreator.value = pick.creator;
+      autoCreator = pick.creator;
     }
     // 사진은 아직 없거나, 전에 검색 결과로 채운 표지일 때만 바꿈 — 직접 고른
     // 파일이나 수정 중인 기록의 원래 사진은 그대로 둠.
     const current = photoPicker.getFile() ? 'file' : photoPicker.getUrl();
-    if (book.cover && (!current || current === autoCover)) {
-      photoPicker.setExisting(book.cover);
-      autoCover = book.cover;
+    if (pick.cover && (!current || current === autoCover)) {
+      photoPicker.setExisting(pick.cover);
+      autoCover = pick.cover;
     }
   }
+
+  // 음악은 가수를 제목보다 나중에 써도 되게 — 가수 칸을 고치고 나가면 제목 칸의
+  // 검색 결과를 "가수 제목"으로 다시 찾아 보여줌.
+  fCreator.addEventListener('change', () => {
+    if (currentCat === 'music' && fTitle.value.trim()) presetAutocomplete.refresh();
+  });
 
   function updateCreatorField() {
     const field = CREATOR_FIELD[currentCat] || CREATOR_FIELD.book;

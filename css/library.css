@@ -259,10 +259,11 @@ body.read-only #addTabBtn{ display:none; }
 }
 .preset-item:hover{ background:rgba(243,236,224,0.08); }
 .preset-item:last-child{ border-bottom:none; }
-/* 책 검색 결과(카카오) — 표지 썸네일 + 원래 제목 + "작가 · 출판사 · 연도". 줄이
-   높아서 목록도 더 길게 열어 둠. */
-.preset-list:has(.preset-item.book){ max-height:min(340px, 55vh); }
-.preset-item.book{ justify-content:flex-start; }
+/* 책·음악 검색 결과 — 표지 썸네일 + 제목 + 설명 한 줄. 줄이 높아서 목록도 더
+   길게 열어 둠. */
+.preset-list:has(.preset-item.rich){ max-height:min(340px, 55vh); }
+.preset-item.rich{ justify-content:flex-start; }
+.preset-item.rich .preset-cover.square{ height:34px; }
 .preset-cover{
   flex:none; width:34px; height:49px; object-fit:cover; border-radius:3px;
   background:rgba(243,236,224,0.08);

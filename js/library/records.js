@@ -74,6 +74,16 @@ export function searchBooks(q, signal) {
   });
 }
 
+// 음악 검색(백엔드가 유튜브 뮤직에서 앨범을 찾아 줌) —
+// [{ album, song, creator, kind, year, cover }]. 로그인 없이는 앨범만 와서 song은
+// 보통 null. 유튜브 쪽이 깨지면(503) 실패로 끝남 — 책 검색과 같이 다룸.
+export function searchMusic(q, signal) {
+  return fetch(API_BASE + '/api/search/music?' + new URLSearchParams({ q }), { signal }).then((res) => {
+    if (!res.ok) throw new Error('music search failed');
+    return res.json();
+  });
+}
+
 // 기록 하나를 삭제.
 export function deleteRecord(id) {
   return fetch(API_BASE + '/api/rooms/' + roomCode + '/records/' + id, {

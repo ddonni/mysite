@@ -47,8 +47,14 @@
   받은 의견은 서버에서 psql로 봄(`mysite-backend/CLAUDE.md`).
 - `GOOGLE_CLIENT_ID`: `js/shared/config.js` ↔ 백엔드 환경 변수(같은 값이어야 함).
 - 책 검색: 백엔드 `GET /api/search/book`(카카오, 키는 백엔드 `KAKAO_REST_KEY`) ↔
-  `js/library/records.js`의 `searchBooks` + `modal.js`의 `titleSuggestions`/`fillFromBook`
+  `js/library/records.js`의 `searchBooks` + `modal.js`의 `titleSuggestions`/`fillFromPick`
   (책 탭·두 글자부터, 고르면 작가·표지까지 채움, 직접 쓴 값은 안 덮어씀).
+- 음악 검색: 백엔드 `GET /api/search/music`(유튜브 뮤직, 비공식 ytmusicapi — 로그인 없이는
+  **앨범만** 찾아짐) ↔ `records.js`의 `searchMusic` + `modal.js`의 `titleSuggestions`
+  (가수 칸이 채워져 있으면 "가수 제목"으로 검색, 가수 칸을 나중에 고쳐도 다시 검색).
+  고르면 가수·커버만 채우고 **제목은 입력한 그대로**(대개 노래 제목이라). 커버 서버
+  (yt3.googleusercontent.com)는 CORS를 줘서 중계 안 거침. 목록 그리기는 책·음악 모두
+  `presetAutocomplete.js`의 후보 `card`({title, meta, cover, square}) 하나로.
   표지 중계: 백엔드 `GET /api/cover` + `book_search.COVER_HOSTS` ↔ `js/shared/photoSrc.js`의
   `RELAY_HOSTS`(같아야 함). 사진을 띄우는 곳(로비 `coverImage.js`, 목록 `itemFormat.js`,
   추가 창 `photoPicker.js`, 검색 목록)은 전부 `photoSrc()`를 거침.
