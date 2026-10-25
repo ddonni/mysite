@@ -84,6 +84,25 @@ export function searchMusic(q, signal) {
   });
 }
 
+// 영화·애니 검색(백엔드가 TMDB에서 한국어 제목·포스터를 찾아 줌) —
+// [{ id, media: 'movie'|'tv', title, original_title, year, cover }]. kind는 'movie'
+// (영화 전체) 또는 'anime'(영화·TV 중 애니메이션만). 감독은 안 들어 있어서 고른
+// 작품만 fetchScreenCreator로 따로 물어봄.
+export function searchScreen(q, kind, signal) {
+  return fetch(API_BASE + '/api/search/screen?' + new URLSearchParams({ q, kind }), { signal }).then((res) => {
+    if (!res.ok) throw new Error('screen search failed');
+    return res.json();
+  });
+}
+
+// 고른 영화·TV의 감독 이름(못 찾으면 빈 문자열).
+export function fetchScreenCreator(media, id) {
+  return fetch(API_BASE + '/api/search/screen/creator?' + new URLSearchParams({ media, id })).then((res) => {
+    if (!res.ok) throw new Error('screen creator failed');
+    return res.json();
+  }).then((data) => data.creator || '');
+}
+
 // 기록 하나를 삭제.
 export function deleteRecord(id) {
   return fetch(API_BASE + '/api/rooms/' + roomCode + '/records/' + id, {

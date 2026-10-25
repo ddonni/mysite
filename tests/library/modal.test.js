@@ -10,6 +10,8 @@ vi.mock('../../js/shared/config.js', () => ({
 
 const searchMusic = vi.fn();
 const searchBooks = vi.fn();
+const searchScreen = vi.fn();
+const fetchScreenCreator = vi.fn();
 vi.mock('../../js/library/records.js', () => ({
   CATS: [
     { key: 'book', label: '책' }, { key: 'anime', label: '애니' },
@@ -21,6 +23,8 @@ vi.mock('../../js/library/records.js', () => ({
   fetchSuggestions: () => Promise.resolve([]),
   searchBooks: (...a) => searchBooks(...a),
   searchMusic: (...a) => searchMusic(...a),
+  searchScreen: (...a) => searchScreen(...a),
+  fetchScreenCreator: (...a) => fetchScreenCreator(...a),
 }));
 
 const { createModal } = await import('../../js/library/modal.js');
@@ -51,6 +55,8 @@ let modal;
 beforeEach(() => {
   searchMusic.mockReset();
   searchBooks.mockReset();
+  searchScreen.mockReset();
+  fetchScreenCreator.mockReset();
   mountDom();
   modal = createModal({ onSaved: () => {} });
   modal.openAdd('music');
@@ -249,6 +255,56 @@ describe('만든 사람 칸 검색', () => {
     typeTitle('Everything');
     await settle();
     expect(searchMusic).toHaveBeenLastCalledWith('검정치마 Everything', expect.anything());
+  });
+});
+
+describe('영화·애니 탭', () => {
+  const SHINSEKAI = { id: 30991, media: 'tv', title: '신세계에서', original_title: '新世界より', year: '2012', cover: 'https://image.tmdb.org/t/p/w342/a.jpg' };
+
+  it('애니: 제목으로 TMDB를 찾고 원제·연도·TV판 여부를 보여줌', async () => {
+    modal.openAdd('anime');
+    searchScreen.mockResolvedValue([SHINSEKAI]);
+    typeTitle('신세계');
+    await settle();
+    expect(searchScreen).toHaveBeenCalledWith('신세계', 'anime', expect.anything());
+    const item = $('presetList').querySelector('.preset-item.rich');
+    expect(item.querySelector('.preset-meta').textContent).toBe('新世界より · 2012 · TV');
+    expect($('presetList').querySelector('.preset-foot').textContent).toContain('정보 제공: TMDB');
+  });
+
+  it('고르면 포스터를 채우고, 감독은 따로 물어봐서 빈 칸에 채움', async () => {
+    modal.openAdd('anime');
+    searchScreen.mockResolvedValue([SHINSEKAI]);
+    fetchScreenCreator.mockResolvedValue('이시하마 마사시');
+    typeTitle('신세계');
+    await settle();
+    $('presetList').querySelector('.preset-item.rich').click();
+    expect($('fTitle').value).toBe('신세계에서');
+    expect($('photoPreview').getAttribute('src')).toBe(SHINSEKAI.cover);
+    await settle();
+    expect(fetchScreenCreator).toHaveBeenCalledWith('tv', 30991);
+    expect($('fCreator').value).toBe('이시하마 마사시');
+  });
+
+  it('감독 칸에 직접 쓴 이름이 있으면 감독 답이 와도 안 덮어씀', async () => {
+    modal.openAdd('movie');
+    searchScreen.mockResolvedValue([{ ...SHINSEKAI, media: 'movie', title: '기생충', original_title: '' }]);
+    fetchScreenCreator.mockResolvedValue('봉준호');
+    $('fCreator').value = '내가 쓴 감독';
+    $('fCreator').dispatchEvent(new Event('input'));
+    typeTitle('기생충');
+    await settle();
+    $('presetList').querySelector('.preset-item.rich').click();
+    await settle();
+    expect($('fCreator').value).toBe('내가 쓴 감독');
+  });
+
+  it('감독 칸에서는 검색하지 않음', async () => {
+    modal.openAdd('movie');
+    $('fCreator').value = '봉준호';
+    $('fCreator').dispatchEvent(new Event('input'));
+    await settle();
+    expect(searchScreen).not.toHaveBeenCalled();
   });
 });
 

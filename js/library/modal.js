@@ -6,7 +6,9 @@
 // 결과만 모아서 폼을 채우고 비우고 저장하는 오케스트레이션만 함.
 //
 // 실제 서버 저장은 records.js의 uploadPhoto/saveRecord를 불러 씀.
-import { CATS, PRESETS, uploadPhoto, saveRecord, fetchSuggestions, searchBooks, searchMusic } from './records.js';
+import {
+  CATS, PRESETS, uploadPhoto, saveRecord, fetchSuggestions, searchBooks, searchMusic, searchScreen, fetchScreenCreator,
+} from './records.js';
 import { CREATOR_FIELD } from './modal/categoryFields.js';
 import { createStarPicker } from './modal/starPicker.js';
 import { createPhotoPicker } from './modal/photoPicker.js';
@@ -71,7 +73,7 @@ export function createModal({ onSaved }) {
       },
       footer: creatorFooter,
       header: (items) => searchHeader('creator', items),
-      pendingText: (q) => (searchesWeb(currentCat, q) ? '검색 중…' : ''),
+      pendingText: (q) => (searchesWeb(currentCat, q, 'creator') ? '검색 중…' : ''),
       emptyText: (q) => emptyText('creator', q),
       keepOpenOn: [fTitle],
       openOnFocus: () => !presetAutocomplete.isOpen(),
@@ -87,6 +89,9 @@ export function createModal({ onSaved }) {
   let autoCover = null;
   // 작가 칸에서 검색 결과를 고를 땐 아래 change 리스너의 "제목 칸 다시 검색"을 건너뜀.
   let skipCreatorRefresh = false;
+  // 영화·애니를 고른 뒤 감독을 따로 물어보는 요청의 번호 — 그사이 다른 작품을 고르거나
+  // 창을 다시 열면 늦게 온 옛 답은 버림.
+  let creatorLookup = 0;
 
   // 책·음악이면 이 방·공개 방들의 후보 뒤에 검색 결과를 붙임. 한 글자로는 검색 결과가
   // 너무 넓어서 두 글자부터. 어느 한쪽이 실패해도 나머지만으로 보여줌.
@@ -109,8 +114,12 @@ export function createModal({ onSaved }) {
     creator: { failed: false, dropped: '' },
   };
 
-  function searchesWeb(cat, q) {
-    return (cat === 'book' || cat === 'music') && q.length >= 2;
+  // 제목 칸은 네 탭 모두 검색, 만든 사람 칸은 책·음악만(영화·애니는 감독 이름으로
+  // 작품을 찾는 검색을 안 붙임 — 제목으로 고르면 감독은 자동으로 채워짐).
+  const isScreen = (cat) => cat === 'movie' || cat === 'anime';
+  function searchesWeb(cat, q, field = 'title') {
+    const web = cat === 'book' || cat === 'music' || (field === 'title' && isScreen(cat));
+    return web && q.length >= 2;
   }
 
   function typedTitle() {
@@ -138,6 +147,8 @@ export function createModal({ onSaved }) {
   // field 칸에 q를 친 것 — 다른 칸에 직접 쓴 값이 있으면 합쳐서, 0건이면 q만으로.
   // → { found: 결과 배열|null(실패), dropped: 합쳤다가 뺀 다른 칸 값 }
   function webSearch(cat, field, q, signal) {
+    // 영화·애니(TMDB)는 제목으로만 — 감독을 섞으면 TMDB 검색이 오히려 못 찾음.
+    if (isScreen(cat)) return tryWeb(searchScreen(q, cat, signal), signal).then((found) => ({ found, dropped: '' }));
     const other = field === 'title' ? typedArtist() : typedTitle();
     const alone = () => (cat === 'music'
       ? searchMusic(q, signal)
@@ -157,6 +168,10 @@ export function createModal({ onSaved }) {
   }
 
   const bookMeta = (b) => [b.creator, b.publisher, b.year].filter(Boolean).join(' · ');
+  // 영화·애니: 원제(한국어 제목과 다를 때만 옴) · 연도, 애니는 TV판인지 극장판인지도.
+  const screenMeta = (cat, r) => [
+    r.original_title, r.year, cat === 'anime' ? (r.media === 'tv' ? 'TV' : '극장판') : '',
+  ].filter(Boolean).join(' · ');
   const albumCard = (m) => ({
     title: m.song || m.album,
     meta: [m.creator, m.song ? m.album : m.kind, m.year].filter(Boolean).join(' · '),
@@ -173,16 +188,24 @@ export function createModal({ onSaved }) {
     return Promise.all([own.catch(() => []), webSearch(cat, 'title', q, signal)]).then(([mine, { found, dropped }]) => {
       record('title', signal, { failed: found === null, dropped });
       const results = found || [];
-      if (cat === 'book') {
+      if (cat === 'book' || isScreen(cat)) {
         const mineTitles = new Set(mine.filter((s) => s.mine).map((s) => s.value.trim()));
-        const bookTitles = new Set(results.map((b) => b.title.trim()));
-        const rest = mine.filter((s) => !bookTitles.has(s.value.trim()));
-        return rest.slice(0, 3).concat(results.map((b) => ({
-          value: b.title,
-          mine: mineTitles.has(b.title.trim()),
-          card: { title: b.full_title, meta: bookMeta(b), cover: b.cover },
-          pick: { creator: b.creator, cover: b.cover },
-          source: 'book',
+        const webTitles = new Set(results.map((r) => r.title.trim()));
+        const rest = mine.filter((s) => !webTitles.has(s.value.trim()));
+        return rest.slice(0, 3).concat(results.map((r) => ({
+          value: r.title,
+          mine: mineTitles.has(r.title.trim()),
+          ...(cat === 'book'
+            ? {
+              card: { title: r.full_title, meta: bookMeta(r), cover: r.cover },
+              pick: { creator: r.creator, cover: r.cover },
+              source: 'book',
+            }
+            : {
+              card: { title: r.title, meta: screenMeta(cat, r), cover: r.cover },
+              pick: { cover: r.cover, screen: { media: r.media, id: r.id } },
+              source: 'screen',
+            }),
         })));
       }
       return mine.slice(0, 3).concat(results.map((m) => ({
@@ -201,7 +224,7 @@ export function createModal({ onSaved }) {
   // 노래 제목과 다름 — 제목 칸은 사용자가 씀).
   function creatorSuggestions(cat, q, signal) {
     const own = fetchSuggestions(cat, 'creator', q, signal);
-    if (!searchesWeb(cat, q)) {
+    if (!searchesWeb(cat, q, 'creator')) {
       record('creator', signal, { failed: false, dropped: '' });
       return own;
     }
@@ -228,6 +251,8 @@ export function createModal({ onSaved }) {
   // 약관의 출처 표기, 음악은 고르면 무엇이 채워지는지 + 가수를 안 썼으면 요령.
   function titleFooter(items) {
     if (items.some((s) => s.source === 'book')) return '책 정보 제공: Kakao';
+    // TMDB 이용 약관의 출처 표기 + "TMDB가 보증하지 않음" 문구.
+    if (items.some((s) => s.source === 'screen')) return '고르면 감독·포스터를 채워요 · 정보 제공: TMDB(TMDB의 보증을 받은 서비스는 아니에요)';
     if (items.some((s) => s.source === 'music')) {
       const tip = typedArtist() ? '' : ' · 가수를 함께 쓰면 더 정확해요';
       return '고르면 가수·앨범 커버를 채워요' + tip;
@@ -252,7 +277,7 @@ export function createModal({ onSaved }) {
   // 검색까지 했는데 후보가 하나도 없을 때. 검색 자체가 실패한 것(서버·카카오·유튜브
   // 오류)과 정말 결과가 없는 것을 구분해서 알려줌.
   function emptyText(field, q) {
-    if (!searchesWeb(currentCat, q)) return '';
+    if (!searchesWeb(currentCat, q, field)) return '';
     if (searchState[field].failed) return '지금은 검색할 수 없어요. 직접 입력해 주세요.';
     const tip = field === 'title' && currentCat === 'music' && !typedArtist() ? ' 가수를 함께 써 보세요.' : '';
     return `'${q}' 검색 결과가 없어요.${tip}`;
@@ -277,6 +302,21 @@ export function createModal({ onSaved }) {
       photoPicker.setExisting(pick.cover);
       autoCover = pick.cover;
     }
+    // 영화·애니는 검색 결과에 감독이 없어서 고른 작품만 따로 물어봄 — 답이 올 때도
+    // 같은 규칙(빈 칸이거나 자동으로 채운 칸만). 그사이 다른 걸 고르면 옛 답은 버림.
+    const lookup = ++creatorLookup;
+    if (pick.screen) {
+      fetchScreenCreator(pick.screen.media, pick.screen.id)
+        .then((name) => {
+          if (lookup !== creatorLookup || !name) return;
+          const now = fCreator.value.trim();
+          if (!now || now === autoCreator) {
+            fCreator.value = name;
+            autoCreator = name;
+          }
+        })
+        .catch(() => {}); // 못 찾으면 사용자가 직접 씀
+    }
   }
 
   // 칸에 한 번이라도 직접 손대면 그 값은 사용자가 쓴 것 — 자동으로 채운 값이었다는
@@ -294,7 +334,8 @@ export function createModal({ onSaved }) {
   fCreator.addEventListener('change', () => {
     setTimeout(() => {
       if (skipCreatorRefresh) { skipCreatorRefresh = false; return; }
-      if (searchesWeb(currentCat, fTitle.value.trim())) presetAutocomplete.refresh();
+      // 영화·애니는 감독을 검색에 안 써서(webSearch) 다시 찾을 이유가 없음.
+      if (!isScreen(currentCat) && searchesWeb(currentCat, fTitle.value.trim())) presetAutocomplete.refresh();
     }, 0);
   });
 
@@ -334,6 +375,7 @@ export function createModal({ onSaved }) {
     autoTitle = null;
     autoCreator = null;
     autoCover = null;
+    creatorLookup++;
     photoPicker.reset();
     starPicker.setValue(0);
     presetAutocomplete.hide();
@@ -414,6 +456,7 @@ export function createModal({ onSaved }) {
       autoTitle = null;
       autoCreator = null;
       autoCover = null;
+      creatorLookup++;
       photoPicker.setExisting(item.photo_url || null);
       starPicker.setValue(item.rating || 0);
       presetAutocomplete.hide();
