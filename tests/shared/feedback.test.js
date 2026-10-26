@@ -79,17 +79,32 @@ describe('의견 보내기 창', () => {
     expect(dialog.querySelector('.feedback-status').textContent).toBe('내용을 적어 주세요.');
   });
 
-  it('보내면 감사 문구를 띄우고 입력을 비운 뒤 잠시 후 닫힘', async () => {
+  it('보내면 입력 칸 대신 "잘 받았습니다" 화면 — 저절로 닫히지 않고, 닫았다 다시 열면 빈 입력 칸', async () => {
     mockFetch(200);
     const dialog = await openDialog();
     dialog.querySelector('textarea').value = '  아바타 기능 원해요  ';
     dialog.querySelector('form').requestSubmit();
     await flush();
-    expect(dialog.querySelector('.feedback-status').textContent).toBe('감사합니다! 잘 받았습니다.');
+    expect(dialog.classList.contains('done')).toBe(true);
+    expect(dialog.querySelector('.feedback-done-title').textContent).toBe('감사합니다! 잘 받았습니다.');
     expect(dialog.querySelector('textarea').value).toBe('');
-    expect(dialog.hidden).toBe(false);
     await new Promise((r) => setTimeout(r, 1600));
+    expect(dialog.hidden).toBe(false); // 예전처럼 1.5초 뒤에 사라지지 않음
+    dialog.querySelector('.feedback-done-close').click();
     expect(dialog.hidden).toBe(true);
+    document.querySelector('[data-feedback-open]').click();
+    expect(dialog.classList.contains('done')).toBe(false);
+  });
+
+  it('"하나 더 보내기"면 바로 빈 입력 칸으로', async () => {
+    mockFetch(200);
+    const dialog = await openDialog();
+    dialog.querySelector('textarea').value = '하나';
+    dialog.querySelector('form').requestSubmit();
+    await flush();
+    dialog.querySelector('.feedback-again').click();
+    expect(dialog.classList.contains('done')).toBe(false);
+    expect(dialog.hidden).toBe(false);
   });
 
   it('실패하면 쓴 내용을 남겨 둠', async () => {

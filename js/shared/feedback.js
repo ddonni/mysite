@@ -62,6 +62,17 @@ function buildDialog() {
         <button type="button" class="feedback-cancel">닫기</button>
         <button type="submit" class="feedback-send">보내기</button>
       </div>
+      <!-- 보낸 뒤 — 입력 칸 대신 이것만 보임(.done). 예전엔 아래 작은 초록 글씨만 1.5초 뜨고 창이
+           저절로 닫혀서, 폰에선 보내졌는지 알아채기 어려웠음(사용자 피드백). 직접 닫을 때까지 둠. -->
+      <div class="feedback-done" role="status">
+        <div class="feedback-done-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"/></svg></div>
+        <p class="feedback-done-title">감사합니다! 잘 받았습니다.</p>
+        <p class="feedback-done-sub">보내 주신 의견은 개발자만 읽습니다.</p>
+        <div class="feedback-actions">
+          <button type="button" class="feedback-again">하나 더 보내기</button>
+          <button type="button" class="feedback-done-close">닫기</button>
+        </div>
+      </div>
     </form>`;
   document.body.appendChild(dialog);
   return dialog;
@@ -70,11 +81,9 @@ function buildDialog() {
 // 창 상태는 모듈 하나에 하나 — 상단 메뉴 서랍(roomNav.js)도 같은 창을 openFeedback()으로 엶.
 let dialog = null;
 let returnFocus = null;
-let closeTimer = null;
 
 function close() {
   if (!dialog || dialog.hidden) return;
-  clearTimeout(closeTimer);
   dialog.hidden = true;
   if (returnFocus && returnFocus.focus) returnFocus.focus();
 }
@@ -88,6 +97,11 @@ function setup() {
   const sendBtn = dialog.querySelector('.feedback-send');
 
   dialog.querySelector('.feedback-cancel').addEventListener('click', close);
+  dialog.querySelector('.feedback-done-close').addEventListener('click', close);
+  dialog.querySelector('.feedback-again').addEventListener('click', () => {
+    dialog.classList.remove('done');
+    messageEl.focus();
+  });
   // 카드 바깥(어두운 배경)을 눌러도 닫힘. 쓰던 내용은 그대로 남아 있음.
   dialog.addEventListener('click', (e) => { if (e.target === dialog) close(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
@@ -107,9 +121,10 @@ function setup() {
     sendFeedback({ message, name: nameEl.value.trim() })
       .then(() => {
         form.reset();
-        statusEl.textContent = '감사합니다! 잘 받았습니다.';
-        statusEl.dataset.kind = 'ok';
-        closeTimer = setTimeout(close, 1500);
+        statusEl.textContent = '';
+        statusEl.dataset.kind = '';
+        dialog.classList.add('done');
+        dialog.querySelector('.feedback-done-close').focus();
       })
       .catch((err) => {
         statusEl.textContent = err.message;
@@ -124,9 +139,8 @@ function setup() {
 export function openFeedback() {
   if (!dialog || !dialog.isConnected) setup();
   returnFocus = document.activeElement;
-  const statusEl = dialog.querySelector('.feedback-status');
-  // 보내고 닫힌 뒤 다시 열면 지난 "잘 받았습니다"는 지움(실패 문구는 남겨 둠).
-  if (statusEl.dataset.kind === 'ok') { statusEl.textContent = ''; statusEl.dataset.kind = ''; }
+  // 보내고 닫은 뒤 다시 열면 "보냈어요" 화면 대신 빈 입력 칸부터(실패 문구는 남겨 둠).
+  dialog.classList.remove('done');
   dialog.hidden = false;
   dialog.querySelector('textarea').focus();
 }

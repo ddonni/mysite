@@ -50,6 +50,21 @@
 }
 .feedback-field textarea { resize: vertical; min-height: 100px; }
 .feedback-field textarea:focus, .feedback-field input:focus { outline: 2px solid var(--fb-accent); outline-offset: 1px; }
+/* 보낸 뒤 화면 — .done이면 입력 칸·버튼을 숨기고 이것만. */
+.feedback-done { display: none; text-align: center; padding: 10px 0 2px; }
+.feedback-dialog.done .feedback-card > :not(.feedback-done) { display: none; }
+.feedback-dialog.done .feedback-done { display: block; }
+.feedback-done-icon {
+  width: 56px; height: 56px; margin: 0 auto 14px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; background: var(--fb-ok);
+}
+.feedback-done-icon svg { width: 30px; height: 30px; fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.feedback-done-title { margin: 0 0 6px; font-size: 17px; font-weight: 700; color: var(--fb-ink); }
+.feedback-done-sub { margin: 0 0 18px; font-size: 13px; color: var(--fb-dim); }
+.feedback-done .feedback-actions { justify-content: center; }
+.feedback-again { background: none; color: var(--fb-dim); border: 1px solid var(--fb-line); }
+.feedback-done-close { background: var(--fb-accent); color: var(--fb-accent-ink); border: none; }
+
 .feedback-status { min-height: 1.4em; margin: 0 0 10px; font-size: 12.5px; color: var(--fb-dim); }
 .feedback-status[data-kind="error"] { color: var(--fb-error); }
 .feedback-status[data-kind="ok"] { color: var(--fb-ok); }
