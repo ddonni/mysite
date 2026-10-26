@@ -74,7 +74,7 @@ function visitorHelp() {
       ${lookAround()}
       ${FURNITURE}
       <li><b>가구 위에 크게 걸린 건 친구가 아끼는 작품이에요.</b></li>
-      <li><b>내 방도 있어요.</b> 왼쪽 위 "나도 내 방 만들기"를 누르면 이 브라우저의 내 방으로 가요.</li>
+      <li><b>내 방도 있어요.</b> 방 제목 아래 버튼을 누르면 이 브라우저의 내 방으로 가요.</li>
     </ul>`;
 }
 
@@ -99,11 +99,13 @@ function roomTitle(name) {
   return /방$/.test(name) ? name : `${name}의 방`;
 }
 
+// 구경하러 온 사람에겐 구경만 안내함 — 방이 보이기도 전에 "내 방 만들기"를 권하면
+// 어색해서(사용자 피드백), 내 방으로 가는 길은 머리말의 차분한 버튼(roomChrome.js)에만 둠.
+// 버튼은 닫기 버튼 하나("구경하기")뿐이라 그게 주 버튼 모양(lobby.css).
 function visitorWelcome(ctx, info) {
   return `
     <h2 id="helpTitle">${escapeHtml(roomTitle(info && info.name))}에 놀러 왔어요</h2>
-    <p class="help-lead">친구가 읽고, 보고, 들은 것들이에요. 가구를 누르면 기록을 볼 수 있어요.</p>
-    <a class="help-primary" href="${lobbyUrl(ctx.mine.code, ctx.mine.code)}">나도 내 방 만들기</a>`;
+    <p class="help-lead">친구가 읽고, 보고, 들은 것들이에요. 가구를 누르면 기록을 볼 수 있어요.</p>`;
 }
 
 // ? 버튼과 닫기를 연결하고, 처음 온 사람이면 환영 카드를 띄우는 함수를 돌려줌 —

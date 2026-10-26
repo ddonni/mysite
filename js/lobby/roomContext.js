@@ -38,6 +38,23 @@ export const roomRecords = roomContext.then((ctx) =>
   fetch(`${roomApi(ctx)}/records`).then((res) => (res.ok ? res.json() : null), () => null)
 );
 
+// 남의 방을 구경하는 사람의 "내 방"이 아직 비어 있는지(기록 0개). 비었으면 "나도 내 방
+// 만들기", 아니면 "내 방으로 돌아가기"로 안내함(roomChrome.js의 머리말 버튼). 위 roomRecords는 "지금 보는 방"의 기록이라 따로 한 번 더 받음 — 내 방을 보는
+// 중엔 요청하지 않음. 내 방을 보는 중이거나 조회에 실패하면 null(모름).
+export const myRoomEmpty = roomContext.then((ctx) => {
+  if (!ctx.readOnly) return null;
+  return fetch(`${API_BASE}/api/rooms/${encodeURIComponent(ctx.mine.code)}/records`)
+    .then((res) => (res.ok ? res.json() : null), () => null)
+    .then((records) => (Array.isArray(records) ? records.length === 0 : null));
+});
+
+// 위 값에 맞는 버튼 문구. 모를 땐(null) "돌아가기" — 방은 이미 이 브라우저에 있음.
+export const MY_ROOM_EMPTY_LABEL = '나도 내 방 만들기';
+export const MY_ROOM_BACK_LABEL = '내 방으로 돌아가기';
+export function myRoomLabel(empty) {
+  return empty === true ? MY_ROOM_EMPTY_LABEL : MY_ROOM_BACK_LABEL;
+}
+
 // sketchbook.html/library.html로 넘어갈 때, 남의 방을 보던 중이면 ?room=을
 // 이어 붙여서 거기서도 그 방을 읽기 전용으로 보게 함. page에 이미
 // 쿼리(예: library.html?cat=music)가 있을 수 있어서 ?와 &를 구분함.

@@ -16,6 +16,8 @@ vi.mock('../../js/lobby/roomContext.js', async (importOriginal) => ({
   ...(await importOriginal()),
   roomContext: new Promise(() => {}),
   roomInfo: new Promise(() => {}),
+  // 방문자 본인의 방은 기록이 있는 걸로 — "돌아가기" 문구가 나와야 함.
+  myRoomEmpty: Promise.resolve(false),
 }));
 vi.mock('../../js/lobby/scene.js', () => ({ DEFAULT_THEME: 'wood' }));
 vi.mock('../../js/lobby/roomNameEditor.js', () => ({ renderRoomName: () => {} }));
@@ -23,6 +25,7 @@ vi.mock('../../js/lobby/themePicker.js', () => ({ renderThemePicker: () => {} })
 vi.mock('../../js/shared/googleAuth.js', () => ({ initGoogleAuth: () => {} }));
 
 const { initRoomChrome } = await import('../../js/lobby/roomChrome.js');
+const { myRoomLabel } = await import('../../js/lobby/roomContext.js');
 
 function ctx(myCode, viewingCode) {
   return { mine: { code: myCode, token: 'tok' }, viewingCode, readOnly: myCode !== viewingCode };
@@ -32,12 +35,22 @@ beforeEach(() => {
   document.body.innerHTML = '<a id="devRoomLink" hidden></a><a id="myRoomCta" hidden></a>';
 });
 
-describe('나도 내 방 만들기 버튼', () => {
-  it('남의 방을 구경하는 중이면 내 방 로비로 가는 버튼이 뜸', () => {
+describe('내 방으로 가는 버튼(방문자용)', () => {
+  it('남의 방을 구경하는 중이면 내 방 로비로 가는 버튼이 뜸 — 내 방에 기록이 있으면 "돌아가기"', async () => {
     initRoomChrome(ctx('MINE22', 'DEV123'));
+    await Promise.resolve();
     const cta = document.getElementById('myRoomCta');
     expect(cta.hidden).toBe(false);
     expect(cta.getAttribute('href')).toBe('./');
+    expect(cta.textContent).toBe('내 방으로 돌아가기');
+    // 돌아가기는 꺾쇠가 글자 앞(왼쪽)
+    expect(cta.firstElementChild.tagName.toLowerCase()).toBe('svg');
+  });
+
+  it('문구: 내 방이 비었을 때만 "만들기", 모르면 "돌아가기"', () => {
+    expect(myRoomLabel(true)).toBe('나도 내 방 만들기');
+    expect(myRoomLabel(false)).toBe('내 방으로 돌아가기');
+    expect(myRoomLabel(null)).toBe('내 방으로 돌아가기');
   });
 
   it('내 방에선 숨김', () => {

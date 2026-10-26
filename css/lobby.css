@@ -240,14 +240,21 @@ body{
 }
 .dev-room-link:hover{color:var(--gold);}
 .dev-room-link[hidden]{display:none;}
-/* 방문자용 "나도 내 방 만들기"(머리말) — 남의 방에서 내 방으로 가는 가장 눈에 띄는 길. */
+/* 방문자용 내 방 버튼(머리말) — 구경하는 동안 늘 보이게 종이색 바탕 + 진한 글씨.
+   주황(주 행동 색)은 피함: 방이 보이기도 전에 "만들라"고 권하는 느낌이었음. 어두운
+   반투명 외곽선만 두었을 땐 어두운 방 배경에 묻혀서 안 보였음(사용자 피드백). */
 .my-room-cta{
   align-self:flex-start;pointer-events:auto;margin-top:6px;
   font-size:12.5px;font-weight:700;color:var(--void);text-decoration:none;
-  background:var(--ember);border-radius:999px;padding:7px 14px;
-  box-shadow:0 4px 14px rgba(0,0,0,0.35);
+  background:var(--paper);border-radius:999px;padding:6px 13px;
+  box-shadow:0 3px 12px rgba(0,0,0,0.4);
 }
-.my-room-cta:hover{filter:brightness(1.08);}
+.my-room-cta:hover{filter:brightness(0.94);}
+.my-room-cta:not([hidden]){display:inline-flex;align-items:center;gap:5px;}
+/* 꺾쇠 쪽은 안쪽 여백을 조금 줄여서 글자와 아이콘 묶음이 버튼 가운데에 보이게. */
+.my-room-cta svg{width:13px;height:13px;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.my-room-cta svg:first-child{margin-left:-3px;}
+.my-room-cta svg:last-child{margin-right:-3px;}
 .my-room-cta[hidden]{display:none;}
 .google-unlink{
   font-family:inherit;font-size:10.5px;color:var(--paper-dim);opacity:.45;
@@ -321,12 +328,11 @@ body{
 .help-primary:hover{filter:brightness(1.08);}
 .help-secondary{color:var(--paper);border:1px solid var(--void-border);}
 .help-secondary:hover{border-color:var(--paper-dim);}
-.help-dialog[data-mode="owner"] .help-close,
-.help-dialog[data-mode="visitor"] .help-close{
+/* 방문자 환영 카드엔 다른 버튼이 없어서 "구경하기"(닫기)가 그대로 주 버튼(주황). */
+.help-dialog[data-mode="owner"] .help-close{
   background:none;color:var(--paper-dim);border:1px solid transparent;
 }
-.help-dialog[data-mode="owner"] .help-close:hover,
-.help-dialog[data-mode="visitor"] .help-close:hover{color:var(--paper);filter:none;}
+.help-dialog[data-mode="owner"] .help-close:hover{color:var(--paper);filter:none;}
 
 /* 방 화면엔 오른쪽 위에 ? 버튼이 있어서, 상단 메뉴가 그 자리까지 늘어나 겹치지
    않게 폭을 버튼만큼 줄임(좁으면 메뉴가 두 줄로 접힘). */
