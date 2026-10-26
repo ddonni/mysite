@@ -162,7 +162,11 @@ function bootWithTheme(theme, ctx) {
   const baseFog = { near: scene.fog.near, far: scene.fog.far };
   const tanHalf = (deg) => Math.tan((deg * Math.PI) / 360);
   function resize() {
-    const w = window.innerWidth, h = window.innerHeight;
+    // window.innerWidth/innerHeight는 아이폰에서 화면을 확대(두 번 탭 등)하면 "지금 보이는
+    // 부분"의 크기로 줄어듦 — 그 순간 방을 작은 크기로 다시 그리고, 확대가 풀려도 안 돌아와서
+    // 방이 작아진 채 남았음(사용자 피드백). 화면 전체에 붙어 있는 #stage의 크기는 확대와
+    // 상관없어서 그걸 씀.
+    const w = stage.clientWidth || window.innerWidth, h = stage.clientHeight || window.innerHeight;
     const aspect = w / h;
     renderer.setSize(w, h);
     camera.aspect = aspect;

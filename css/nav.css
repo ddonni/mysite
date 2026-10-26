@@ -195,3 +195,9 @@ body.drawer-open { overflow: hidden; }
     font-size: 16px !important;
   }
 }
+
+/* 두 번 탭해서 확대하기는 끔 — 버튼을 빠르게 두 번 누르면(로비의 "방 설정" 등) 아이폰이 그
+   자리를 확대해 버려서 메뉴가 밖으로 밀리고 로비에선 되돌리기도 어려웠음(사용자 피드백).
+   두 손가락으로 벌려 확대하는 건 그대로 됨. 조상의 touch-action이 자손에도 걸려서 html 하나면
+   페이지 전체에 적용됨. */
+html { touch-action: manipulation; }

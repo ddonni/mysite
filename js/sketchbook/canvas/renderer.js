@@ -23,8 +23,11 @@ export function createRenderer({ canvasEl, pageWrap, ctx, dpr, getStrokes }) {
     // 위아래 여백을 좌우보다 넉넉히 둬서, 페이지가 화면을 꽉 채워도
     // 좌상단의 .site-nav(페이지 이동 네비바)를 가리지 않게 함.
     const padY = 70;
-    const availW = window.innerWidth - padX * 2;
-    const availH = window.innerHeight - padY * 2;
+    // 화면 크기는 화면 전체에 붙어 있는 #stage로 잼 — window.innerWidth/innerHeight는 아이폰에서
+    // 화면을 확대하면 보이는 부분 크기로 줄어서, 그때 종이가 작아진 채 남을 수 있음.
+    const stageEl = pageWrap.parentElement;
+    const availW = (stageEl.clientWidth || window.innerWidth) - padX * 2;
+    const availH = (stageEl.clientHeight || window.innerHeight) - padY * 2;
     const ratio = PAGE_W / PAGE_H;
     let w = availW, h = w / ratio;
     if (h > availH) { h = availH; w = h * ratio; }
