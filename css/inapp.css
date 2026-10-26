@@ -31,10 +31,13 @@
 .inapp-text { flex: 1 1 260px; }
 .inapp-text p { margin: 0; font-size: 13px; line-height: 1.6; }
 .inapp-text .inapp-how { margin-top: 6px; color: var(--ia-dim); font-size: 12.5px; }
-.inapp-actions { display: flex; gap: 8px; margin-left: auto; }
+.inapp-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
 .inapp-actions button {
   font: inherit; font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: 999px; cursor: pointer;
   min-height: 40px;
 }
 .inapp-open, .inapp-copy { background: var(--ia-accent); color: var(--ia-accent-ink); border: none; }
 .inapp-close { background: none; color: var(--ia-dim); border: 1px solid var(--ia-line); }
+.inapp-copy:disabled { cursor: default; opacity: 0.7; }
+/* 아이폰 인스타는 "사파리로 열기"가 주 버튼이고 크롬·복사는 대안 */
+.inapp-open + .inapp-open, .inapp-open + .inapp-copy { background: none; color: var(--ia-ink); border: 1px solid var(--ia-line); }

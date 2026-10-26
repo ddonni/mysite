@@ -69,18 +69,47 @@ describe('안내 띠', () => {
     expect(hrefSet).toHaveLength(1);
   });
 
-  it('아이폰 인스타는 메뉴 안내 + 링크 복사', () => {
+  it('아이폰 인스타는 처음 한 번 사파리로 자동 시도 + 사파리·크롬 버튼·메뉴 안내·링크 복사', () => {
     load(UA.instaIos);
-    expect(hrefSet).toEqual([]);
+    expect(hrefSet).toEqual(['x-safari-' + HERE]);
     expect(document.querySelector('.inapp-how')).not.toBeNull();
     expect(document.querySelector('.inapp-copy')).not.toBeNull();
-    expect(document.querySelector('.inapp-open')).toBeNull();
+    const [safari, chrome] = document.querySelectorAll('.inapp-open');
+    expect(safari.textContent).toBe('사파리로 열기');
+    expect(chrome.textContent).toBe('크롬으로 열기');
+    safari.click();
+    chrome.click();
+    expect(hrefSet).toEqual(['x-safari-' + HERE, 'x-safari-' + HERE, 'googlechromes://ex.com/mysite/?room=AB12CD']);
+
+    load(UA.instaIos);
+    expect(hrefSet).toHaveLength(3); // 자동 시도는 세션당 한 번
   });
 
-  it('안드로이드 인스타는 크롬으로 열기 버튼', () => {
+  it('안드로이드 인스타는 처음 한 번 크롬으로 자동 시도 + 크롬으로 열기 버튼', () => {
     load(UA.instaAndroid);
-    document.querySelector('.inapp-open').click();
     expect(hrefSet).toEqual([mod.androidChromeUrl(HERE)]);
+    document.querySelector('.inapp-open').click();
+    expect(hrefSet).toEqual([mod.androidChromeUrl(HERE), mod.androidChromeUrl(HERE)]);
+  });
+
+  it('링크 복사 후엔 버튼은 "복사됨"으로 멈추고, 붙여넣을 곳은 안내 줄에 적음', async () => {
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: vi.fn(() => Promise.resolve()) }, configurable: true });
+    load(UA.instaIos);
+    const copy = document.querySelector('.inapp-copy');
+    copy.click();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(HERE);
+    expect(copy.textContent).toBe('복사됨 ✓');
+    expect(copy.disabled).toBe(true);
+    expect(document.querySelector('.inapp-how').textContent).toContain('주소창에 붙여넣어');
+  });
+
+  it('인스타 말고 다른 앱(아이폰 페이스북)은 자동 이동 없이 안내만', () => {
+    load('Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/FBIOS;FBAV/470.0]');
+    expect(hrefSet).toEqual([]);
+    expect(document.querySelector('.inapp-open')).toBeNull();
+    expect(document.querySelector('.inapp-copy')).not.toBeNull();
   });
 
   it('"여기서 볼게요"를 누르면 닫히고 이번 세션엔 다시 안 뜸', () => {
