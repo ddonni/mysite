@@ -181,3 +181,17 @@ body.drawer-open { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .nav-drawer, .nav-drawer-panel { transition: none; }
 }
+
+/* --- 터치 화면의 입력칸은 16px 이상 ---
+   아이폰 Safari는 글씨가 16px보다 작은 입력칸을 누르면 화면을 저절로 확대하고, 다 쓴 뒤에도
+   되돌리지 않음. 의견 창(14px)에 쓰고 나니 화면이 확대된 채로 남아 상단 메뉴가 밖으로 밀려났고,
+   로비는 끌면 3D 방이 돌아가서 되돌릴 수도 없었음(사용자 피드백). 페이지마다 입력칸 글씨가
+   제각각이라(11.5~14px) 네 페이지가 다 불러오는 여기서 한 번에 막음 — 앞으로 생길 입력칸까지.
+   각 페이지의 더 구체적인 규칙을 이겨야 해서 !important. 확대 자체를 막는 viewport
+   maximum-scale은 글씨를 키워 봐야 하는 사람까지 막아서 쓰지 않음. */
+@media (pointer: coarse) {
+  input:not([type]), input[type="text"], input[type="search"], input[type="email"], input[type="url"],
+  input[type="number"], textarea {
+    font-size: 16px !important;
+  }
+}
