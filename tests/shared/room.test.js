@@ -123,6 +123,12 @@ describe('roomLink', () => {
     const { roomLink } = await freshRoomModule();
     expect(roomLink('library', 'OTHER1', 'MINE01')).toBe('library?room=OTHER1');
   });
+
+  it('이미 쿼리가 있는 주소엔 &로 붙임(상단 메뉴의 library?cat=book)', async () => {
+    const { roomLink } = await freshRoomModule();
+    expect(roomLink('library?cat=book', 'OTHER1', 'MINE01')).toBe('library?cat=book&room=OTHER1');
+    expect(roomLink('library?cat=book', 'MINE01', 'MINE01')).toBe('library?cat=book');
+  });
 });
 
 describe('roomShareUrl', () => {

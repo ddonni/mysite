@@ -11,7 +11,7 @@ import { renderVisibilityToggle } from '../shared/visibilityToggle.js';
 // 방 코드 표시 + 다른 방 방문 폼(+ 남의 방을 보는 중이면 "내 방으로"),
 // 구글 계정 연동, 방 이름/테마 스위처/둘러보기 공개 스위치까지 — 로비 헤더/카드 "주변" UI를
 // 전부 채움. .room-info(방 코드)는 이제 폴백 링크 화면에만 있음 — 3D
-// 화면에선 상단 메뉴(shared/roomNav.js)가 같은 역할을 함. main.js가
+// 화면에선 상단 메뉴의 ☰ 서랍(shared/roomNav.js)이 같은 역할을 함. main.js가
 // roomContext가 resolve된 뒤 한 번 불러줌.
 const CHEVRON_LEFT = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg>';
 const CHEVRON_RIGHT = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg>';
@@ -66,8 +66,8 @@ export function initRoomChrome(ctx) {
     devLink.hidden = false;
   }
 
-  // 남의 방을 구경하는 사람에게 내 방으로 가는 버튼 — 같은 일을 하는 상단 메뉴의
-  // "내 방으로"는 메뉴 맨 끝이라 폰에선 메뉴를 옆으로 밀어야 보임. 인스타 스토리처럼
+  // 남의 방을 구경하는 사람에게 내 방으로 가는 버튼 — 같은 일을 하는 "내 방으로
+  // 돌아가기"는 상단 메뉴의 ☰ 서랍 안에 있어서 열어 봐야 보임. 인스타 스토리처럼
   // 폰으로 링크를 눌러 들어온 사람이 자기 방 가는 길을 놓치지 않게 머리말에 하나 더 둠.
   // 문구는 내 방이 비었으면 "나도 내 방 만들기", 아니면 "내 방으로 돌아가기"(myRoomLabel).
   // (방은 이 페이지를 연 순간 이미 만들어져 있고, 이 링크는 거기로 이동만 함.)

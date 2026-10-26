@@ -67,72 +67,73 @@ function buildDialog() {
   return dialog;
 }
 
-export function initFeedback() {
-  const openBtns = document.querySelectorAll('[data-feedback-open]');
-  if (!openBtns.length) return;
+// 창 상태는 모듈 하나에 하나 — 상단 메뉴 서랍(roomNav.js)도 같은 창을 openFeedback()으로 엶.
+let dialog = null;
+let returnFocus = null;
+let closeTimer = null;
 
-  let dialog = null;
-  let returnFocus = null;
-  let closeTimer = null;
+function close() {
+  if (!dialog || dialog.hidden) return;
+  clearTimeout(closeTimer);
+  dialog.hidden = true;
+  if (returnFocus && returnFocus.focus) returnFocus.focus();
+}
 
-  function close() {
-    if (!dialog || dialog.hidden) return;
-    clearTimeout(closeTimer);
-    dialog.hidden = true;
-    if (returnFocus && returnFocus.focus) returnFocus.focus();
-  }
+function setup() {
+  dialog = buildDialog();
+  const form = dialog.querySelector('form');
+  const messageEl = form.elements.message;
+  const nameEl = form.elements.name;
+  const statusEl = dialog.querySelector('.feedback-status');
+  const sendBtn = dialog.querySelector('.feedback-send');
 
-  function setup() {
-    dialog = buildDialog();
-    const form = dialog.querySelector('form');
-    const messageEl = form.elements.message;
-    const nameEl = form.elements.name;
-    const statusEl = dialog.querySelector('.feedback-status');
-    const sendBtn = dialog.querySelector('.feedback-send');
+  dialog.querySelector('.feedback-cancel').addEventListener('click', close);
+  // 카드 바깥(어두운 배경)을 눌러도 닫힘. 쓰던 내용은 그대로 남아 있음.
+  dialog.addEventListener('click', (e) => { if (e.target === dialog) close(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
 
-    dialog.querySelector('.feedback-cancel').addEventListener('click', close);
-    // 카드 바깥(어두운 배경)을 눌러도 닫힘. 쓰던 내용은 그대로 남아 있음.
-    dialog.addEventListener('click', (e) => { if (e.target === dialog) close(); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
-
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const message = messageEl.value.trim();
-      if (!message) {
-        statusEl.textContent = '내용을 적어 주세요.';
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const message = messageEl.value.trim();
+    if (!message) {
+      statusEl.textContent = '내용을 적어 주세요.';
+      statusEl.dataset.kind = 'error';
+      messageEl.focus();
+      return;
+    }
+    sendBtn.disabled = true;
+    statusEl.textContent = '보내는 중…';
+    statusEl.dataset.kind = '';
+    sendFeedback({ message, name: nameEl.value.trim() })
+      .then(() => {
+        form.reset();
+        statusEl.textContent = '감사합니다! 잘 받았습니다.';
+        statusEl.dataset.kind = 'ok';
+        closeTimer = setTimeout(close, 1500);
+      })
+      .catch((err) => {
+        statusEl.textContent = err.message;
         statusEl.dataset.kind = 'error';
-        messageEl.focus();
-        return;
-      }
-      sendBtn.disabled = true;
-      statusEl.textContent = '보내는 중…';
-      statusEl.dataset.kind = '';
-      sendFeedback({ message, name: nameEl.value.trim() })
-        .then(() => {
-          form.reset();
-          statusEl.textContent = '감사합니다! 잘 받았습니다.';
-          statusEl.dataset.kind = 'ok';
-          closeTimer = setTimeout(close, 1500);
-        })
-        .catch((err) => {
-          statusEl.textContent = err.message;
-          statusEl.dataset.kind = 'error';
-        })
-        .finally(() => { sendBtn.disabled = false; });
-    });
-  }
+      })
+      .finally(() => { sendBtn.disabled = false; });
+  });
+}
 
-  function open() {
-    if (!dialog) setup();
-    returnFocus = document.activeElement;
-    const statusEl = dialog.querySelector('.feedback-status');
-    // 보내고 닫힌 뒤 다시 열면 지난 "잘 받았습니다"는 지움(실패 문구는 남겨 둠).
-    if (statusEl.dataset.kind === 'ok') { statusEl.textContent = ''; statusEl.dataset.kind = ''; }
-    dialog.hidden = false;
-    dialog.querySelector('textarea').focus();
-  }
+// 의견 창을 엶(처음 부를 때 창을 만듦). 서랍은 페이지가 뜬 뒤에 만들어져서 아래
+// initFeedback의 버튼 연결에 안 걸리므로, roomNav.js가 이 함수를 직접 부름.
+export function openFeedback() {
+  if (!dialog || !dialog.isConnected) setup();
+  returnFocus = document.activeElement;
+  const statusEl = dialog.querySelector('.feedback-status');
+  // 보내고 닫힌 뒤 다시 열면 지난 "잘 받았습니다"는 지움(실패 문구는 남겨 둠).
+  if (statusEl.dataset.kind === 'ok') { statusEl.textContent = ''; statusEl.dataset.kind = ''; }
+  dialog.hidden = false;
+  dialog.querySelector('textarea').focus();
+}
 
-  openBtns.forEach((btn) => btn.addEventListener('click', open));
+// 페이지에 처음부터 있는 [data-feedback-open] 버튼에 연결.
+export function initFeedback() {
+  document.querySelectorAll('[data-feedback-open]').forEach((btn) => btn.addEventListener('click', openFeedback));
 }
 
 initFeedback();

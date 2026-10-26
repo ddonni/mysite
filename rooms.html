@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/library.css?v=12">
-<link rel="stylesheet" href="css/nav.css?v=3">
+<link rel="stylesheet" href="css/nav.css?v=4">
 <link rel="stylesheet" href="css/feedback.css">
 <link rel="stylesheet" href="css/inapp.css">
 <link rel="stylesheet" href="css/visibility.css">
@@ -26,11 +26,14 @@
 <body>
 
 <nav class="site-nav" aria-label="페이지 이동">
-  <a href="./" data-page="./">방</a>
+  <!-- 위 줄: 어디서든 바로 가는 곳. 방 코드·둘러보기·의견 보내기 등은 ☰ 서랍(js/shared/roomNav.js) -->
+  <button type="button" class="nav-menu" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navDrawer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <a href="./" data-page="./">홈</a>
   <a href="sketchbook" data-page="sketchbook">캔버스</a>
-  <a href="library" data-page="library">기록 보관소</a>
-  <a href="rooms" class="active">둘러보기</a>
-  <button type="button" class="nav-feedback" data-feedback-open>의견 보내기</button>
+  <a href="library?cat=book" data-page="library?cat=book" data-cat="book">책</a>
+  <a href="library?cat=anime" data-page="library?cat=anime" data-cat="anime">애니</a>
+  <a href="library?cat=movie" data-page="library?cat=movie" data-cat="movie">영화</a>
+  <a href="library?cat=music" data-page="library?cat=music" data-cat="music">음악</a>
 </nav>
 
 <main class="wrap">

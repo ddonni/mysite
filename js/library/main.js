@@ -3,7 +3,7 @@
 import { fetchRecords, deleteRecord, setFeatured, setPlaying, setRoom } from './records.js';
 import { createList } from './list.js';
 import { createModal } from './modal.js';
-import { initRoomNav } from '../shared/roomNav.js';
+import { initRoomNav, setActiveCat } from '../shared/roomNav.js';
 import { featureLabel, withEunNeun, withEulReul } from './list/itemFormat.js';
 import { watchForSlow, SLOW_MESSAGE } from '../shared/slow.js';
 
@@ -30,7 +30,9 @@ function reload() {
 
 let list; // readOnly를 알아야 목록을 그릴 수 있어서, 방을 안 뒤에 만듦
 
-initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: 'library' }).then(({ mine, viewingCode, readOnly }) => {
+const navEl = document.querySelector('.site-nav');
+
+initRoomNav({ navEl, currentPage: 'library' }).then(({ mine, viewingCode, readOnly }) => {
   setRoom(viewingCode, readOnly ? null : mine.token);
   document.body.classList.toggle('read-only', readOnly);
 
@@ -53,7 +55,18 @@ initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: 'library'
     // 음악을 로비 턴테이블에 올리거나 내림 — 목록을 다시 불러오면 "턴테이블 위" 표시도 옮겨감.
     onPlay: (item, playing) => setPlaying(item.id, playing).then(reload)
       .catch(() => alert('저장에 실패했어요. 잠시 후 다시 시도해주세요.')),
+    // 이 페이지의 탭을 바꾸면 상단 메뉴의 카테고리 표시도 따라감('전체'면 아무것도 안 켬).
+    onTabChange: (key) => setActiveCat(navEl, key),
   });
+
+  // 상단 메뉴의 책·애니·영화·음악 — 이미 기록 보관소에 있으니 페이지를 다시 불러오지 않고
+  // 탭만 바꾸고, 아래로 내려와 있었으면 맨 위로 올림(그 카테고리를 처음부터 보게).
+  navEl.querySelectorAll('a[data-cat]').forEach((a) => a.addEventListener('click', (e) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; // 새 탭으로 열기는 그대로
+    e.preventDefault();
+    list.selectTab(a.dataset.cat);
+    window.scrollTo({ top: 0 });
+  }));
 
   // 보고 있던 탭의 카테고리로 추가 창을 엶(전체 탭이면 책).
   document.getElementById('addTabBtn').addEventListener('click', () => modal.openAdd(list.activeTab()));

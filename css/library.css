@@ -48,6 +48,9 @@ body{ background:#1c1612; }
 /* --- 머리말 --- */
 .top{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:22px; }
 .eyebrow{ font-size:11px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--ember); }
+/* 지금 보는 방("내 방" / "개발자의 방" / "○○의 방", roomNav.js) — 한글이라 영문 대문자용
+   넓은 자간을 줄임. */
+.eyebrow[data-room-label]{ font-size:12px; letter-spacing:0.02em; }
 .top h1{
   font-family:'Fraunces', Georgia, serif; font-weight:600; font-optical-sizing:auto;
   font-size:clamp(26px, 4.4vw, 34px); line-height:1.15; margin:4px 0 2px;

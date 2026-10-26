@@ -12,6 +12,7 @@
 import { roomContext, roomInfo, roomRecords, pageUrl, lobbyUrl } from './roomContext.js';
 import { DEVELOPER_ROOM_CODE } from '../shared/config.js';
 import { escapeHtml } from '../shared/dom.js';
+import { roomTitle } from '../shared/room.js';
 
 // 주인·방문자 환영은 따로 기억함 — 내 방 환영을 봤어도 친구 방에 처음 가면 그쪽 환영은 뜸.
 const SEEN_OWNER = 'untitled-canvas.lobby-welcome-owner';
@@ -61,7 +62,7 @@ function ownerHelp() {
       ${FURNITURE}
       <li><b>기록은 제목만 쳐도 돼요.</b> 새 기록 창에서 제목이나 작가·가수·감독을 쓰면 표지까지 찾아 줘요.</li>
       <li><b>아끼는 작품은 크게 걸어두세요.</b> 기록에서 "인생책으로", "인생영화로" 같은 버튼을 누르면 카테고리마다 3개까지 가구 위에 크게 올라가요. 최애음악은 레코드 콘솔 위에 올라가고, 그중 하나가 턴테이블에서 돌아가요.</li>
-      <li><b>친구와 방을 주고받을 수 있어요.</b> 왼쪽 위 "링크 복사"로 보낸 링크를 누르면 친구가 바로 구경하러 오고, 친구 코드를 넣으면 그 방에 놀러 갈 수 있어요.</li>
+      <li><b>친구와 방을 주고받을 수 있어요.</b> 왼쪽 위 메뉴(☰)의 "링크 복사"로 보낸 링크를 누르면 친구가 바로 구경하러 오고, 친구 코드를 넣으면 그 방에 놀러 갈 수 있어요.</li>
       <li><b>구글 계정을 연결해두세요.</b> 브라우저 기록이 지워지거나 기기를 바꿔도 내 방을 되찾을 수 있어요.</li>
     </ul>`;
 }
@@ -94,11 +95,6 @@ function ownerWelcome(ctx) {
 }
 
 // 방 이름이 "도현의 방"처럼 이미 "방"으로 끝나면 그대로, 아니면 "…의 방".
-function roomTitle(name) {
-  if (!name) return '친구의 방';
-  return /방$/.test(name) ? name : `${name}의 방`;
-}
-
 // 구경하러 온 사람에겐 구경만 안내함 — 방이 보이기도 전에 "내 방 만들기"를 권하면
 // 어색해서(사용자 피드백), 내 방으로 가는 길은 머리말의 차분한 버튼(roomChrome.js)에만 둠.
 // 버튼은 닫기 버튼 하나("구경하기")뿐이라 그게 주 버튼 모양(lobby.css).

@@ -214,6 +214,18 @@ body {
 #clearBtn { width: 36px; height: 36px; }
 #clearBtn svg { width: 18px; height: 18px; }
 
+/* 지금 보는 방 — "내 방" / "개발자의 방" / "○○의 방"(roomNav.js가 채움). 오른쪽 아래는
+   그리기 도구 자리라 왼쪽 아래에 둠. 남의 방이면 주황 글씨. */
+.room-label {
+  position: fixed; z-index: 20; pointer-events: none;
+  left: max(14px, env(safe-area-inset-left)); bottom: max(16px, env(safe-area-inset-bottom));
+  font-family: 'Manrope', system-ui, sans-serif; font-size: 12px; font-weight: 700;
+  padding: 6px 12px; border-radius: 999px;
+  color: #f3ece0; background: rgba(29, 24, 18, 0.72); border: 1px solid rgba(243, 236, 224, 0.16);
+}
+.room-label:empty { display: none; }
+.room-label.visiting { color: #e08a42; }
+
 #toast {
   position: fixed;
   left: 50%;

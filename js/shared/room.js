@@ -88,9 +88,18 @@ export function getViewingRoomCode(myCode) {
 
 // sketchbook.html/library.html/index.html 사이를 오갈 때 지금 보고
 // 있는 방을 이어서 넘겨주기 위한 링크 헬퍼. 내 방을 보고 있을 땐
-// 굳이 ?room=을 안 붙임(URL이 더 짧고 깔끔함).
+// 굳이 ?room=을 안 붙임(URL이 더 짧고 깔끔함). page에 이미 쿼리가 있을 수
+// 있어서(상단 메뉴의 library?cat=book) ?와 &를 구분함.
 export function roomLink(page, viewingCode, myCode) {
-  return viewingCode && viewingCode !== myCode ? `${page}?room=${viewingCode}` : page;
+  if (!viewingCode || viewingCode === myCode) return page;
+  return `${page}${page.includes('?') ? '&' : '?'}room=${viewingCode}`;
+}
+
+// 남의 방을 부르는 말 — 방 이름이 있으면 "○○의 방"(이름이 이미 "…방"으로 끝나면 그대로),
+// 없으면 "친구의 방". 로비 환영 카드와 기록 보관소·캔버스의 방 표시(roomNav.js)가 같이 씀.
+export function roomTitle(name) {
+  if (!name) return '친구의 방';
+  return /방$/.test(name) ? name : `${name}의 방`;
 }
 
 // 이 방으로 바로 들어오는 전체 주소(로비 + ?room=코드) — "링크 복사" 버튼이 씀.

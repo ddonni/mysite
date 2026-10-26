@@ -1,8 +1,8 @@
-/* 캔버스/기록 보관소가 같이 쓰는 상단 메뉴(.site-nav) — 두 페이지가 각자
-   스타일을 따로 갖고 있어서 페이지를 옮길 때마다 메뉴 모양이 바뀌던 걸
-   여기 한 곳으로 모음. 왼쪽 위에 떠 있는 알약 모양이고, 방 코드 UI
-   (roomNav.js가 메뉴 안에 붙임)도 같이 담당함. 색은 페이지 변수에 기대지
-   않고 여기서 따로 정의함 — 두 페이지의 색 토큰 이름/값이 서로 달라서. */
+/* 네 페이지가 같이 쓰는 상단 메뉴(.site-nav)와 왼쪽 서랍(.nav-drawer) — 페이지마다
+   스타일을 따로 갖고 있어서 페이지를 옮길 때마다 메뉴 모양이 바뀌던 걸 여기 한 곳으로
+   모음. 위 메뉴는 왼쪽 위에 떠 있는 알약 모양(☰ · 홈 · 캔버스 · 책 · 애니 · 영화 · 음악)이고,
+   방 코드 UI 같은 나머지는 ☰로 여는 서랍에 있음(roomNav.js가 만듦). 색은 페이지 변수에
+   기대지 않고 여기서 따로 정의함 — 페이지마다 색 토큰 이름/값이 서로 달라서. */
 .site-nav {
   --nav-bg-rgb: 232, 226, 214;
   --nav-ink: #2b2b2e;
@@ -77,29 +77,107 @@
     mask-image: linear-gradient(to right, transparent, #000 44px, #000 calc(100% - 44px), transparent);
   }
 }
-/* --- 방 코드 UI --- */
-.site-nav .room-box { display: flex; align-items: center; gap: 4px; padding: 2px 4px 2px 10px; }
-.site-nav .room-tag { font-size: 11px; color: var(--nav-dim); white-space: nowrap; }
-.site-nav .room-tag b { color: var(--nav-ink); }
-.site-nav .room-tag.readonly { color: var(--nav-accent); }
-.site-nav .room-copy, .site-nav .room-home {
-  font-size: 11px; padding: 4px 10px; border-radius: 999px; border: none;
-  background: none; cursor: pointer; color: var(--nav-dim); font-family: inherit;
+/* --- 메뉴 버튼(☰) — 누르면 왼쪽 서랍이 열림(roomNav.js) --- */
+.site-nav .nav-menu {
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 28px; padding: 0; margin-right: 2px;
+  border: none; border-radius: 999px; background: none; cursor: pointer; color: var(--nav-ink);
 }
-.site-nav .room-copy:hover, .site-nav .room-home:hover { background: var(--nav-hover); color: var(--nav-ink); }
-.site-nav .room-visit { display: flex; gap: 4px; padding: 2px 4px; }
-.site-nav .room-visit input {
-  width: 100px; padding: 4px 8px; border-radius: 999px; border: 1px solid var(--nav-line);
-  font-size: 11px; font-family: inherit; background: var(--nav-paper); color: var(--nav-ink); text-transform: uppercase;
+.site-nav .nav-menu:hover { background: var(--nav-hover); }
+.site-nav .nav-menu svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+/* 폰: 위 줄 7개가 한 줄에 들어가게 칸을 조금 좁힘. */
+@media (max-width: 560px) {
+  .site-nav a { padding: 6px 9px; }
 }
-.site-nav .room-visit button {
-  font-size: 11px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--nav-line);
-  background: none; cursor: pointer; color: var(--nav-dim); font-family: inherit;
+
+/* --- 왼쪽 서랍 --- 색은 위 메뉴와 같은 값(서랍은 .site-nav 밖이라 다시 정의). */
+.nav-drawer {
+  --nav-bg-rgb: 232, 226, 214;
+  --nav-ink: #2b2b2e;
+  --nav-dim: #57534e;
+  --nav-paper: #fffdfa;
+  --nav-hover: rgba(40, 38, 34, 0.1);
+  --nav-line: rgba(40, 38, 34, 0.14);
+  --nav-accent: #d9793a;
+
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(10, 8, 6, 0);
+  visibility: hidden; pointer-events: none;
+  transition: background 0.22s ease, visibility 0s linear 0.22s;
+  font-family: 'Manrope', system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.3; text-shadow: none;
 }
-.site-nav .room-visit button:hover { background: var(--nav-hover); color: var(--nav-ink); }
-/* --- "의견 보내기"(js/shared/feedback.js) — 링크처럼 보이는 버튼 --- */
-.site-nav .nav-feedback {
-  padding: 6px 12px; border-radius: 999px; border: none; background: none; cursor: pointer;
-  font-size: 12px; font-family: inherit; color: var(--nav-dim); white-space: nowrap;
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .nav-drawer {
+    --nav-bg-rgb: 32, 29, 26;
+    --nav-ink: #fffdfa;
+    --nav-dim: #cbc6bd;
+    --nav-paper: #2b2b2e;
+    --nav-hover: rgba(255, 253, 250, 0.14);
+    --nav-line: rgba(255, 253, 250, 0.16);
+    --nav-accent: #e08a42;
+  }
 }
-.site-nav .nav-feedback:hover { background: var(--nav-hover); color: var(--nav-ink); }
+.nav-drawer.open {
+  background: rgba(10, 8, 6, 0.5);
+  visibility: visible; pointer-events: auto;
+  transition: background 0.22s ease, visibility 0s;
+}
+.nav-drawer-panel {
+  position: absolute; top: 0; bottom: 0; left: 0;
+  width: min(300px, 84vw); overflow-y: auto;
+  display: flex; flex-direction: column; gap: 14px;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: rgb(var(--nav-bg-rgb)); color: var(--nav-ink);
+  box-shadow: 8px 0 30px rgba(0, 0, 0, 0.3);
+  transform: translateX(-100%); transition: transform 0.22s ease;
+}
+.nav-drawer.open .nav-drawer-panel { transform: none; }
+body.drawer-open { overflow: hidden; }
+.drawer-head { display: flex; align-items: center; justify-content: space-between; }
+.drawer-title { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: var(--nav-dim); }
+.drawer-close {
+  display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0;
+  border: none; border-radius: 999px; background: none; cursor: pointer; color: var(--nav-ink);
+}
+.drawer-close:hover { background: var(--nav-hover); }
+.drawer-close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+
+/* 지금 보는 방 — 내 방이면 코드 + 링크 복사, 남의 방이면 그 방 + 내 방으로 돌아가기. */
+.drawer-room {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 12px; border-radius: 14px; background: var(--nav-paper); border: 1px solid var(--nav-line);
+}
+.drawer-room:empty { display: none; }
+.drawer-room .room-tag { font-size: 12.5px; color: var(--nav-dim); }
+.drawer-room .room-tag b { color: var(--nav-ink); letter-spacing: 0.04em; }
+.drawer-room .room-tag.readonly { color: var(--nav-accent); width: 100%; }
+.drawer-room .room-copy, .drawer-room .room-home {
+  font-family: inherit; font-size: 12.5px; font-weight: 700; text-decoration: none; cursor: pointer;
+  padding: 6px 12px; border-radius: 999px; border: 1px solid var(--nav-line); background: none; color: var(--nav-ink);
+}
+.drawer-room .room-copy:hover, .drawer-room .room-home:hover { background: var(--nav-hover); }
+.drawer-room .room-home { display: inline-flex; align-items: center; gap: 4px; padding-left: 9px; }
+.drawer-room .room-home svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+.drawer-links { display: flex; flex-direction: column; }
+.drawer-links a, .drawer-links button {
+  display: block; width: 100%; text-align: left; font-family: inherit; font-size: 15px; font-weight: 600;
+  color: var(--nav-ink); text-decoration: none; padding: 12px 10px; border: none; border-radius: 10px;
+  background: none; cursor: pointer;
+}
+.drawer-links a:hover, .drawer-links button:hover { background: var(--nav-hover); }
+
+.nav-drawer .room-visit { display: flex; gap: 6px; margin-top: auto; padding-top: 8px; border-top: 1px solid var(--nav-line); }
+.nav-drawer .room-visit input {
+  flex: 1; min-width: 0; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--nav-line);
+  font-size: 13px; font-family: inherit; background: var(--nav-paper); color: var(--nav-ink); text-transform: uppercase;
+}
+.nav-drawer .room-visit button {
+  font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--nav-line);
+  background: none; cursor: pointer; color: var(--nav-ink); font-family: inherit;
+}
+.nav-drawer .room-visit button:hover { background: var(--nav-hover); }
+@media (prefers-reduced-motion: reduce) {
+  .nav-drawer, .nav-drawer-panel { transition: none; }
+}

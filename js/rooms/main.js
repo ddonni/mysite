@@ -72,7 +72,7 @@ function render(rooms, mine) {
   rooms.forEach((r) => listEl.appendChild(roomCard(r, mine)));
 }
 
-initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: './' }).then(({ mine }) => {
+initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: 'rooms' }).then(({ mine }) => {
   const stopWatch = watchForSlow(() => { metaEl.textContent = SLOW_MESSAGE; });
   const load = () => fetchPublicRooms()
     .then((rooms) => render(rooms, mine))
