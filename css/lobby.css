@@ -18,6 +18,12 @@ body{
   -webkit-font-smoothing:antialiased;
 }
 
+/* 로비에선 페이지 자체 확대(두 손가락·두 번 탭)를 끔 — 두 손가락은 3D 방이 받는데(controls.js),
+   머리말 글씨 위처럼 3D 밖에서 벌리면 페이지가 확대되고, 그 뒤엔 화면 대부분이 3D라 오므려도
+   3D만 움직여서 되돌릴 수가 없었음(사용자 피드백). 세로 스크롤(도움말·의견 창 안)은 그대로.
+   아이폰에서 확실히 막으려고 main.js가 gesture 이벤트도 막음. 다른 페이지는 nav.css대로 두
+   손가락 확대가 됨(거기선 오므리면 돌아옴). */
+.lobby-page{touch-action:pan-x pan-y;}
 #stage{position:fixed;inset:0;background:var(--void);}
 #canvas3d{position:absolute;inset:0;display:block;touch-action:none;cursor:grab;}
 #canvas3d.dragging{cursor:grabbing;}

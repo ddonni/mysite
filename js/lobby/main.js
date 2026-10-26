@@ -41,6 +41,13 @@ const ROOM_INFO = {
 const help = initHelpDialog();
 // 내 방의 비어 있는 카테고리(기록을 받아오면 채워짐) — 그 가구의 "첫 ○ 기록하기"는
 // 기록 보관소에서 새 기록 창을 바로 열게 함(goToRoom).
+// 아이폰(Safari·크롬 모두 WebKit)은 touch-action만으로는 두 손가락 페이지 확대를 다 못 막아서
+// 확대 제스처 이벤트도 막음(lobby.css의 .lobby-page 설명 참고). 3D 방의 두 손가락 확대는
+// pointer 이벤트로 받아서(controls.js) 이것과 상관없음.
+['gesturestart', 'gesturechange', 'gestureend'].forEach((type) => {
+  document.addEventListener(type, (e) => e.preventDefault(), { passive: false });
+});
+
 const emptyCats = initEmptyRoom(ROOM_INFO);
 // 왼쪽 위 상단 메뉴(캔버스/기록 보관소와 같은 것) — 방 코드·방문 폼은 그 메뉴의 ☰ 서랍에 있음.
 initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: './' }).catch(() => {});
