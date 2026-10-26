@@ -73,6 +73,14 @@ export function createModal({ onSaved }) {
   });
 
   // ---- 모달 열기/닫기 ----
+  // 열려 있는 동안 뒤 페이지(body)는 스크롤을 막음 — 폰에서 창 끝까지 당기면 그 당김이
+  // 뒤 페이지로 넘어가 창이 통째로 밀리고 뒤가 보였음(창 쪽은 CSS overscroll-behavior).
+  function setOpen(open) {
+    overlay.classList.toggle('open', open);
+    document.body.classList.toggle('modal-open', open);
+    if (open) fit.update();
+  }
+
   // cat: 처음 골라둘 카테고리 — 보고 있던 탭(음악 탭이면 음악). 전체 탭이면 책.
   function resetFormForAdd(cat) {
     editingId = null;
@@ -91,7 +99,7 @@ export function createModal({ onSaved }) {
 
   // 창은 "취소"(또는 저장 성공)로만 닫힘 — 예전엔 창 바깥을 누르면 닫혀서,
   // 입력하다 실수로 바깥을 건드리면 쓰던 내용이 통째로 날아갔음.
-  document.getElementById('cancelBtn').addEventListener('click', () => overlay.classList.remove('open'));
+  document.getElementById('cancelBtn').addEventListener('click', () => setOpen(false));
 
   // ---- 저장 ----
   async function handleSave() {
@@ -131,7 +139,7 @@ export function createModal({ onSaved }) {
       }, editingId);
 
       onSaved(); // main.js가 목록을 다시 불러와 화면에 반영함
-      overlay.classList.remove('open');
+      setOpen(false);
     } catch (err) {
       alert('저장에 실패했어요. 잠시 후 다시 시도해주세요.');
       console.error(err);
@@ -145,8 +153,7 @@ export function createModal({ onSaved }) {
   return {
     openAdd(cat) {
       resetFormForAdd(cat);
-      overlay.classList.add('open');
-      fit.update();
+      setOpen(true);
     },
 
     // list.js에서 "수정하기"를 누르면 그 기록(item) 전체를 그대로
@@ -164,8 +171,7 @@ export function createModal({ onSaved }) {
       search.reset();
       photoPicker.setExisting(item.photo_url || null);
       starPicker.setValue(item.rating || 0);
-      overlay.classList.add('open');
-      fit.update();
+      setOpen(true);
     },
   };
 }
