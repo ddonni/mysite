@@ -27,9 +27,10 @@ const DEBOUNCE_MS = 180;
 //   작가 칸을 누를 때). 그 칸에 입력을 시작하면 닫는 건 부르는 쪽 몫(hide()).
 // openOnFocus() → 칸에 포커스가 올 때 이미 쓰인 값으로 목록을 다시 열지(기본: 연다)
 //   — 다른 칸의 목록이 열려 있으면 그걸 덮지 않게 부르는 쪽이 false를 줌.
+// onShow() → 목록이 열릴 때마다 — 같은 자리에 뜨는 다른 칸의 목록을 닫으라고.
 export function createAutocomplete({ input, listEl }, {
   getCat, fetchSuggestions, markMine = false, onPick, footer, header, pendingText, emptyText,
-  keepOpenOn = [], openOnFocus = () => true,
+  keepOpenOn = [], openOnFocus = () => true, onShow,
 }) {
   let timer = null;
   let ctrl = null; // 진행 중인 서버 요청 — 새로 치면 이전 것은 취소
@@ -37,6 +38,11 @@ export function createAutocomplete({ input, listEl }, {
 
   function hide() {
     listEl.style.display = 'none';
+  }
+
+  function show() {
+    listEl.style.display = 'block';
+    if (onShow) onShow();
   }
 
   function note(className, text) {
@@ -50,14 +56,14 @@ export function createAutocomplete({ input, listEl }, {
   function drawMessage(text) {
     listEl.innerHTML = '';
     if (!text) { hide(); return; }
-    listEl.style.display = 'block';
+    show();
     note('ac-message', text);
   }
 
   function draw(items) {
     listEl.innerHTML = '';
     if (!items.length) { hide(); return; }
-    listEl.style.display = 'block';
+    show();
     const top = header ? header(items) : '';
     if (top) note('ac-head', top);
     items.forEach((s) => {

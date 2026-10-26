@@ -137,3 +137,23 @@ describe('안내 문구', () => {
     expect(listEl.firstElementChild.textContent).toContain('제목만으로 찾았어요');
   });
 });
+
+describe('onShow', () => {
+  it('목록이 열릴 때 불러서 같은 자리의 다른 목록을 닫게 함', async () => {
+    const onShow = vi.fn();
+    setup([DEMIAN], { onShow });
+    type('데미');
+    await settle();
+    expect(listEl.style.display).toBe('block');
+    expect(onShow).toHaveBeenCalled();
+  });
+
+  it('결과가 없어 닫힐 땐 안 부름', async () => {
+    const onShow = vi.fn();
+    setup([], { onShow });
+    type('없는책');
+    await settle();
+    expect(listEl.style.display).toBe('none');
+    expect(onShow).not.toHaveBeenCalled();
+  });
+});
