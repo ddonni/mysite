@@ -409,3 +409,63 @@ describe('책 탭', () => {
     expect($('titleList').querySelector('.ac-message').textContent).toBe("'없는책' 검색 결과가 없어요.");
   });
 });
+
+describe('카테고리 탭 바꾸기', () => {
+  const BOOK = { title: '괴물', full_title: '괴물', creator: '책작가', publisher: '', year: '', cover: 'https://t1.daumcdn.net/lbook/x' };
+  const tab = (key) => $('catTabs').querySelector(`[data-key="${key}"]`).click();
+
+  async function pickBook() {
+    modal.openAdd('book');
+    searchBooks.mockResolvedValue([BOOK]);
+    typeTitle('괴물');
+    await settle();
+    $('titleList').querySelector('.ac-item').click();
+    expect($('fCreator').value).toBe('책작가');
+    expect($('photoPreview').style.display).toBe('block');
+  }
+
+  it('검색 결과로 채운 작가·표지는 지우고, 제목은 남겨서 새 탭에서 다시 찾음', async () => {
+    await pickBook();
+    searchScreen.mockResolvedValue([]);
+    tab('movie');
+    expect($('fTitle').value).toBe('괴물');
+    expect($('fCreator').value).toBe('');
+    expect($('photoPreview').style.display).toBe('none');
+    await settle();
+    expect(searchScreen).toHaveBeenCalledWith('괴물', 'movie', expect.anything());
+  });
+
+  it('채운 뒤 직접 고친 작가는 남김', async () => {
+    await pickBook();
+    $('fCreator').value = '봉준호';
+    $('fCreator').dispatchEvent(new Event('input'));
+    searchScreen.mockResolvedValue([]);
+    tab('movie');
+    expect($('fCreator').value).toBe('봉준호');
+  });
+
+  it('직접 쓴 제목·작가는 그대로', () => {
+    modal.openAdd('book');
+    $('fTitle').value = '괴물';
+    $('fCreator').value = '봉준호';
+    tab('movie');
+    expect($('fTitle').value).toBe('괴물');
+    expect($('fCreator').value).toBe('봉준호');
+  });
+});
+
+describe('카테고리 탭 바꾸기 — 제목', () => {
+  it('작가 칸 검색 결과를 골라 채운 제목은 지움', async () => {
+    modal.openAdd('book');
+    searchBooks.mockResolvedValue([{ title: '책제목', full_title: '책제목', creator: '봉준호', publisher: '', year: '', cover: '' }]);
+    $('fCreator').value = '봉준호';
+    $('fCreator').dispatchEvent(new Event('input'));
+    await settle();
+    $('creatorList').querySelector('.ac-item').click();
+    expect($('fTitle').value).toBe('책제목');
+    searchScreen.mockResolvedValue([]);
+    $('catTabs').querySelector('[data-key="movie"]').click();
+    expect($('fTitle').value).toBe('');
+    expect($('fCreator').value).toBe('봉준호'); // 작가 칸은 직접 쓴 값
+  });
+});

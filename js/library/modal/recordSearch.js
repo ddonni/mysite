@@ -69,6 +69,8 @@ export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, p
   // 아니라서 두 칸을 합친 검색에 안 씀(typedTitle/typedArtist).
   let autoTitle = null;
   let autoCreator = null;
+  // 검색 결과를 골라 채운 표지 — 카테고리를 바꾸면 그대로 남아 있을 때만 지움.
+  let autoCover = null;
   // 작가 칸에서 검색 결과를 고를 땐 아래 change 리스너의 "제목 칸 다시 검색"을 건너뜀.
   let skipCreatorRefresh = false;
   // 영화·애니를 고른 뒤 감독을 따로 물어보는 요청의 번호 — 그사이 다른 작품을 고르거나
@@ -280,7 +282,10 @@ export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, p
     }
     const current = photoPicker.getUrl();
     const ownPhoto = photoPicker.getFile() || (current && !isSearchCover(current));
-    if (pick.cover && !ownPhoto) photoPicker.setExisting(pick.cover);
+    if (pick.cover && !ownPhoto) {
+      photoPicker.setExisting(pick.cover);
+      autoCover = pick.cover;
+    }
     // 영화·애니는 검색 결과에 감독이 없어서 고른 작품만 따로 물어봄. 답이 오기 전에
     // 다른 걸 고르거나 감독 칸을 직접 고치면(아래 input 리스너) 늦게 온 답은 버림.
     const lookup = ++creatorLookup;
@@ -311,6 +316,9 @@ export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, p
       // 작가 칸 목록이 열려 있을 땐 제목 칸을 눌러도 그 위를 덮지 않음(반대도 같음).
       keepOpenOn: [fCreator],
       openOnFocus: () => !creatorAutocomplete.isOpen(),
+      // 두 목록은 같은 자리(묶음 아래)에 떠서, 나중에 열린 쪽만 남김 — 작가 칸을 고치고
+      // 제목 칸을 누르면(change → 제목 목록 다시 찾기) 둘이 겹쳐 보였음.
+      onShow: () => creatorAutocomplete.hide(),
     },
   );
   const creatorAutocomplete = createAutocomplete(
@@ -332,6 +340,7 @@ export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, p
       emptyText: (q) => emptyText('creator', q),
       keepOpenOn: [fTitle],
       openOnFocus: () => !titleAutocomplete.isOpen(),
+      onShow: () => titleAutocomplete.hide(),
     },
   );
 
@@ -360,14 +369,26 @@ export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, p
     reset() {
       autoTitle = null;
       autoCreator = null;
+      autoCover = null;
       creatorLookup++;
       titleAutocomplete.hide();
       creatorAutocomplete.hide();
     },
-    // 카테고리 탭을 바꿨을 때 — 지금 입력값으로 두 목록을 다시 찾음.
+    // 카테고리 탭을 바꿨을 때. 직접 쓴 값은 그대로 두고(애니 탭에서 쓴 "괴물"이 사실
+    // 영화였을 때 탭만 바꾸면 다시 찾아지게), 다른 카테고리의 검색 결과를 골라 채운
+    // 제목·작가·감독·가수와 표지는 지움 — 책 제목·작가·표지가 영화 기록에 남지 않게.
+    // 그다음 지금 입력값으로 목록을 다시 찾음 — 두 목록은 한 번에 하나만 뜨니(onShow)
+    // 작가 칸 목록이 열려 있었으면 그쪽, 아니면 제목 칸.
     refresh() {
-      titleAutocomplete.refresh();
-      creatorAutocomplete.refresh();
+      creatorLookup++; // 아직 안 온 감독 답이 새 탭의 칸을 채우지 않게
+      if (autoTitle && fTitle.value.trim() === autoTitle) fTitle.value = '';
+      autoTitle = null;
+      if (autoCreator && fCreator.value.trim() === autoCreator) fCreator.value = '';
+      autoCreator = null;
+      if (autoCover && !photoPicker.getFile() && photoPicker.getUrl() === autoCover) photoPicker.reset();
+      autoCover = null;
+      if (creatorAutocomplete.isOpen() && fCreator.value.trim()) creatorAutocomplete.refresh();
+      else titleAutocomplete.refresh();
     },
   };
 }

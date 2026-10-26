@@ -84,6 +84,11 @@
   칸 밑)에 뜸 — 목록이 가수 칸을 가리지 않게. 한 줄 배치는 긴 제목이 잘려서 되돌림.
   폰 키보드: `modal/fitViewport.js`가 창(`.overlay`)을 `visualViewport`에 맞추고 목록에 남은
   높이(`--ac-room`)를 줌, 저장·취소 줄(`.modal-actions`)은 `position:sticky`로 늘 보임.
+  창이 열린 동안 `body.modal-open`(뒤 페이지 스크롤 막음) + `.overlay`·`.ac-list`에
+  `overscroll-behavior:contain` — 아이폰에서 끝까지 당기면 창이 통째로 밀리고 뒤가 보였음.
+  두 목록은 한 번에 하나만(`autocomplete.js`의 `onShow`로 나중에 열린 쪽만 남김).
+  카테고리 탭을 바꾸면(`recordSearch.js`의 `refresh`) 직접 쓴 값은 두고, 검색 결과로 채운
+  제목·작가·감독·가수와 표지(`autoTitle`/`autoCreator`/`autoCover`, 그 뒤 안 고쳤을 때만)는 지움.
   고르면 가수·커버만 채우고 **제목은 입력한 그대로**(대개 노래 제목이라). 커버 서버
   (yt3.googleusercontent.com)는 CORS를 줘서 중계 안 거침. 목록 그리기는 책·음악 모두
   `autocomplete.js`의 후보 `card`({title, meta, cover, square}) 하나로.
