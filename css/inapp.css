@@ -39,5 +39,5 @@
 .inapp-open, .inapp-copy { background: var(--ia-accent); color: var(--ia-accent-ink); border: none; }
 .inapp-close { background: none; color: var(--ia-dim); border: 1px solid var(--ia-line); }
 .inapp-copy:disabled { cursor: default; opacity: 0.7; }
-/* 아이폰 인스타는 "사파리로 열기"가 주 버튼이고 크롬·복사는 대안 */
-.inapp-open + .inapp-open, .inapp-open + .inapp-copy { background: none; color: var(--ia-ink); border: 1px solid var(--ia-line); }
+/* 아이폰 인스타는 "크롬으로 열기"가 주 버튼이고 복사는 대안 */
+.inapp-open + .inapp-copy { background: none; color: var(--ia-ink); border: 1px solid var(--ia-line); }

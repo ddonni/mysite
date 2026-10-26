@@ -3,11 +3,9 @@
 // 크롬·사파리와 따로라서 여기서 만든 방은 나중에 브라우저로 열면 안 보임.
 //   - 카톡: 카톡이 제공하는 주소(kakaotalk://web/openExternal)로 바로 바깥
 //     브라우저를 염.
-//   - 인스타: 공식 주소가 없어서 안드로이드는 크롬 intent, 아이폰은 사파리를
-//     여는 x-safari-https:// (애플이 공개한 기능이 아님 — 막히면 안내 띠만 남음)로
-//     자동 시도함.
+//   - 안드로이드 인스타: 공식 주소가 없어서 크롬 intent로 바로 크롬을 염.
 //   - 그 밖의 앱: 화면 아래에 안내 띠를 띄움. 안드로이드는 크롬으로 여는 버튼,
-//     아이폰은 앱 메뉴에서 여는 방법 + 링크 복사.
+//     아이폰은 앱 메뉴에서 여는 방법 + 링크 복사(인스타면 크롬으로 여는 버튼도).
 //
 // feedback.js처럼 각 html이 <script type="module">로 따로 불러옴 — 페이지
 // 본체(main.js)보다 앞에 둬서 방을 만들기 전에 카톡 이동부터 시도함.
@@ -48,13 +46,9 @@ export function isInstagram(ua) {
   return /Instagram/i.test(ua);
 }
 
-// 아이폰에서 사파리로 바로 여는 주소(https://… → x-safari-https://…).
-export function iosSafariUrl(href) {
-  return 'x-safari-' + href;
-}
-
 // 아이폰 크롬으로 여는 주소(https:// → googlechromes://). 크롬이 없으면 아무 반응이
-// 없어서 자동 이동엔 안 쓰고 버튼으로만 둠.
+// 없어서 자동 이동엔 안 쓰고 버튼으로만 둠. (사파리를 여는 x-safari-https://는
+// 인스타가 막아서 안 씀 — 2026-10 실제 아이폰에서 확인.)
 export function iosChromeUrl(href) {
   return href.replace(/^https:/, 'googlechromes:').replace(/^http:/, 'googlechrome:');
 }
@@ -63,7 +57,7 @@ export function iosChromeUrl(href) {
 export function externalUrl(kind, ua, href) {
   if (kind === 'kakao') return kakaoExternalUrl(href);
   if (isAndroid(ua)) return androidChromeUrl(href);
-  if (isInstagram(ua)) return iosSafariUrl(href);
+  if (isInstagram(ua)) return iosChromeUrl(href);
   return null;
 }
 
@@ -87,13 +81,11 @@ function renderBanner(kind, ua, href, go) {
   bar.setAttribute('aria-label', '브라우저 안내');
   const android = isAndroid(ua);
   const openUrl = externalUrl(kind, ua, href);
-  const opens = []; // [버튼 글자, 여는 주소]
-  if (openUrl) opens.push([kind === 'kakao' ? '브라우저로 열기' : android ? '크롬으로 열기' : '사파리로 열기', openUrl]);
-  if (openUrl && kind !== 'kakao' && !android) opens.push(['크롬으로 열기', iosChromeUrl(href)]);
-  let action = opens
-    .map(([label], i) => `<button type="button" class="inapp-open" data-i="${i}">${label}</button>`)
-    .join('');
-  // 아이폰은 사파리·크롬으로 여는 주소가 막혔을 수도 있어서 복사도 같이 둠.
+  let action = '';
+  if (openUrl) {
+    action = `<button type="button" class="inapp-open">${kind === 'kakao' ? '브라우저로 열기' : '크롬으로 열기'}</button>`;
+  }
+  // 아이폰은 사파리로 바로 여는 방법이 없고 크롬이 없을 수도 있어서 복사도 같이 둠.
   if (kind !== 'kakao' && !android) action += '<button type="button" class="inapp-copy">링크 복사</button>';
   const how = kind !== 'kakao' && !android
     ? '<p class="inapp-how"><b>⋯</b> 메뉴 → <b>외부 브라우저로 열기</b></p>'
@@ -108,9 +100,8 @@ function renderBanner(kind, ua, href, go) {
       <button type="button" class="inapp-close" aria-label="안내 닫기">여기서 볼게요</button>
     </div>`;
 
-  bar.querySelectorAll('.inapp-open').forEach((btn) => {
-    btn.addEventListener('click', () => go(opens[btn.dataset.i][1]));
-  });
+  const openBtn = bar.querySelector('.inapp-open');
+  if (openBtn) openBtn.addEventListener('click', () => go(openUrl));
   const copyBtn = bar.querySelector('.inapp-copy');
   if (copyBtn) {
     copyBtn.addEventListener('click', () => {
@@ -142,11 +133,13 @@ export function initInAppBrowser({
 } = {}) {
   const kind = detectInApp(ua);
   if (!kind) return;
-  // 카톡·인스타는 바로 바깥 브라우저로 넘김. 웹뷰는 이 페이지에 그대로 남으니,
-  // 넘어가지 않았을 때(구버전 카톡, 인스타가 막은 경우 등)를 위해 안내 띠도 같이
-  // 띄움. 자동 이동은 세션당 한 번만 — 웹뷰에서 계속 보기로 한 사람이 페이지를
-  // 옮길 때마다 브라우저가 또 열리면 곤란함.
-  if ((kind === 'kakao' || isInstagram(ua)) && !autoTried()) go(externalUrl(kind, ua, href));
+  // 카톡·안드로이드 인스타는 바로 바깥 브라우저로 넘김. 웹뷰는 이 페이지에 그대로
+  // 남으니, 넘어가지 않았을 때(구버전 카톡, 인스타가 막은 경우 등)를 위해 안내 띠도
+  // 같이 띄움. 자동 이동은 세션당 한 번만 — 웹뷰에서 계속 보기로 한 사람이 페이지를
+  // 옮길 때마다 브라우저가 또 열리면 곤란함. 아이폰 인스타는 크롬이 없을 수 있어서
+  // 자동으로는 안 넘김.
+  const auto = kind === 'kakao' || (isInstagram(ua) && isAndroid(ua));
+  if (auto && !autoTried()) go(externalUrl(kind, ua, href));
   if (!dismissed()) renderBanner(kind, ua, href, go);
 }
 

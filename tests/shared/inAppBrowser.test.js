@@ -69,20 +69,16 @@ describe('안내 띠', () => {
     expect(hrefSet).toHaveLength(1);
   });
 
-  it('아이폰 인스타는 처음 한 번 사파리로 자동 시도 + 사파리·크롬 버튼·메뉴 안내·링크 복사', () => {
+  it('아이폰 인스타는 자동 이동 없이 크롬 버튼·메뉴 안내·링크 복사', () => {
     load(UA.instaIos);
-    expect(hrefSet).toEqual(['x-safari-' + HERE]);
+    expect(hrefSet).toEqual([]); // 크롬이 없을 수 있어서 자동으로는 안 넘김
     expect(document.querySelector('.inapp-how')).not.toBeNull();
     expect(document.querySelector('.inapp-copy')).not.toBeNull();
-    const [safari, chrome] = document.querySelectorAll('.inapp-open');
-    expect(safari.textContent).toBe('사파리로 열기');
-    expect(chrome.textContent).toBe('크롬으로 열기');
-    safari.click();
-    chrome.click();
-    expect(hrefSet).toEqual(['x-safari-' + HERE, 'x-safari-' + HERE, 'googlechromes://ex.com/mysite/?room=AB12CD']);
-
-    load(UA.instaIos);
-    expect(hrefSet).toHaveLength(3); // 자동 시도는 세션당 한 번
+    const opens = document.querySelectorAll('.inapp-open');
+    expect(opens).toHaveLength(1);
+    expect(opens[0].textContent).toBe('크롬으로 열기');
+    opens[0].click();
+    expect(hrefSet).toEqual(['googlechromes://ex.com/mysite/?room=AB12CD']);
   });
 
   it('안드로이드 인스타는 처음 한 번 크롬으로 자동 시도 + 크롬으로 열기 버튼', () => {
