@@ -4,6 +4,7 @@ import { renderRoomName } from './roomNameEditor.js';
 import { renderThemePicker } from './themePicker.js';
 import { initGoogleAuth } from '../shared/googleAuth.js';
 import { copyToClipboard } from '../shared/dom.js';
+import { roomShareUrl } from '../shared/room.js';
 import { DEVELOPER_ROOM_CODE } from '../shared/config.js';
 import { renderVisibilityToggle } from '../shared/visibilityToggle.js';
 
@@ -33,15 +34,15 @@ export function initRoomChrome(ctx) {
     } else {
       el.innerHTML = `
         <span class="room-tag">내 방 코드 <b>${mine.code}</b></span>
-        <button class="room-copy" type="button">복사</button>
+        <button class="room-copy" type="button">링크 복사</button>
       ` + visitForm;
       // 복사됐는지 알 수 있게 버튼 글자를 잠깐 "복사됨"으로 바꿈.
       const copyBtn = el.querySelector('.room-copy');
       copyBtn.addEventListener('click', () => {
-        copyToClipboard(mine.code)
+        copyToClipboard(roomShareUrl(mine.code))
           .then(() => {
             copyBtn.textContent = '복사됨';
-            setTimeout(() => { copyBtn.textContent = '복사'; }, 1200);
+            setTimeout(() => { copyBtn.textContent = '링크 복사'; }, 1200);
           })
           .catch(() => {});
       });

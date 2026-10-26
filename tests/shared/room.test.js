@@ -124,3 +124,11 @@ describe('roomLink', () => {
     expect(roomLink('library', 'OTHER1', 'MINE01')).toBe('library?room=OTHER1');
   });
 });
+
+describe('roomShareUrl', () => {
+  it('어느 페이지에서 불러도 로비 + ?room=코드', async () => {
+    const { roomShareUrl } = await freshRoomModule();
+    expect(roomShareUrl('MINE01', 'https://ddonni.github.io/mysite/library?cat=book')).toBe('https://ddonni.github.io/mysite/?room=MINE01');
+    expect(roomShareUrl('MINE01', 'https://ddonni.github.io/mysite/')).toBe('https://ddonni.github.io/mysite/?room=MINE01');
+  });
+});

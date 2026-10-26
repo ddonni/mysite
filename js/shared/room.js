@@ -92,3 +92,11 @@ export function getViewingRoomCode(myCode) {
 export function roomLink(page, viewingCode, myCode) {
   return viewingCode && viewingCode !== myCode ? `${page}?room=${viewingCode}` : page;
 }
+
+// 이 방으로 바로 들어오는 전체 주소(로비 + ?room=코드) — "링크 복사" 버튼이 씀.
+// roomLink와 달리 내 방이어도 ?room=을 붙여야 함: 안 붙이면 받은 사람 브라우저에선
+// 그 사람의 방이 열림(예전 "복사"는 코드만 복사해서 받은 사람이 코드를 직접 넣어야 했음).
+// 지금 페이지 주소 기준이라 로컬/배포, 어느 페이지에서 눌러도 로비를 가리킴.
+export function roomShareUrl(code, base = location.href) {
+  return new URL('./?room=' + encodeURIComponent(code), base).href;
+}

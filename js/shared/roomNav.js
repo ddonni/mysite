@@ -1,7 +1,7 @@
 // index.html(방)/sketchbook.html/library.html 셋 다 상단 .site-nav에 붙는
 // "지금 어느 방을 보고 있는가" UI를 여기 한 곳에서 만듦 — 코드 복사,
 // 다른 방 코드로 이동, 읽기 전용일 때 "내 방으로" 돌아가기.
-import { getMyRoom, getViewingRoomCode, roomLink } from './room.js';
+import { getMyRoom, getViewingRoomCode, roomLink, roomShareUrl } from './room.js';
 import { copyToClipboard } from './dom.js';
 import { DEVELOPER_ROOM_CODE } from './config.js';
 
@@ -79,7 +79,7 @@ export function initRoomNav({ navEl, currentPage }) {
     } else {
       box.innerHTML = `
         <span class="room-tag mine">내 방 코드 <b>${mine.code}</b></span>
-        <button class="room-copy" type="button">복사</button>
+        <button class="room-copy" type="button">링크 복사</button>
       `;
     }
     navEl.appendChild(box);
@@ -87,8 +87,8 @@ export function initRoomNav({ navEl, currentPage }) {
     if (!readOnly) {
       const copyBtn = box.querySelector('.room-copy');
       copyBtn.addEventListener('click', () => {
-        copyToClipboard(mine.code)
-          .then(() => { copyBtn.textContent = '복사됨'; setTimeout(() => { copyBtn.textContent = '복사'; }, 1500); })
+        copyToClipboard(roomShareUrl(mine.code))
+          .then(() => { copyBtn.textContent = '복사됨'; setTimeout(() => { copyBtn.textContent = '링크 복사'; }, 1500); })
           .catch(() => {});
       });
     }
