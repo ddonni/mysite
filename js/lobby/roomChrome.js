@@ -63,6 +63,16 @@ export function initRoomChrome(ctx) {
     devLink.hidden = false;
   }
 
+  // 남의 방을 구경하는 사람에게 "나도 내 방 만들기" — 같은 일을 하는 상단 메뉴의
+  // "내 방으로"는 메뉴 맨 끝이라 폰에선 메뉴를 옆으로 밀어야 보임. 인스타 스토리처럼
+  // 폰으로 링크를 눌러 들어온 사람이 자기 방 가는 길을 놓치지 않게 머리말에 하나 더 둠.
+  // (방은 이 페이지를 연 순간 이미 만들어져 있고, 이 링크는 거기로 이동만 함.)
+  const myRoomCta = document.getElementById('myRoomCta');
+  if (myRoomCta && readOnly) {
+    myRoomCta.href = lobbyUrl(mine.code, mine.code);
+    myRoomCta.hidden = false;
+  }
+
   // 폰에서 머리말이 3D 방을 너무 가려서, 내 방일 때 테마·공개 스위치·구글 버튼을 "방
   // 설정" 버튼 뒤로 접어 둠(보이고 숨기는 건 lobby.css의 폭 560px 이하 규칙 — 컴퓨터에선
   // 버튼 자체가 안 보이고 원래대로 다 펼쳐져 있음). 남의 방엔 접을 게 없어서 버튼도 없음.

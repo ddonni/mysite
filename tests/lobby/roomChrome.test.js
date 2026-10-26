@@ -29,7 +29,21 @@ function ctx(myCode, viewingCode) {
 }
 
 beforeEach(() => {
-  document.body.innerHTML = '<a id="devRoomLink" hidden></a>';
+  document.body.innerHTML = '<a id="devRoomLink" hidden></a><a id="myRoomCta" hidden></a>';
+});
+
+describe('나도 내 방 만들기 버튼', () => {
+  it('남의 방을 구경하는 중이면 내 방 로비로 가는 버튼이 뜸', () => {
+    initRoomChrome(ctx('MINE22', 'DEV123'));
+    const cta = document.getElementById('myRoomCta');
+    expect(cta.hidden).toBe(false);
+    expect(cta.getAttribute('href')).toBe('./');
+  });
+
+  it('내 방에선 숨김', () => {
+    initRoomChrome(ctx('MINE22', 'MINE22'));
+    expect(document.getElementById('myRoomCta').hidden).toBe(true);
+  });
 });
 
 describe('개발자의 방 구경하기 링크', () => {

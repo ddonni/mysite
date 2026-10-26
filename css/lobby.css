@@ -240,6 +240,15 @@ body{
 }
 .dev-room-link:hover{color:var(--gold);}
 .dev-room-link[hidden]{display:none;}
+/* 방문자용 "나도 내 방 만들기"(머리말) — 남의 방에서 내 방으로 가는 가장 눈에 띄는 길. */
+.my-room-cta{
+  align-self:flex-start;pointer-events:auto;margin-top:6px;
+  font-size:12.5px;font-weight:700;color:var(--void);text-decoration:none;
+  background:var(--ember);border-radius:999px;padding:7px 14px;
+  box-shadow:0 4px 14px rgba(0,0,0,0.35);
+}
+.my-room-cta:hover{filter:brightness(1.08);}
+.my-room-cta[hidden]{display:none;}
 .google-unlink{
   font-family:inherit;font-size:10.5px;color:var(--paper-dim);opacity:.45;
   background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;
