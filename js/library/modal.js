@@ -11,6 +11,7 @@ import { createStarPicker } from './modal/starPicker.js';
 import { createPhotoPicker } from './modal/photoPicker.js';
 import { createRecordSearch } from './modal/recordSearch.js';
 import { shrinkImage } from './modal/shrinkImage.js';
+import { fitToViewport } from './modal/fitViewport.js';
 
 export function createModal({ onSaved }) {
   const overlay = document.getElementById('overlay');
@@ -41,6 +42,12 @@ export function createModal({ onSaved }) {
     creatorList: document.getElementById('creatorList'),
     photoPicker,
     getCat: () => currentCat,
+  });
+  // 폰 키보드에 창 아래쪽이 가려지지 않게(modal/fitViewport.js).
+  const fit = fitToViewport({
+    overlay,
+    group: overlay.querySelector('.title-group'),
+    actions: overlay.querySelector('.modal-actions'),
   });
 
   // 카테고리 탭이 바뀔 때마다 만든 사람 칸 라벨과 제목 칸 안내 글씨를 그 탭에 맞춤.
@@ -139,6 +146,7 @@ export function createModal({ onSaved }) {
     openAdd(cat) {
       resetFormForAdd(cat);
       overlay.classList.add('open');
+      fit.update();
     },
 
     // list.js에서 "수정하기"를 누르면 그 기록(item) 전체를 그대로
@@ -157,6 +165,7 @@ export function createModal({ onSaved }) {
       photoPicker.setExisting(item.photo_url || null);
       starPicker.setValue(item.rating || 0);
       overlay.classList.add('open');
+      fit.update();
     },
   };
 }
