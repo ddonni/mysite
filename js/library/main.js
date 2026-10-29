@@ -3,6 +3,7 @@
 import { fetchRecords, deleteRecord, setFeatured, setPlaying, setRoom } from './records.js';
 import { createList } from './list.js';
 import { createModal } from './modal.js';
+import { createBulkImport } from './bulk.js';
 import { initRoomNav, setActiveCat } from '../shared/roomNav.js';
 import { featureLabel, withEunNeun, withEulReul } from './list/itemFormat.js';
 import { watchForSlow, SLOW_MESSAGE } from '../shared/slow.js';
@@ -19,7 +20,7 @@ function reload() {
     if (isPlaceholder()) listEl.firstElementChild.textContent = SLOW_MESSAGE;
   });
   return fetchRecords()
-    .then((items) => { stopWatch(); list.render(items); })
+    .then((items) => { stopWatch(); currentItems = items; list.render(items); })
     .catch(() => {
       stopWatch();
       // list.render()가 실행되기 전(=최초 로딩)에만 이 자리를 대신 채움 —
@@ -29,6 +30,7 @@ function reload() {
 }
 
 let list; // readOnly를 알아야 목록을 그릴 수 있어서, 방을 안 뒤에 만듦
+let currentItems = []; // 마지막으로 받은 기록 — "목록으로 추가"가 이미 기록한 제목을 거르는 데 씀
 
 const navEl = document.querySelector('.site-nav');
 
@@ -70,6 +72,15 @@ initRoomNav({ navEl, currentPage: 'library' }).then(({ mine, viewingCode, readOn
 
   // 보고 있던 탭의 카테고리로 추가 창을 엶(전체 탭이면 책).
   document.getElementById('addTabBtn').addEventListener('click', () => modal.openAdd(list.activeTab()));
+
+  // 목록으로 한꺼번에 추가 — 끝나면 그 카테고리 탭을 보여줌(방금 넣은 게 바로 보이게).
+  if (!readOnly) {
+    const bulk = createBulkImport({
+      getItems: () => currentItems,
+      onSaved: (cat) => reload().then(() => list.selectTab(cat)),
+    });
+    document.getElementById('bulkBtn').addEventListener('click', () => bulk.open(list.activeTab()));
+  }
 
   // 로비의 "첫 기록 남기기"·"첫 책 기록하기"로 오면(library?cat=book&new=1) 새 기록 창을
   // 바로 엶 — 처음 온 사람이 기록 보관소에서 또 "추가" 버튼을 찾지 않게. 새로고침하면

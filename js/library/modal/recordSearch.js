@@ -31,10 +31,10 @@ function searchesWeb(cat, q) {
   return (cat === 'book' || cat === 'music' || isScreen(cat)) && q.length >= 2;
 }
 
-// 영화·애니에서 감독의 연출작 중 제목이 맞는 것만 — 띄어쓰기·대소문자는 무시하고,
+// 영화·애니에서 감독의 연출작 중 제목이 맞는 것만(bulk/match.js도 씀) — 띄어쓰기·대소문자는 무시하고,
 // 원제로 쓴 경우도 맞춰 줌.
-const squash = (s) => (s || '').replace(/\s+/g, '').toLowerCase();
-const titled = (works, title) => works.filter((w) => squash(w.title).includes(squash(title))
+export const squash = (s) => (s || '').replace(/\s+/g, '').toLowerCase();
+export const titled = (works, title) => works.filter((w) => squash(w.title).includes(squash(title))
   || squash(w.original_title).includes(squash(title)));
 
 // 검색 결과 배열 또는 실패(null). 취소된 요청은 abort 에러 그대로 넘김.
@@ -47,11 +47,11 @@ function tryWeb(promise, signal) {
 
 // 목록 한 줄의 설명 — 책: 작가 · 출판사 · 연도 / 영화·애니: 원제(한국어 제목과 다를
 // 때만 옴) · 연도, 애니는 TV판인지 극장판인지도 / 음악: 앨범 카드(정사각형 커버).
-const bookMeta = (b) => [b.creator, b.publisher, b.year].filter(Boolean).join(' · ');
-const screenMeta = (cat, r) => [
+export const bookMeta = (b) => [b.creator, b.publisher, b.year].filter(Boolean).join(' · ');
+export const screenMeta = (cat, r) => [
   r.original_title, r.year, cat === 'anime' ? (r.media === 'tv' ? 'TV' : '극장판') : '',
 ].filter(Boolean).join(' · ');
-const albumCard = (m) => ({
+export const albumCard = (m) => ({
   title: m.song || m.album,
   meta: [m.creator, m.song ? m.album : m.kind, m.year].filter(Boolean).join(' · '),
   cover: m.cover,
@@ -59,7 +59,7 @@ const albumCard = (m) => ({
 });
 
 // TMDB 이용 약관의 출처 표기 + "TMDB가 보증하지 않음" 문구.
-const TMDB_NOTE = '정보 제공: TMDB(TMDB의 보증을 받은 서비스는 아니에요)';
+export const TMDB_NOTE = '정보 제공: TMDB(TMDB의 보증을 받은 서비스는 아니에요)';
 
 // fTitle·fCreator: 두 입력칸, titleList·creatorList: 각 칸의 목록, photoPicker: 표지를
 // 채울 사진 위젯, getCat: 지금 카테고리. 돌려주는 reset()은 창을 새로 열 때, refresh()는
