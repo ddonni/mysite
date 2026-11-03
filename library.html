@@ -16,7 +16,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/library.css?v=19">
+<link rel="stylesheet" href="css/library.css?v=26">
 <link rel="stylesheet" href="css/nav.css?v=6">
 <link rel="stylesheet" href="css/feedback.css?v=2">
 <link rel="stylesheet" href="css/inapp.css">
@@ -42,7 +42,6 @@
       <div class="meta"><span id="totalCount">0</span>개</div>
     </div>
     <div class="top-actions">
-      <button type="button" class="add-btn ghost" id="bulkBtn">여러 개 추가</button>
       <button type="button" class="add-btn" id="addTabBtn">+ 기록하기</button>
     </div>
   </header>
@@ -62,99 +61,72 @@
   <div class="detail-card"></div>
 </div>
 
-<!-- Add/Edit Modal -->
+<!-- Add/Edit Modal — 새 기록은 검색 화면(js/library/modal/searchView.js)부터, 결과를 고르거나
+     직접 쓰기를 누르면 입력 칸. 수정은 입력 칸만(js/library/modal.js) -->
 <div class="overlay" id="overlay">
   <div class="modal">
     <h2 id="modalTitle">새 기록</h2>
 
     <div class="cat-tabs" id="catTabs"></div>
 
-    <!-- 제목·만든 사람을 한 묶음으로 두고, 두 칸의 추천 목록은 묶음 아래(가수 칸
-         밑)에 펼침 — 제목 칸 목록이 바로 밑의 가수 칸을 덮어서 가수를 고쳐 쓰기
-         어려웠음. -->
-    <div class="title-group">
-      <div class="field title-field">
-        <label for="fTitle">제목</label>
-        <input type="text" id="fTitle" autocomplete="off" placeholder="제목을 입력해 보세요">
+    <div id="searchView">
+      <div class="s-row">
+        <input type="search" id="sQuery" class="s-query" autocomplete="off" enterkeyhint="search" aria-label="검색어">
+        <button type="button" class="s-btn" id="sBtn">검색</button>
       </div>
-      <div class="field creator-field">
-        <label for="fCreator" id="creatorLabel">작가</label>
-        <input type="text" id="fCreator" autocomplete="off">
+      <div class="s-bar">
+        <span id="sStatus" aria-live="polite"></span>
+        <button type="button" class="s-manual" id="manualBtn">+ 직접 쓰기</button>
       </div>
-      <div class="ac-list" id="titleList" style="display:none;"></div>
-      <div class="ac-list" id="creatorList" style="display:none;"></div>
-    </div>
-    <div id="titleError" class="field-error title-error" style="display:none;">제목을 적어 주세요.</div>
-
-    <div class="field">
-      <label>별점</label>
-      <div class="stars" id="starPicker"></div>
-    </div>
-
-    <div class="field">
-      <label>사진 (선택)</label>
-      <div class="photo-drop" id="photoDrop">
-        <span id="photoDropText">드래그하거나 클릭해서 선택</span>
-        <input type="file" id="fPhoto" accept="image/*">
+      <div class="s-notice" id="sNotice" role="status" hidden></div>
+      <ul class="s-results" id="sResults" hidden></ul>
+      <p class="s-foot" id="sFoot"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="searchCloseBtn">닫기</button>
       </div>
-      <img id="photoPreview">
-      <span class="remove-photo" id="removePhoto">사진 지우기</span>
     </div>
 
-    <div class="field">
-      <label>한 줄 감상</label>
-      <textarea id="fMemo" placeholder="어땠는지 한 줄로 남겨보세요"></textarea>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn ghost" id="cancelBtn">취소</button>
-      <button class="btn primary" id="saveBtn">저장</button>
-    </div>
-  </div>
-</div>
-
-<!-- 여러 개 한꺼번에 추가(js/library/bulk.js) — 목록 붙여넣기 또는 검색해서 고르기 → 확인 두 단계 -->
-<div class="overlay" id="bulkOverlay">
-  <div class="modal bulk-modal" role="dialog" aria-modal="true" aria-labelledby="bulkTitle">
-    <div class="bulk-head">
-      <h2 id="bulkTitle">여러 개 한꺼번에 추가</h2>
-      <button type="button" class="bulk-x" data-bulk="close" aria-label="닫기">×</button>
-    </div>
-
-    <div id="bulkWrite">
-      <div class="cat-tabs" id="bulkCatTabs"></div>
-      <div class="bulk-modes" id="bulkModes" role="group" aria-label="추가 방법">
-        <button type="button" data-mode="list" aria-pressed="true">목록 붙여넣기</button>
-        <button type="button" data-mode="name" aria-pressed="false">검색해서 고르기</button>
-      </div>
-      <div id="bulkListPane">
-        <p class="bulk-lead" id="bulkHint"></p>
-        <textarea id="bulkText" class="bulk-text-input" rows="9" placeholder="데미안&#10;채식주의자 / 한강&#10;1. 어린 왕자"></textarea>
-      </div>
-      <div id="bulkNamePane" hidden>
-        <p class="bulk-lead">제목이나 작가·감독·가수 이름으로 찾아요. 이름이면 그 사람의 작품이 쭉 떠요. 본 것만 체크해서 한꺼번에 넣으세요.</p>
-        <div class="field">
-          <label for="bulkName" id="bulkNameLabel">제목이나 작가 이름</label>
-          <input type="text" id="bulkName" autocomplete="off">
+    <div id="formView" hidden>
+      <!-- 제목·만든 사람을 한 묶음으로 두고, 두 칸의 추천 목록은 묶음 아래(가수 칸
+           밑)에 펼침 — 제목 칸 목록이 바로 밑의 가수 칸을 덮어서 가수를 고쳐 쓰기
+           어려웠음. -->
+      <div class="title-group">
+        <div class="field title-field">
+          <label for="fTitle">제목</label>
+          <input type="text" id="fTitle" autocomplete="off" placeholder="제목을 입력해 보세요">
         </div>
+        <div class="field creator-field">
+          <label for="fCreator" id="creatorLabel">작가</label>
+          <input type="text" id="fCreator" autocomplete="off">
+        </div>
+        <div class="ac-list" id="titleList" style="display:none;"></div>
+        <div class="ac-list" id="creatorList" style="display:none;"></div>
       </div>
-      <div class="field-error" id="bulkError" hidden></div>
-      <div class="modal-actions">
-        <button type="button" class="btn ghost" data-bulk="cancel">취소</button>
-        <button type="button" class="btn primary" data-bulk="find">찾아보기</button>
-      </div>
-    </div>
+      <div id="titleError" class="field-error title-error" style="display:none;">제목을 적어 주세요.</div>
 
-    <div id="bulkReview" hidden>
-      <div class="bulk-summary-row">
-        <p class="bulk-lead" id="bulkSummary" aria-live="polite"></p>
-        <button type="button" class="bulk-all" data-bulk="all" hidden>모두 체크</button>
+      <div class="field">
+        <label>별점</label>
+        <div class="stars" id="starPicker"></div>
       </div>
-      <ul class="bulk-rows" id="bulkRows"></ul>
-      <p class="bulk-foot" id="bulkFoot"></p>
+
+      <div class="field">
+        <label>사진 (선택)</label>
+        <div class="photo-drop" id="photoDrop">
+          <span id="photoDropText">드래그하거나 클릭해서 선택</span>
+          <input type="file" id="fPhoto" accept="image/*">
+        </div>
+        <img id="photoPreview">
+        <span class="remove-photo" id="removePhoto">사진 지우기</span>
+      </div>
+
+      <div class="field">
+        <label>한 줄 감상</label>
+        <textarea id="fMemo" placeholder="어땠는지 한 줄로 남겨보세요"></textarea>
+      </div>
+
       <div class="modal-actions">
-        <button type="button" class="btn ghost" data-bulk="back">다시 쓰기</button>
-        <button type="button" class="btn primary" data-bulk="save">추가하기</button>
+        <button class="btn ghost" id="cancelBtn">취소</button>
+        <button class="btn primary" id="saveBtn">저장</button>
       </div>
     </div>
   </div>

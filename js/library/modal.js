@@ -4,25 +4,34 @@
 // 사람 칸의 자동 완성과 책·음악·영화·애니 검색은 modal/recordSearch.js로 빠져 있음 —
 // 이 파일은 그 결과만 모아서 폼을 채우고 비우고 저장하는 오케스트레이션만 함.
 //
-// 실제 서버 저장은 records.js의 uploadPhoto/saveRecord를 불러 씀.
-import { CATS, uploadPhoto, saveRecord } from './records.js';
+// 창은 두 화면: 새 기록은 검색 화면(modal/searchView.js)부터 — 결과를 고르면 값이 채워진
+// 입력 칸으로 넘어가 별점·감상을 쓰고 저장하면 다시 검색 화면(결과가 남아 있어 이어서 넣음).
+// 결과 줄의 "+ 넣기"도 같음. 검색에 없으면 "+ 직접 쓰기"로 빈 입력 칸.
+// 수정은 입력 칸만.
+//
+// 실제 서버 저장은 records.js의 uploadPhoto/saveRecord/deleteRecord를 불러 씀.
+import { CATS, uploadPhoto, saveRecord, deleteRecord, fetchScreenCreator } from './records.js';
 import { CREATOR_FIELD, TITLE_PLACEHOLDER } from './modal/categoryFields.js';
 import { createStarPicker } from './modal/starPicker.js';
 import { createPhotoPicker } from './modal/photoPicker.js';
 import { createRecordSearch } from './modal/recordSearch.js';
+import { createSearchView } from './modal/searchView.js';
 import { shrinkImage } from './modal/shrinkImage.js';
 import { fitToViewport } from './modal/fitViewport.js';
 
-// onPickMany(cat, 이름): 작가·감독 칸 검색 결과에서 "여러 개 고르기"를 눌렀을 때 — 이 창은
-// 닫고 부르는 쪽(main.js)이 "여러 개 추가" 창(bulk.js)을 그 이름으로 엶.
-export function createModal({ onSaved, onPickMany }) {
+// onSaved(): 기록을 저장·삭제한 뒤(목록을 다시 불러오라고). getItems(): 지금 방의 기록 —
+// 검색 결과에서 이미 기록한 걸 표시하려고.
+export function createModal({ onSaved, getItems = () => [] }) {
   const overlay = document.getElementById('overlay');
   const catTabsEl = document.getElementById('catTabs');
+  const searchEl = document.getElementById('searchView');
+  const formEl = document.getElementById('formView');
   const fTitle = document.getElementById('fTitle');
   const fCreator = document.getElementById('fCreator');
   const creatorLabel = document.getElementById('creatorLabel');
   const fMemo = document.getElementById('fMemo');
   const saveBtn = document.getElementById('saveBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
   const titleError = document.getElementById('titleError');
   const modalTitle = document.getElementById('modalTitle');
 
@@ -37,6 +46,10 @@ export function createModal({ onSaved, onPickMany }) {
 
   let currentCat = 'book';
   let editingId = null;
+  // 입력 칸을 검색 화면에서 열었는지 — 그러면 취소·저장 뒤 검색 화면으로 돌아감.
+  let fromSearch = false;
+  // 고른 영화·애니의 감독을 따로 물어보는 요청 번호 — 그새 다른 걸 고르면 늦은 답은 버림.
+  let creatorLookup = 0;
   const search = createRecordSearch({
     fTitle,
     fCreator,
@@ -44,13 +57,19 @@ export function createModal({ onSaved, onPickMany }) {
     creatorList: document.getElementById('creatorList'),
     photoPicker,
     getCat: () => currentCat,
-    onPickMany: onPickMany && ((cat, name) => { setOpen(false); onPickMany(cat, name); }),
+  });
+  const searchView = createSearchView({
+    getCat: () => currentCat,
+    getItems,
+    onPick: (c) => openForm({ candidate: c }),
+    onManual: (q) => openForm({ title: q }),
+    onUndo: (record) => deleteRecord(record.id).then(() => onSaved()),
   });
   // 폰 키보드에 창 아래쪽이 가려지지 않게(modal/fitViewport.js).
   const fit = fitToViewport({
     overlay,
     group: overlay.querySelector('.title-group'),
-    actions: overlay.querySelector('.modal-actions'),
+    actions: formEl.querySelector('.modal-actions'),
   });
 
   // 카테고리 탭이 바뀔 때마다 만든 사람 칸 라벨과 제목 칸 안내 글씨를 그 탭에 맞춤.
@@ -60,6 +79,12 @@ export function createModal({ onSaved, onPickMany }) {
     fTitle.placeholder = TITLE_PLACEHOLDER[currentCat] || TITLE_PLACEHOLDER.book;
   }
 
+  function selectCatTab(cat) {
+    currentCat = CATS.some((c) => c.key === cat) ? cat : 'book';
+    [...catTabsEl.children].forEach((b) => b.classList.toggle('active', b.dataset.key === currentCat));
+    updateCreatorField();
+  }
+
   // ---- 카테고리 탭(책/애니/영화/음악) ----
   CATS.forEach((cat) => {
     const btn = document.createElement('button');
@@ -67,10 +92,9 @@ export function createModal({ onSaved, onPickMany }) {
     btn.dataset.key = cat.key;
     if (cat.key === currentCat) btn.classList.add('active');
     btn.addEventListener('click', () => {
-      currentCat = cat.key;
-      [...catTabsEl.children].forEach((b) => b.classList.toggle('active', b.dataset.key === cat.key));
-      updateCreatorField();
-      search.refresh();
+      selectCatTab(cat.key);
+      if (formEl.hidden) searchView.refresh();
+      else search.refresh();
     });
     catTabsEl.appendChild(btn);
   });
@@ -84,25 +108,65 @@ export function createModal({ onSaved, onPickMany }) {
     if (open) fit.update();
   }
 
-  // cat: 처음 골라둘 카테고리 — 보고 있던 탭(음악 탭이면 음악). 전체 탭이면 책.
-  function resetFormForAdd(cat) {
-    editingId = null;
+  function showView(form) {
+    searchEl.hidden = form;
+    formEl.hidden = !form;
+    if (overlay.classList.contains('open')) fit.update();
+  }
+
+  // 입력 칸만 비움(카테고리는 그대로).
+  function clearFields() {
     titleError.style.display = 'none';
-    modalTitle.textContent = '새 기록';
-    currentCat = CATS.some((c) => c.key === cat) ? cat : 'book';
-    [...catTabsEl.children].forEach((b) => b.classList.toggle('active', b.dataset.key === currentCat));
-    updateCreatorField();
     fTitle.value = '';
     fCreator.value = '';
     fMemo.value = '';
     search.reset();
     photoPicker.reset();
     starPicker.setValue(0);
+    creatorLookup++;
+  }
+
+  // 영화·애니 검색 결과엔 감독이 없을 때가 있어서 고른 것만 따로 물어봄(못 찾으면 '').
+  const creatorOf = (c) => (c.screen && !c.creator
+    ? fetchScreenCreator(c.screen.media, c.screen.id).catch(() => '')
+    : Promise.resolve(c.creator || ''));
+
+  // 검색 화면에서 입력 칸으로 — candidate(고른 결과)면 그 값으로, title(직접 쓰기)이면 제목만.
+  function openForm({ candidate, title }) {
+    clearFields();
+    editingId = null;
+    fromSearch = true;
+    modalTitle.textContent = '새 기록';
+    cancelBtn.textContent = '← 검색으로';
+    showView(true);
+    if (!candidate) {
+      fTitle.value = title || '';
+      fTitle.focus();
+      return;
+    }
+    fTitle.value = candidate.title;
+    fCreator.value = candidate.creator || '';
+    if (candidate.cover) photoPicker.setExisting(candidate.cover);
+    if (candidate.screen && !candidate.creator) {
+      const lookup = ++creatorLookup;
+      creatorOf(candidate).then((name) => {
+        if (lookup === creatorLookup && name && !fCreator.value.trim()) fCreator.value = name;
+      });
+    }
+  }
+
+  function backToSearch() {
+    editingId = null;
+    clearFields();
+    showView(false);
+    searchView.focus();
   }
 
   // 창은 "취소"(또는 저장 성공)로만 닫힘 — 예전엔 창 바깥을 누르면 닫혀서,
-  // 입력하다 실수로 바깥을 건드리면 쓰던 내용이 통째로 날아갔음.
-  document.getElementById('cancelBtn').addEventListener('click', () => setOpen(false));
+  // 입력하다 실수로 바깥을 건드리면 쓰던 내용이 통째로 날아갔음. 검색 화면에서 연
+  // 입력 칸의 취소는 검색 화면으로 돌아감.
+  cancelBtn.addEventListener('click', () => (fromSearch ? backToSearch() : setOpen(false)));
+  document.getElementById('searchCloseBtn').addEventListener('click', () => setOpen(false));
 
   // ---- 저장 ----
   async function handleSave() {
@@ -132,7 +196,7 @@ export function createModal({ onSaved, onPickMany }) {
       if (photoPicker.getFile()) {
         photo_url = await uploadPhoto(await shrinkImage(photoPicker.getFile()));
       }
-      await saveRecord({
+      const saved = await saveRecord({
         cat: currentCat,
         title,
         creator: fCreator.value.trim(),
@@ -142,7 +206,12 @@ export function createModal({ onSaved, onPickMany }) {
       }, editingId);
 
       onSaved(); // main.js가 목록을 다시 불러와 화면에 반영함
-      setOpen(false);
+      if (fromSearch) {
+        backToSearch();
+        searchView.saved({ cat: currentCat, title, ...saved });
+      } else {
+        setOpen(false);
+      }
     } catch (err) {
       alert('저장에 실패했어요. 잠시 후 다시 시도해주세요.');
       console.error(err);
@@ -154,9 +223,17 @@ export function createModal({ onSaved, onPickMany }) {
   saveBtn.addEventListener('click', handleSave);
 
   return {
+    // cat: 처음 골라둘 카테고리 — 보고 있던 탭(음악 탭이면 음악). 전체 탭이면 책.
     openAdd(cat) {
-      resetFormForAdd(cat);
+      editingId = null;
+      fromSearch = false;
+      modalTitle.textContent = '새 기록';
+      selectCatTab(cat);
+      clearFields();
+      searchView.reset();
+      showView(false);
       setOpen(true);
+      searchView.focus();
     },
 
     // list.js에서 "수정하기"를 누르면 그 기록(item) 전체를 그대로
@@ -164,16 +241,17 @@ export function createModal({ onSaved, onPickMany }) {
     openEdit(item) {
       titleError.style.display = 'none';
       editingId = item.id;
+      fromSearch = false;
       modalTitle.textContent = '기록 수정하기';
-      currentCat = item.cat;
-      [...catTabsEl.children].forEach((b) => b.classList.toggle('active', b.dataset.key === currentCat));
-      updateCreatorField();
+      cancelBtn.textContent = '취소';
+      selectCatTab(item.cat);
       fTitle.value = item.title || '';
       fCreator.value = item.creator || '';
       fMemo.value = item.memo || '';
       search.reset();
       photoPicker.setExisting(item.photo_url || null);
       starPicker.setValue(item.rating || 0);
+      showView(true);
       setOpen(true);
     },
   };

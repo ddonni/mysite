@@ -12,13 +12,16 @@ const searchMusic = vi.fn();
 const searchBooks = vi.fn();
 const searchScreen = vi.fn();
 const fetchScreenCreator = vi.fn();
+const saveRecord = vi.fn();
+const deleteRecord = vi.fn();
 vi.mock('../../js/library/records.js', () => ({
   CATS: [
     { key: 'book', label: '책' }, { key: 'anime', label: '애니' },
     { key: 'movie', label: '영화' }, { key: 'music', label: '음악' },
   ],
   uploadPhoto: vi.fn(),
-  saveRecord: vi.fn(),
+  saveRecord: (...a) => saveRecord(...a),
+  deleteRecord: (...a) => deleteRecord(...a),
   fetchSuggestions: () => Promise.resolve([]),
   searchBooks: (...a) => searchBooks(...a),
   searchMusic: (...a) => searchMusic(...a),
@@ -33,12 +36,17 @@ const ALBUM = { album: 'LEGEND(전설)', song: null, creator: 'JANNABI', kind: '
 function mountDom() {
   document.body.innerHTML = `
     <div id="overlay"><h2 id="modalTitle"></h2><div id="catTabs"></div>
+      <div id="searchView"><input id="sQuery"><button id="sBtn"></button><span id="sStatus"></span>
+        <button id="manualBtn"></button><div id="sNotice" hidden></div><ul id="sResults"></ul><p id="sFoot"></p>
+        <button id="searchCloseBtn"></button></div>
+      <div id="formView" hidden><div class="modal-actions"></div></div>
       <input id="fTitle"><input id="fCreator"><label id="creatorLabel"></label>
       <div id="titleList" style="display:none"></div><div id="creatorList" style="display:none"></div>
       <div id="titleError"></div><div id="starPicker"></div>
       <div id="photoDrop"><span id="photoDropText"></span><input type="file" id="fPhoto"></div>
       <img id="photoPreview"><span id="removePhoto"></span>
-      <textarea id="fMemo"></textarea><button id="cancelBtn"></button><button id="saveBtn"></button>
+      <textarea id="fMemo"></textarea>
+      <button id="cancelBtn"></button><button id="saveBtn"></button>
     </div>`;
 }
 
@@ -51,14 +59,20 @@ function typeTitle(v) {
 }
 
 let modal;
+let onSaved;
 beforeEach(() => {
+  saveRecord.mockReset().mockResolvedValue();
+  deleteRecord.mockReset().mockResolvedValue();
   searchMusic.mockReset();
   searchBooks.mockReset();
   searchScreen.mockReset();
   fetchScreenCreator.mockReset();
   mountDom();
-  modal = createModal({ onSaved: () => {} });
+  onSaved = vi.fn();
+  modal = createModal({ onSaved });
   modal.openAdd('music');
+  // 아래 입력 칸 테스트들은 직접 쓰기로 연 입력 칸에서(검색 화면은 맨 아래 묶음).
+  $('manualBtn').click();
 });
 
 describe('음악 탭 제목 검색', () => {
@@ -130,7 +144,9 @@ describe('음악 탭 제목 검색', () => {
     $('titleList').querySelector('.ac-item.rich').click();
     expect($('fTitle').value).toBe('뉴질랜드');
 
+
     modal.openAdd('book'); // 다른 탭은 원래 안내 글씨
+    $('manualBtn').click();
     expect($('fTitle').placeholder).toBe('제목을 입력해 보세요');
   });
 
@@ -199,6 +215,7 @@ describe('만든 사람 칸 검색', () => {
 
   it('책: 작가 이름으로 찾고, 고르면 이름·제목·표지를 채움', async () => {
     modal.openAdd('book');
+    $('manualBtn').click();
     searchBooks.mockResolvedValue([HAN]);
     typeCreator('한강');
     await settle();
@@ -211,6 +228,7 @@ describe('만든 사람 칸 검색', () => {
 
   it('책: 이미 쓴 제목이 있어도 고른 결과의 제목으로 바뀜', async () => {
     modal.openAdd('book');
+    $('manualBtn').click();
     searchBooks.mockResolvedValue([HAN]);
     typeTitle('채식주의자');
     typeCreator('한강');
@@ -221,6 +239,7 @@ describe('만든 사람 칸 검색', () => {
 
   it('고른 뒤에 고친 값은 그대로 — 저장되는 것도 고친 값', async () => {
     modal.openAdd('book');
+    $('manualBtn').click();
     searchBooks.mockResolvedValue([HAN]);
     typeCreator('한강');
     await settle();
@@ -232,6 +251,7 @@ describe('만든 사람 칸 검색', () => {
 
   it('책: 제목 칸에 직접 쓴 제목이 있으면 "제목 작가"로 합쳐 찾음', async () => {
     modal.openAdd('book');
+    $('manualBtn').click();
     searchBooks.mockResolvedValue([HAN]);
     typeTitle('소년이 온다');
     await settle();
@@ -242,6 +262,7 @@ describe('만든 사람 칸 검색', () => {
 
   it('책: 제목 칸 검색도 작가 칸에 직접 쓴 작가가 있으면 합쳐 찾음', async () => {
     modal.openAdd('book');
+    $('manualBtn').click();
     searchBooks.mockResolvedValue([HAN]);
     typeCreator('한강');
     await settle();
@@ -252,6 +273,7 @@ describe('만든 사람 칸 검색', () => {
 
   it('책: 합쳐서 0건이면 작가 이름만으로 다시 찾고 맨 위에 알림', async () => {
     modal.openAdd('book');
+    $('manualBtn').click();
     searchBooks.mockImplementation((q, signal, by) => Promise.resolve(by === 'author' ? [HAN] : []));
     typeTitle('없는 제목');
     await settle();
@@ -288,6 +310,7 @@ describe('영화·애니 탭', () => {
 
   it('애니: 제목으로 TMDB를 찾고 원제·연도·TV판 여부를 보여줌', async () => {
     modal.openAdd('anime');
+    $('manualBtn').click();
     searchScreen.mockResolvedValue([SHINSEKAI]);
     typeTitle('신세계');
     await settle();
@@ -299,6 +322,7 @@ describe('영화·애니 탭', () => {
 
   it('고르면 포스터를 채우고, 감독은 따로 물어봐서 빈 칸에 채움', async () => {
     modal.openAdd('anime');
+    $('manualBtn').click();
     searchScreen.mockResolvedValue([SHINSEKAI]);
     fetchScreenCreator.mockResolvedValue('이시하마 마사시');
     typeTitle('신세계');
@@ -313,6 +337,7 @@ describe('영화·애니 탭', () => {
 
   it('고르기 전에 쓴 감독은 고른 작품의 감독으로 바뀜', async () => {
     modal.openAdd('movie');
+    $('manualBtn').click();
     searchScreen.mockResolvedValue([{ ...SHINSEKAI, media: 'movie', title: '기생충', original_title: '' }]);
     fetchScreenCreator.mockResolvedValue('봉준호');
     typeTitle('기생충');
@@ -325,6 +350,7 @@ describe('영화·애니 탭', () => {
 
   it('고른 뒤 감독 답이 오기 전에 감독 칸을 고치면 늦게 온 답으로 안 덮음', async () => {
     modal.openAdd('movie');
+    $('manualBtn').click();
     searchScreen.mockResolvedValue([{ ...SHINSEKAI, media: 'movie', title: '기생충', original_title: '' }]);
     let answer;
     fetchScreenCreator.mockReturnValue(new Promise((r) => { answer = r; }));
@@ -361,6 +387,7 @@ describe('영화·애니 탭', () => {
 
   it('감독 칸: 감독의 연출작을 찾고, 고르면 제목·포스터(감독은 따로 안 물음)', async () => {
     modal.openAdd('movie');
+    $('manualBtn').click();
     searchScreen.mockResolvedValue([PARASITE, OKJA]);
     $('fCreator').value = '봉준호';
     $('fCreator').dispatchEvent(new Event('input'));
@@ -375,6 +402,7 @@ describe('영화·애니 탭', () => {
 
   it('두 칸 다 차 있으면 감독의 연출작 중 제목이 맞는 것만', async () => {
     modal.openAdd('movie');
+    $('manualBtn').click();
     searchScreen.mockResolvedValue([PARASITE, OKJA]);
     $('fCreator').value = '봉준호';
     $('fCreator').dispatchEvent(new Event('input'));
@@ -390,6 +418,7 @@ describe('영화·애니 탭', () => {
 
   it('감독 연출작에 맞는 제목이 없으면 제목만으로 다시 찾고 알림', async () => {
     modal.openAdd('movie');
+    $('manualBtn').click();
     searchScreen.mockImplementation((q, kind, signal, by) => Promise.resolve(by === 'director' ? [PARASITE] : [{ ...OKJA, creator: '', title: '인터스텔라' }]));
     $('fCreator').value = '봉준호';
     $('fCreator').dispatchEvent(new Event('input'));
@@ -403,6 +432,7 @@ describe('영화·애니 탭', () => {
 describe('책 탭', () => {
   it('결과 없음 문구에 가수 요령은 안 붙음', async () => {
     modal.openAdd('book');
+    $('manualBtn').click();
     searchBooks.mockResolvedValue([]);
     typeTitle('없는책');
     await settle();
@@ -416,6 +446,7 @@ describe('카테고리 탭 바꾸기', () => {
 
   async function pickBook() {
     modal.openAdd('book');
+    $('manualBtn').click();
     searchBooks.mockResolvedValue([BOOK]);
     typeTitle('괴물');
     await settle();
@@ -446,6 +477,7 @@ describe('카테고리 탭 바꾸기', () => {
 
   it('직접 쓴 제목·작가는 그대로', () => {
     modal.openAdd('book');
+    $('manualBtn').click();
     $('fTitle').value = '괴물';
     $('fCreator').value = '봉준호';
     tab('movie');
@@ -457,6 +489,7 @@ describe('카테고리 탭 바꾸기', () => {
 describe('카테고리 탭 바꾸기 — 제목', () => {
   it('작가 칸 검색 결과를 골라 채운 제목은 지움', async () => {
     modal.openAdd('book');
+    $('manualBtn').click();
     searchBooks.mockResolvedValue([{ title: '책제목', full_title: '책제목', creator: '봉준호', publisher: '', year: '', cover: '' }]);
     $('fCreator').value = '봉준호';
     $('fCreator').dispatchEvent(new Event('input'));
@@ -467,5 +500,93 @@ describe('카테고리 탭 바꾸기 — 제목', () => {
     $('catTabs').querySelector('[data-key="movie"]').click();
     expect($('fTitle').value).toBe('');
     expect($('fCreator').value).toBe('봉준호'); // 작가 칸은 직접 쓴 값
+  });
+});
+
+describe('검색 화면(새 기록)', () => {
+  const PARASITE = { id: 9, media: 'movie', title: '기생충', cover: 'https://image.tmdb.org/p.jpg' };
+  function searchFor(q) {
+    $('sQuery').value = q;
+    $('sQuery').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+  }
+
+  beforeEach(() => {
+    modal.openAdd('movie');
+    searchScreen.mockImplementation((q, cat, signal, by) => Promise.resolve(by === 'director' ? [] : [PARASITE]));
+    fetchScreenCreator.mockResolvedValue('봉준호');
+  });
+
+  it('치는 것만으로는 안 찾고 검색 버튼(Enter)을 눌러야 — 한 글자 제목도 찾음', async () => {
+    $('sQuery').value = '괴';
+    $('sQuery').dispatchEvent(new Event('input'));
+    await settle();
+    expect(searchScreen).not.toHaveBeenCalled();
+    $('sBtn').click();
+    await settle();
+    expect(searchScreen).toHaveBeenCalledWith('괴', 'movie');
+  });
+
+  it('새 기록은 검색 화면부터, 입력 칸은 숨김', () => {
+    expect($('searchView').hidden).toBe(false);
+    expect($('formView').hidden).toBe(true);
+  });
+
+  it('결과를 누르면 값이 채워진 입력 칸 — 저장하면 검색 화면으로 돌아오고 결과는 그대로', async () => {
+    saveRecord.mockResolvedValue({ id: 41 });
+    searchFor('기생충');
+    await settle();
+    $('sResults').querySelector('.si-main').click();
+    await settle();
+    expect($('formView').hidden).toBe(false);
+    expect($('fTitle').value).toBe('기생충');
+    expect($('fCreator').value).toBe('봉준호');
+    $('fMemo').value = '계단';
+    $('saveBtn').click();
+    await settle();
+    expect(saveRecord).toHaveBeenCalledWith(expect.objectContaining({ cat: 'movie', title: '기생충', creator: '봉준호', memo: '계단' }), null);
+    expect(onSaved).toHaveBeenCalled();
+    expect($('searchView').hidden).toBe(false);
+    expect($('sNotice').textContent).toContain('기생충');
+    expect($('sResults').querySelector('.si-add').textContent).toBe('✓ 넣음');
+  });
+
+  it('+ 넣기도 값이 채워진 입력 칸 — 별점·감상까지 쓰고 저장, ✓ 넣음을 다시 누르면 지움', async () => {
+    saveRecord.mockResolvedValue({ id: 42, cat: 'movie', title: '기생충' });
+    searchFor('기생충');
+    await settle();
+    $('sResults').querySelector('.si-add').click();
+    await settle();
+    expect($('formView').hidden).toBe(false);
+    expect($('fTitle').value).toBe('기생충');
+    expect($('fCreator').value).toBe('봉준호');
+    expect($('photoPreview').style.display).toBe('block');
+    $('fMemo').value = '계단';
+    $('saveBtn').click();
+    await settle();
+    expect(saveRecord).toHaveBeenCalledWith(expect.objectContaining({ title: '기생충', memo: '계단' }), null);
+    const btn = $('sResults').querySelector('.si-add');
+    expect(btn.textContent).toBe('✓ 넣음');
+    btn.click();
+    await settle();
+    expect(deleteRecord).toHaveBeenCalledWith(42);
+    expect($('sResults').querySelector('.si-add').textContent).toBe('+ 넣기');
+  });
+
+  it('직접 쓰기는 검색어를 제목으로 채운 입력 칸, 취소하면 검색 화면으로', async () => {
+    $('sQuery').value = '우리 동네 독립영화';
+    $('manualBtn').click();
+    expect($('formView').hidden).toBe(false);
+    expect($('fTitle').value).toBe('우리 동네 독립영화');
+    $('cancelBtn').click();
+    expect($('searchView').hidden).toBe(false);
+    expect($('overlay').classList.contains('open')).toBe(true);
+  });
+
+  it('수정은 입력 칸만, 취소하면 창을 닫음', () => {
+    modal.openEdit({ id: 3, cat: 'book', title: '데미안', creator: '헤세', memo: '', rating: 4, photo_url: null });
+    expect($('formView').hidden).toBe(false);
+    expect($('searchView').hidden).toBe(true);
+    $('cancelBtn').click();
+    expect($('overlay').classList.contains('open')).toBe(false);
   });
 });

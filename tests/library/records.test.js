@@ -4,7 +4,7 @@
 // 겪은 버그(fetchRecords가 404의 에러 바디를 정상 데이터인 척 넘겨서
 // 화면에 "undefined"가 찍힌 것)의 재발을 막기 위한 회귀 테스트.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { deleteRecord, fetchRecords, saveRecord, saveRecords, setFeatured, setPlaying, setRoom } from '../../js/library/records.js';
+import { deleteRecord, fetchRecords, saveRecord, setFeatured, setPlaying, setRoom } from '../../js/library/records.js';
 
 function jsonResponse(body, ok = true, status = ok ? 200 : 400) {
   return { ok, status, json: () => Promise.resolve(body) };
@@ -111,20 +111,3 @@ describe('saveRecord', () => {
   });
 });
 
-describe('saveRecords', () => {
-  it('여러 개를 batch로 한 번에, 소유자 토큰과 함께 보냄', async () => {
-    global.fetch.mockResolvedValueOnce(jsonResponse([], true));
-    const records = [{ cat: 'book', title: '데미안' }, { cat: 'book', title: '싯다르타' }];
-    await saveRecords(records);
-    const [url, opts] = global.fetch.mock.calls[0];
-    expect(url).toContain('/api/rooms/ABC123/records/batch');
-    expect(opts.method).toBe('POST');
-    expect(opts.headers['X-Room-Token']).toBe('owner-token');
-    expect(JSON.parse(opts.body)).toEqual({ records });
-  });
-
-  it('실패 응답이면 reject함', async () => {
-    global.fetch.mockResolvedValueOnce(jsonResponse({ detail: 'invalid' }, false, 422));
-    await expect(saveRecords([{ cat: 'book', title: '데미안' }])).rejects.toThrow();
-  });
-});

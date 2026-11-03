@@ -13,7 +13,7 @@ import { createDetail } from './list/detail.js';
 import { featureLabel, withEuro } from './list/itemFormat.js';
 import { TOP_SLOTS, pickMusic } from '../lobby/showcase.js';
 
-const EMPTY_ALL = '아직 기록이 없어요. 오른쪽 위 + 기록하기로 첫 기록을 남기거나, 여러 개 추가로 한꺼번에 넣어 보세요.';
+const EMPTY_ALL = '아직 기록이 없어요. 오른쪽 위 + 기록하기에서 본 작품을 찾아 한꺼번에 넣어 보세요.';
 const EMPTY_CAT = '아직 이 카테고리엔 기록이 없어요. 오른쪽 위 + 기록하기로 남겨보세요.';
 const EMPTY_READONLY = '아직 기록이 없어요.';
 
