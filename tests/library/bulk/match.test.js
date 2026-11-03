@@ -40,6 +40,13 @@ describe('findCandidates', () => {
     expect(found[0]).toMatchObject({ title: '인터스텔라', creator: '크리스토퍼 놀란', screen: null });
   });
 
+  it('영화 탭의 드라마·시리즈(TV)는 설명에 "시리즈"', async () => {
+    records.searchScreen.mockResolvedValueOnce([{ id: 3, media: 'tv', title: '기묘한 이야기', original_title: 'Stranger Things', year: '2016', cover: 's' }]);
+    const [c] = await findCandidates('movie', { title: '기묘한 이야기', creator: '' });
+    expect(c.meta).toBe('Stranger Things · 2016 · 시리즈');
+    expect(c.screen).toEqual({ media: 'tv', id: 3 }); // 감독(시리즈 연출)은 저장할 때 물어봄
+  });
+
   it('영화: 제목 검색 결과엔 감독이 없어서 저장할 때 물어볼 정보를 남김', async () => {
     records.searchScreen.mockResolvedValueOnce([{ id: 7, media: 'tv', title: '귀멸의 칼날', cover: 'x' }]);
     const [c] = await findCandidates('anime', { title: '귀멸의 칼날', creator: '' });

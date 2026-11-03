@@ -46,10 +46,11 @@ function tryWeb(promise, signal) {
 }
 
 // 목록 한 줄의 설명 — 책: 작가 · 출판사 · 연도 / 영화·애니: 원제(한국어 제목과 다를
-// 때만 옴) · 연도, 애니는 TV판인지 극장판인지도 / 음악: 앨범 카드(정사각형 커버).
+// 때만 옴) · 연도, 애니는 TV판인지 극장판인지도, 영화 탭은 드라마·시리즈(TV)면 "시리즈"
+// (영화 탭 검색에 드라마도 나옴 — 백엔드 screen_search._fits) / 음악: 앨범 카드(정사각형 커버).
 export const bookMeta = (b) => [b.creator, b.publisher, b.year].filter(Boolean).join(' · ');
 export const screenMeta = (cat, r) => [
-  r.original_title, r.year, cat === 'anime' ? (r.media === 'tv' ? 'TV' : '극장판') : '',
+  r.original_title, r.year, cat === 'anime' ? (r.media === 'tv' ? 'TV' : '극장판') : (r.media === 'tv' ? '시리즈' : ''),
 ].filter(Boolean).join(' · ');
 export const albumCard = (m) => ({
   title: m.song || m.album,

@@ -9,7 +9,7 @@
 export const TITLE_PLACEHOLDER = {
   book: '제목을 입력해 보세요',
   anime: '제목을 입력해 보세요',
-  movie: '제목을 입력해 보세요',
+  movie: '영화·드라마 제목을 입력해 보세요',
   music: '노래 제목 — 검색하면 실린 앨범이 나와요',
 };
 
