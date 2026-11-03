@@ -263,6 +263,9 @@ export function createBulkImport({ getItems, onSaved }) {
     let cover;
     if (picked && picked.cover) {
       cover = document.createElement('img');
+      // 목록·로비와 같은 CORS 방식으로(list/itemFormat.js 설명). 빼면 이 표지가 CORS 헤더 없이
+      // 캐시돼서, 저장 뒤 목록·로비에서 같은 표지가 캐시를 지울 때까지 안 뜸.
+      cover.crossOrigin = 'anonymous';
       cover.src = photoSrc(picked.cover);
       cover.alt = '';
       cover.loading = 'lazy';
