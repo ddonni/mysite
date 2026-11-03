@@ -42,7 +42,11 @@ initRoomNav({ navEl, currentPage: 'library' }).then(({ mine, viewingCode, readOn
   // library.html?cat=music 형태로 들어옴.
   const initialTab = new URLSearchParams(location.search).get('cat');
 
-  const modal = createModal({ onSaved: reload });
+  let bulk = null; // 내 방일 때만 — 아래에서 만듦
+  const modal = createModal({
+    onSaved: reload,
+    onPickMany: readOnly ? null : (cat, name) => bulk.open(cat, { name }),
+  });
   list = createList({
     readOnly,
     initialTab,
@@ -73,9 +77,10 @@ initRoomNav({ navEl, currentPage: 'library' }).then(({ mine, viewingCode, readOn
   // 보고 있던 탭의 카테고리로 추가 창을 엶(전체 탭이면 책).
   document.getElementById('addTabBtn').addEventListener('click', () => modal.openAdd(list.activeTab()));
 
-  // 목록으로 한꺼번에 추가 — 끝나면 그 카테고리 탭을 보여줌(방금 넣은 게 바로 보이게).
+  // 여러 개 한꺼번에 추가(목록 붙여넣기·검색해서 고르기) — 끝나면 그 카테고리 탭을 보여줌
+  // (방금 넣은 게 바로 보이게).
   if (!readOnly) {
-    const bulk = createBulkImport({
+    bulk = createBulkImport({
       getItems: () => currentItems,
       onSaved: (cat) => reload().then(() => list.selectTab(cat)),
     });

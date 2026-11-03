@@ -62,9 +62,11 @@ export const albumCard = (m) => ({
 export const TMDB_NOTE = '정보 제공: TMDB(TMDB의 보증을 받은 서비스는 아니에요)';
 
 // fTitle·fCreator: 두 입력칸, titleList·creatorList: 각 칸의 목록, photoPicker: 표지를
-// 채울 사진 위젯, getCat: 지금 카테고리. 돌려주는 reset()은 창을 새로 열 때, refresh()는
+// 채울 사진 위젯, getCat: 지금 카테고리. onPickMany(cat, 검색어): 두 칸 검색 결과 위의
+// "여러 개 고르기"를 눌렀을 때(검색 결과 중 본 것을 한꺼번에 — library/bulk.js).
+// 돌려주는 reset()은 창을 새로 열 때, refresh()는
 // 카테고리 탭을 바꿀 때 modal.js가 부름.
-export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, photoPicker, getCat }) {
+export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, photoPicker, getCat, onPickMany }) {
   // 검색 결과로 채워 넣은 제목·작가 — 사용자가 그 뒤 손대지 않았으면 "직접 쓴 값"이
   // 아니라서 두 칸을 합친 검색에 안 씀(typedTitle/typedArtist).
   let autoTitle = null;
@@ -300,6 +302,14 @@ export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, p
     }
   }
 
+  // 두 칸 검색 결과 맨 위 "여러 개 한꺼번에 고르기" — 검색 결과가 있을 때만. 누르면 이 검색어로
+  // "여러 개 추가" 창(library/bulk.js)의 검색해서 고르기를 엶 — 같은 작가·감독의 작품이나 같은
+  // 이름의 시리즈를 여러 개 봤을 때가 많아서.
+  function pickManyAction(items, q, label) {
+    if (!onPickMany || !items.some((s) => s.source) || q.length < 2) return null;
+    return { label: label(q), onClick: () => onPickMany(getCat(), q) };
+  }
+
   const pendingText = (q) => (searchesWeb(getCat(), q) ? '검색 중…' : '');
   const titleAutocomplete = createAutocomplete(
     { input: fTitle, listEl: titleList },
@@ -319,6 +329,7 @@ export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, p
       // 두 목록은 같은 자리(묶음 아래)에 떠서, 나중에 열린 쪽만 남김 — 작가 칸을 고치고
       // 제목 칸을 누르면(change → 제목 목록 다시 찾기) 둘이 겹쳐 보였음.
       onShow: () => creatorAutocomplete.hide(),
+      action: (items) => pickManyAction(items, fTitle.value.trim(), (q) => `'${q}' 검색 결과에서 여러 개 한꺼번에 고르기 →`),
     },
   );
   const creatorAutocomplete = createAutocomplete(
@@ -336,6 +347,9 @@ export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, p
       },
       footer: creatorFooter,
       header: (items) => searchHeader('creator', items),
+      // 검색 결과(그 사람의 작품)가 있을 때만 — 같은 작가·감독의 작품을 여러 개 봤을 때가 많아서.
+      action: (items) => pickManyAction(items, fCreator.value.trim(),
+        (q) => `'${q}'의 ${getCat() === 'music' ? '노래' : '작품'} 여러 개 한꺼번에 고르기 →`),
       pendingText,
       emptyText: (q) => emptyText('creator', q),
       keepOpenOn: [fTitle],

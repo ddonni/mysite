@@ -16,7 +16,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/library.css?v=16">
+<link rel="stylesheet" href="css/library.css?v=18">
 <link rel="stylesheet" href="css/nav.css?v=6">
 <link rel="stylesheet" href="css/feedback.css?v=2">
 <link rel="stylesheet" href="css/inapp.css">
@@ -42,7 +42,7 @@
       <div class="meta"><span id="totalCount">0</span>개</div>
     </div>
     <div class="top-actions">
-      <button type="button" class="add-btn ghost" id="bulkBtn">목록으로 추가</button>
+      <button type="button" class="add-btn ghost" id="bulkBtn">여러 개 추가</button>
       <button type="button" class="add-btn" id="addTabBtn">+ 기록하기</button>
     </div>
   </header>
@@ -113,18 +113,31 @@
   </div>
 </div>
 
-<!-- 목록으로 한꺼번에 추가(js/library/bulk.js) — 쓰기 → 검색 결과 확인 두 단계 -->
+<!-- 여러 개 한꺼번에 추가(js/library/bulk.js) — 목록 붙여넣기 또는 검색해서 고르기 → 확인 두 단계 -->
 <div class="overlay" id="bulkOverlay">
   <div class="modal bulk-modal" role="dialog" aria-modal="true" aria-labelledby="bulkTitle">
     <div class="bulk-head">
-      <h2 id="bulkTitle">목록으로 한꺼번에 추가</h2>
+      <h2 id="bulkTitle">여러 개 한꺼번에 추가</h2>
       <button type="button" class="bulk-x" data-bulk="close" aria-label="닫기">×</button>
     </div>
 
     <div id="bulkWrite">
       <div class="cat-tabs" id="bulkCatTabs"></div>
-      <p class="bulk-lead" id="bulkHint"></p>
-      <textarea id="bulkText" class="bulk-text-input" rows="9" placeholder="데미안&#10;채식주의자 / 한강&#10;1. 어린 왕자"></textarea>
+      <div class="bulk-modes" id="bulkModes" role="group" aria-label="추가 방법">
+        <button type="button" data-mode="list" aria-pressed="true">목록 붙여넣기</button>
+        <button type="button" data-mode="name" aria-pressed="false">검색해서 고르기</button>
+      </div>
+      <div id="bulkListPane">
+        <p class="bulk-lead" id="bulkHint"></p>
+        <textarea id="bulkText" class="bulk-text-input" rows="9" placeholder="데미안&#10;채식주의자 / 한강&#10;1. 어린 왕자"></textarea>
+      </div>
+      <div id="bulkNamePane" hidden>
+        <p class="bulk-lead">제목이나 작가·감독·가수 이름으로 찾아요. 이름이면 그 사람의 작품이 쭉 떠요. 본 것만 체크해서 한꺼번에 넣으세요.</p>
+        <div class="field">
+          <label for="bulkName" id="bulkNameLabel">제목이나 작가 이름</label>
+          <input type="text" id="bulkName" autocomplete="off">
+        </div>
+      </div>
       <div class="field-error" id="bulkError" hidden></div>
       <div class="modal-actions">
         <button type="button" class="btn ghost" data-bulk="cancel">취소</button>
@@ -133,7 +146,10 @@
     </div>
 
     <div id="bulkReview" hidden>
-      <p class="bulk-lead" id="bulkSummary" aria-live="polite"></p>
+      <div class="bulk-summary-row">
+        <p class="bulk-lead" id="bulkSummary" aria-live="polite"></p>
+        <button type="button" class="bulk-all" data-bulk="all" hidden>모두 체크</button>
+      </div>
       <ul class="bulk-rows" id="bulkRows"></ul>
       <p class="bulk-foot" id="bulkFoot"></p>
       <div class="modal-actions">

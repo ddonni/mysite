@@ -384,3 +384,27 @@ body.modal-open{ overflow:hidden; }
   color:var(--paper); background:var(--void-2); border:1px solid var(--line); border-radius:7px;
 }
 .bulk-foot{ margin:8px 0 0; font-size:10.5px; color:var(--paper-dim); text-align:right; }
+/* 목록 붙여넣기 / 이름으로 고르기 — 카테고리 탭 아래 작은 두 칸 스위치 */
+.bulk-modes{ display:flex; gap:4px; margin:-6px 0 14px; padding:3px; border:1px solid var(--line); border-radius:999px; }
+.bulk-modes button{
+  flex:1; padding:7px 8px; border:none; border-radius:999px; background:none; cursor:pointer;
+  font-family:inherit; font-size:12.5px; font-weight:600; color:var(--paper-dim);
+}
+.bulk-modes button[aria-pressed="true"]{ color:var(--paper); background:rgba(243,236,224,0.1); }
+#bulkNamePane .field input{ width:100%; box-sizing:border-box; }
+.bulk-summary-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.bulk-summary-row .bulk-lead{ flex:1; }
+.bulk-all{
+  flex:none; margin-top:-2px; padding:5px 11px; font-family:inherit; font-size:12px; font-weight:600;
+  color:var(--paper); background:none; border:1px solid var(--line-strong); border-radius:999px; cursor:pointer;
+}
+.bulk-all[hidden]{ display:none; }
+.bulk-row{ cursor:pointer; }
+.bulk-row[data-status="loading"]{ cursor:default; }
+/* 작가·감독 칸 검색 결과 맨 위 "여러 개 한꺼번에 고르기" */
+.ac-action{
+  display:block; width:100%; padding:9px 12px; text-align:left; cursor:pointer;
+  font-family:inherit; font-size:12.5px; font-weight:700; color:var(--ember);
+  background:rgba(217,121,58,0.08); border:none; border-bottom:1px solid var(--line);
+}
+.ac-action:hover{ background:rgba(217,121,58,0.16); }

@@ -13,7 +13,9 @@ import { createRecordSearch } from './modal/recordSearch.js';
 import { shrinkImage } from './modal/shrinkImage.js';
 import { fitToViewport } from './modal/fitViewport.js';
 
-export function createModal({ onSaved }) {
+// onPickMany(cat, 이름): 작가·감독 칸 검색 결과에서 "여러 개 고르기"를 눌렀을 때 — 이 창은
+// 닫고 부르는 쪽(main.js)이 "여러 개 추가" 창(bulk.js)을 그 이름으로 엶.
+export function createModal({ onSaved, onPickMany }) {
   const overlay = document.getElementById('overlay');
   const catTabsEl = document.getElementById('catTabs');
   const fTitle = document.getElementById('fTitle');
@@ -42,6 +44,7 @@ export function createModal({ onSaved }) {
     creatorList: document.getElementById('creatorList'),
     photoPicker,
     getCat: () => currentCat,
+    onPickMany: onPickMany && ((cat, name) => { setOpen(false); onPickMany(cat, name); }),
   });
   // 폰 키보드에 창 아래쪽이 가려지지 않게(modal/fitViewport.js).
   const fit = fitToViewport({

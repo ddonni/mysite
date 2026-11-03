@@ -157,3 +157,27 @@ describe('onShow', () => {
     expect(onShow).not.toHaveBeenCalled();
   });
 });
+
+describe('action', () => {
+  it('목록 맨 위 버튼 한 줄 — 누르면 목록을 닫고 onClick', async () => {
+    const onClick = vi.fn();
+    const onPick = vi.fn();
+    setup([DEMIAN], { onPick, action: () => ({ label: "'헤세'의 작품 여러 개 한꺼번에 고르기 →", onClick }) });
+    type('헤세');
+    await settle();
+    const btn = listEl.querySelector('.ac-action');
+    expect(listEl.firstElementChild).toBe(btn);
+    expect(btn.textContent).toContain('여러 개');
+    btn.click();
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(onPick).not.toHaveBeenCalled();
+    expect(listEl.style.display).toBe('none');
+  });
+
+  it('action이 null이면 버튼을 안 그림', async () => {
+    setup([DEMIAN], { action: () => null });
+    type('헤세');
+    await settle();
+    expect(listEl.querySelector('.ac-action')).toBeNull();
+  });
+});

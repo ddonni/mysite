@@ -28,9 +28,11 @@ const DEBOUNCE_MS = 180;
 // openOnFocus() → 칸에 포커스가 올 때 이미 쓰인 값으로 목록을 다시 열지(기본: 연다)
 //   — 다른 칸의 목록이 열려 있으면 그걸 덮지 않게 부르는 쪽이 false를 줌.
 // onShow() → 목록이 열릴 때마다 — 같은 자리에 뜨는 다른 칸의 목록을 닫으라고.
+// action(후보들) → 목록 맨 위 버튼 한 줄 { label, onClick } 또는 null — 후보 하나를 고르는
+//   대신 다른 일을 할 때(작가·감독 칸의 "여러 개 고르기").
 export function createAutocomplete({ input, listEl }, {
   getCat, fetchSuggestions, markMine = false, onPick, footer, header, pendingText, emptyText,
-  keepOpenOn = [], openOnFocus = () => true, onShow,
+  keepOpenOn = [], openOnFocus = () => true, onShow, action,
 }) {
   let timer = null;
   let ctrl = null; // 진행 중인 서버 요청 — 새로 치면 이전 것은 취소
@@ -66,6 +68,16 @@ export function createAutocomplete({ input, listEl }, {
     show();
     const top = header ? header(items) : '';
     if (top) note('ac-head', top);
+    const act = action ? action(items) : null;
+    if (act) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ac-action';
+      btn.textContent = act.label;
+      btn.addEventListener('mousedown', (e) => e.preventDefault()); // 아래 후보와 같은 이유
+      btn.addEventListener('click', () => { hide(); act.onClick(); });
+      listEl.appendChild(btn);
+    }
     items.forEach((s) => {
       const el = document.createElement('div');
       el.className = 'ac-item';

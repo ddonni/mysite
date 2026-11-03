@@ -63,6 +63,74 @@ export function findCandidates(cat, { title, creator }) {
   return found.then((list) => list.slice(0, MAX_CANDIDATES));
 }
 
+// 검색해서 고르기의 음악 — 기록은 노래 단위라(앨범 이름은 잘 모름) 가수의 노래 목록(by=songs,
+// 수록곡을 모은 것)을 주고, 검색어가 노래 제목이면 맨 앞에 쓴 제목 그대로의 줄 하나를 둠
+// (가수·커버는 제목 검색 맨 위 결과 — 백엔드가 iTunes로 그 노래가 실린 앨범을 찾아 줌).
+// 검색어가 그 가수 이름이면("검정치마") 그 줄은 뺌 — "검정치마"라는 노래가 생기지 않게.
+function findSongs(q) {
+  const settle = (pr) => pr.then((list) => ({ list }), () => ({ failed: true }));
+  return Promise.all([settle(searchMusic(q, undefined, 'songs')), settle(searchMusic(q))]).then(([a, b]) => {
+    if (a.failed && b.failed) throw new Error('search failed');
+    const songs = (a.list || []).filter((m) => m.song).map((m) => ({
+      title: m.song,
+      creator: m.creator || '',
+      cover: m.cover,
+      label: m.song,
+      meta: [m.album, m.year].filter(Boolean).join(' · '),
+      square: true,
+    }));
+    const top = (b.list || [])[0];
+    const isArtist = (name) => {
+      const x = squash(name);
+      const y = squash(q);
+      return !!x && (x.includes(y) || y.includes(x));
+    };
+    if (!top || isArtist(top.creator) || songs.some((s) => isArtist(s.creator))) return songs;
+    const typed = {
+      title: q,
+      creator: top.creator || '',
+      cover: top.cover,
+      label: q,
+      meta: [top.creator, top.album && `앨범 ${top.album}`].filter(Boolean).join(' · '),
+      square: true,
+    };
+    return [typed, ...songs];
+  });
+}
+
+// 검색어 하나로 작품 목록 — "검색해서 고르기"에서 본 것만 체크하게. 검색어가 제목인지
+// 작가·감독·가수 이름인지 모르니 둘 다 찾아 합침: 이름 검색(책 by=author, 영화·애니
+// by=director) 결과를 앞에 — 같은 사람의 작품을 여러 개 봤을 때가 많아서 — 그 뒤에 제목
+// 검색 결과(음악은 findSongs). 같은 제목(책의 여러 판본, 양쪽에 다 나온 작품)은 처음 것만.
+// 한쪽이 실패해도 나머지로 보여주고, 둘 다 실패하면 reject.
+export function findWorks(cat, q) {
+  let byName;
+  let byTitle;
+  if (cat === 'book') {
+    byName = searchBooks(q, undefined, 'author').then((rs) => rs.map(bookCandidate));
+    byTitle = searchBooks(q).then((rs) => rs.map(bookCandidate));
+  } else if (cat === 'music') {
+    byName = findSongs(q);
+    byTitle = Promise.resolve([]);
+  } else if (isScreen(cat)) {
+    byName = searchScreen(q, cat, undefined, 'director').then((rs) => rs.map((r) => screenCandidate(cat, r)));
+    byTitle = searchScreen(q, cat).then((rs) => rs.map((r) => screenCandidate(cat, r)));
+  } else {
+    return Promise.resolve([]);
+  }
+  const settle = (pr) => pr.then((list) => ({ list }), () => ({ failed: true }));
+  return Promise.all([settle(byName), settle(byTitle)]).then(([a, b]) => {
+    if (a.failed && b.failed) throw new Error('search failed');
+    const seen = new Set();
+    return [...(a.list || []), ...(b.list || [])].filter((c) => {
+      const key = squash(c.title);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  });
+}
+
 // 이 카테고리에 같은 제목(띄어쓰기·대소문자 무시)이 이미 기록돼 있는지.
 export function isRecorded(items, cat, title) {
   const key = squash(title);
