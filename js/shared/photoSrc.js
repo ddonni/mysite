@@ -8,12 +8,17 @@ import { API_BASE } from './config.js';
 // 백엔드 book_search.COVER_HOSTS와 같아야 함.
 const RELAY_HOSTS = ['t1.daumcdn.net', 'search1.kakaocdn.net'];
 
-// 검색 결과에서 가져온 표지인지(카카오·유튜브 뮤직·TMDB) — 아니면 사용자가 직접
+// 검색 결과에서 가져온 표지인지(카카오·유튜브 뮤직·TMDB·iTunes) — 아니면 사용자가 직접
 // 올린 사진(S3)으로 봄. 새 기록 창이 결과를 고를 때 직접 올린 사진은 안 바꾸려고 씀.
+// iTunes 커버는 음악 검색이 유튜브에서 그 앨범을 못 찾았을 때만 옴(백엔드 music_search.py) —
+// 서버 이름이 is1-ssl~is5-ssl.mzstatic.com으로 바뀌어 와서 모양으로 봄.
 const SEARCH_COVER_HOSTS = [...RELAY_HOSTS, 'yt3.googleusercontent.com', 'lh3.googleusercontent.com', 'image.tmdb.org'];
+const ITUNES_COVER_HOST = /^is\d-ssl\.mzstatic\.com$/;
 
 export function isSearchCover(url) {
-  try { return SEARCH_COVER_HOSTS.includes(new URL(url).hostname); } catch (e) { return false; }
+  let host;
+  try { host = new URL(url).hostname; } catch (e) { return false; }
+  return SEARCH_COVER_HOSTS.includes(host) || ITUNES_COVER_HOST.test(host);
 }
 
 export function photoSrc(url) {

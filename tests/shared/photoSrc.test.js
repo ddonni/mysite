@@ -15,6 +15,9 @@ describe('isSearchCover', () => {
     expect(isSearchCover('https://t1.daumcdn.net/lbook/image/1')).toBe(true);
     expect(isSearchCover('https://yt3.googleusercontent.com/abc=w544')).toBe(true);
     expect(isSearchCover('https://image.tmdb.org/t/p/w342/a.jpg')).toBe(true);
+    // iTunes 커버 서버는 is1~is5 중 아무거나로 옴
+    expect(isSearchCover('https://is1-ssl.mzstatic.com/image/thumb/a/600x600bb.jpg')).toBe(true);
+    expect(isSearchCover('https://is4-ssl.mzstatic.com/image/thumb/a/600x600bb.jpg')).toBe(true);
     expect(isSearchCover('https://mysite-photos-ddonni.s3.ap-northeast-2.amazonaws.com/records/a.jpg')).toBe(false);
     expect(isSearchCover('not a url')).toBe(false);
   });
