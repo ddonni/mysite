@@ -95,7 +95,7 @@ export function buildScene(theme) {
   const labels = {
     book: wallLabel('BOOK', '#74490f', 'book'),
     anime: wallLabel('ANIMATION', '#963a61', 'anime'),
-    movie: wallLabel('MOVIE', '#8c2a22', 'movie'),
+    movie: wallLabel('MOVIE & SERIES', '#8c2a22', 'movie'),
   };
 
   // 가운데 소품들.

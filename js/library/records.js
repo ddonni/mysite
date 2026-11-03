@@ -10,7 +10,7 @@ import { API_BASE } from '../shared/config.js';
 export const CATS = [
   { key: 'book', label: '책' },
   { key: 'anime', label: '애니' },
-  { key: 'movie', label: '영화' },
+  { key: 'movie', label: '영화·시리즈' },
   { key: 'music', label: '음악' },
 ];
 

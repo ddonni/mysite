@@ -12,7 +12,7 @@ import { watchForSlow, SLOW_MESSAGE } from '../shared/slow.js';
 const CATS = [
   { key: 'book', label: '책' },
   { key: 'anime', label: '애니' },
-  { key: 'movie', label: '영화' },
+  { key: 'movie', label: '영화·시리즈' },
   { key: 'music', label: '음악' },
 ];
 // 카드 위 띠 색 — 그 방 테마의 벽/러그 색(js/lobby/scene.js의 THEMES와 맞춤).

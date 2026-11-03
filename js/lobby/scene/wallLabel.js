@@ -1,6 +1,6 @@
 import { canvasToTexture } from './canvasTexture.js';
 
-// 가구 위 벽에 칠한 큰 글씨(BOOK / MOVIE / ANIMATION) — 처음 온 사람도
+// 가구 위 벽에 칠한 큰 글씨(BOOK / MOVIE & SERIES / ANIMATION) — 처음 온 사람도
 // 각 벽이 무슨 기록인지 한눈에 알 수 있게 함. 멀리서(첫 화면) 비스듬히
 // 봐도 읽히게 두꺼운 고딕(Manrope 800) 대문자 + 아래에 짧은 밑줄. 글자
 // 바깥은 투명. (가는 세리프는 멀리서 획이 뭉개져서 바꿈.)

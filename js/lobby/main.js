@@ -32,7 +32,7 @@ const ROOM_INFO = {
   sketchbook: { tag: 'Canvas', title: '캔버스', body: '마음 가는 대로 그려보세요.' },
   book: { tag: 'Book', title: '책', body: '읽은 책이 한 권씩 꽂혀요.' },
   anime: { tag: 'Animation', title: '애니', body: '본 애니가 아크릴 스탠드로 진열돼요.' },
-  movie: { tag: 'Movie', title: '영화', body: '본 영화가 포스터로 한 장씩 붙어요.' },
+  movie: { tag: 'Movie', title: '영화·시리즈', body: '본 영화·시리즈가 포스터로 한 장씩 붙어요.' },
   music: { tag: 'Music', title: '음악', body: '들은 노래가 LP로 꽂혀요.' },
 };
 

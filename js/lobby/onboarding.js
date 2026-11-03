@@ -11,7 +11,7 @@ import { roomContext, roomRecords } from './roomContext.js';
 const EMPTY_CARD = {
   book: { body: '아직 책이 없어요. 첫 책을 기록하면 책장에 꽂혀요.', enter: '첫 책 기록하기' },
   anime: { body: '아직 애니가 없어요. 기록하면 아크릴 스탠드로 진열돼요.', enter: '첫 애니 기록하기' },
-  movie: { body: '아직 영화가 없어요. 기록하면 포스터로 한 장씩 붙어요.', enter: '첫 영화 기록하기' },
+  movie: { body: '아직 영화·시리즈가 없어요. 기록하면 포스터로 한 장씩 붙어요.', enter: '첫 영화·시리즈 기록하기' },
   music: { body: '아직 음악이 없어요. 기록하면 LP로 꽂히고 턴테이블에서 돌아가요.', enter: '첫 음악 기록하기' },
 };
 

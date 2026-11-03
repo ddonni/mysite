@@ -30,7 +30,7 @@ const touch = () => typeof matchMedia === 'function' && matchMedia('(pointer: co
 
 const START_CATS = [
   { key: 'book', label: '책' },
-  { key: 'movie', label: '영화' },
+  { key: 'movie', label: '영화·시리즈' },
   { key: 'anime', label: '애니' },
   { key: 'music', label: '음악' },
 ];
@@ -47,7 +47,7 @@ const FURNITURE = `
       <span><i style="background:var(--ember)"></i>이젤 → 캔버스</span>
       <span><i style="background:var(--gold)"></i>책장 → 책</span>
       <span><i style="background:var(--rose)"></i>진열장 → 애니</span>
-      <span><i style="background:var(--crimson)"></i>포스터 벽 → 영화</span>
+      <span><i style="background:var(--crimson)"></i>포스터 벽 → 영화·시리즈</span>
       <span><i style="background:var(--teal)"></i>턴테이블 → 음악</span>
     </span>
     오른쪽 아래 버튼으로도 바로 갈 수 있어요.
