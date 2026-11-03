@@ -1,0 +1,42 @@
+/* 운영자 피드백 페이지(admin.html) — 바탕·글꼴·색 토큰·.wrap/.top/.empty/.add-btn은
+   기록 보관소(css/library.css)를 그대로 쓰고, 여기선 의견 카드만 정함. */
+
+/* 위 메뉴가 없는 페이지라 메뉴 높이만큼 비울 필요 없음. */
+.wrap{ max-width:760px; padding-top:40px; }
+a.add-btn{ text-decoration:none; }
+
+.admin-signin{ display:flex; justify-content:center; padding:40px 0; }
+.admin-signin[hidden]{ display:none; }
+
+.admin-tools{ display:flex; gap:8px; margin-bottom:18px; }
+.admin-tools[hidden]{ display:none; }
+.admin-tools input{
+  flex:1; min-width:0; font:inherit; font-size:14px; color:var(--paper);
+  background:rgba(243,236,224,0.05); border:1px solid var(--line-strong); border-radius:10px; padding:10px 12px;
+}
+.admin-tools input:focus{ outline:none; border-color:var(--gold); }
+
+.fb-list{ display:flex; flex-direction:column; gap:12px; }
+
+.fb-card{
+  background:var(--void-2); border:1px solid var(--line); border-radius:14px; padding:16px 18px;
+}
+.fb-card.is-new{ border-color:rgba(217,121,58,0.6); }
+.fb-head{ display:flex; align-items:center; gap:8px; font-size:13px; }
+.fb-name{ font-weight:700; }
+.fb-new{
+  font-size:10.5px; font-weight:700; border-radius:999px; padding:2px 8px; color:var(--void); background:var(--ember);
+}
+.fb-head time{ margin-left:auto; color:var(--paper-dim); font-variant-numeric:tabular-nums; }
+.fb-message{ margin:8px 0 0; font-size:15px; white-space:pre-wrap; word-break:break-word; }
+.fb-foot{
+  display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; margin-top:10px;
+  font-size:12.5px; color:var(--paper-dim);
+}
+.fb-room{ margin-left:auto; color:var(--gold); text-decoration:none; }
+.fb-room:hover{ text-decoration:underline; }
+
+@media (max-width:560px){
+  .wrap{ padding:28px 16px 80px; }
+  .fb-card{ padding:14px; }
+}
