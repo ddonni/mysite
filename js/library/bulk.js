@@ -2,13 +2,13 @@
 // 넣는 길 두 가지. 둘 다 "확인" 단계(줄마다 체크·표지)를 거쳐 한꺼번에 저장함.
 //   - 목록 붙여넣기: 제목을 한 줄에 하나씩(bulk/parseList.js가 번호·글머리표를 뗌) →
 //     줄마다 맨 위 검색 결과를 골라 두고(bulk/match.js), 틀렸으면 다른 후보나 "제목만"으로
-//     바꾸거나 체크를 빼고 → 추가하기.
+//     바꾸거나, 그 줄만 검색어를 고쳐 다시 찾거나, 체크를 빼고 → 추가하기.
 //   - 검색해서 고르기: 제목이나 작가·감독·가수 이름 → 검색 결과(findWorks — 이름이면 그
 //     사람의 작품, 제목이면 그 작품)에서 본 것만 체크 → 추가하기. 같은 작가·감독의 작품을
 //     여러 개 봤을 가능성이 높아서. 새 기록 창의 작가·감독 칸 검색 결과에서 "여러 개
 //     고르기"로 바로 들어오기도 함(open의 name).
-// 백엔드는 따로 없음 — 새 기록 창과 같은 검색 API와 POST .../records를 줄 수만큼 부름.
-import { CATS, saveRecord, fetchScreenCreator } from './records.js';
+// 검색은 새 기록 창과 같은 API, 저장은 POST .../records/batch 한 번.
+import { CATS, saveRecords, fetchScreenCreator } from './records.js';
 import { CREATOR_FIELD } from './modal/categoryFields.js';
 import { TMDB_NOTE } from './modal/recordSearch.js';
 import { parseList, MAX_LINES } from './bulk/parseList.js';
@@ -50,8 +50,9 @@ export function createBulkImport({ getItems, onSaved }) {
 
   let cat = 'book';
   let mode = 'list'; // 'list'(목록 붙여넣기) | 'name'(검색해서 고르기)
-  // [{ line, candidates, choice(-1이면 제목만), include, status, fixed, el }] — fixed면 후보가
-  // 정해진 줄(검색해서 고르기)이라 다른 결과 고르기를 안 보여줌.
+  // [{ line, candidates, choice(-1이면 제목만), include, status, fixed, editing, el }] — fixed면
+  // 후보가 정해진 줄(검색해서 고르기)이라 다른 결과 고르기·다시 검색을 안 보여줌. editing이면
+  // 그 줄의 검색어를 고치는 중.
   let rows = [];
   // 창을 닫거나 다시 쓰기로 돌아가면 올라가는 번호 — 늦게 온 검색 결과를 버리려고.
   let run = 0;
@@ -149,9 +150,18 @@ export function createBulkImport({ getItems, onSaved }) {
 
     // 이미 기록한 줄은 찾지 않음(체크를 다시 켜면 그때 제목만으로 저장).
     const todo = rows.filter((r) => r.status === 'loading');
-    mapLimit(todo, SEARCH_CONCURRENCY, (row) => findCandidates(cat, row.line).then(
+    mapLimit(todo, SEARCH_CONCURRENCY, (row) => searchRow(row, mine))
+      .then(() => { if (mine === run) paintSummary(overflow); });
+  }
+
+  // 줄 하나를 찾아 첫 후보를 골라 둠. 그 사이 같은 줄을 다시 검색했으면(row.search가 바뀜) 버림.
+  function searchRow(row, mine) {
+    const ticket = (row.search || 0) + 1;
+    row.search = ticket;
+    const stale = () => mine !== run || row.search !== ticket;
+    return findCandidates(cat, row.line).then(
       (candidates) => {
-        if (mine !== run) return;
+        if (stale()) return;
         row.candidates = candidates;
         row.choice = candidates.length ? 0 : -1;
         row.status = candidates.length ? 'ok' : 'none';
@@ -159,12 +169,28 @@ export function createBulkImport({ getItems, onSaved }) {
         updateSaveBtn();
       },
       () => {
-        if (mine !== run) return;
+        if (stale()) return;
         row.status = 'failed';
         paintRow(row);
         updateSaveBtn();
       },
-    )).then(() => { if (mine === run) paintSummary(overflow); });
+    );
+  }
+
+  // 그 줄만 검색어를 고쳐 다시 찾기 — 오타·줄임말이라 엉뚱한 결과가 나왔을 때. 입력은 목록
+  // 붙여넣기와 같은 모양("제목 / 작가"도 됨). 다시 찾으면 체크도 켬(고치려는 줄이니).
+  function research(row, text) {
+    const [line] = parseList(text).items;
+    row.editing = false;
+    if (!line) { paintRow(row); return; }
+    row.line = line;
+    row.candidates = [];
+    row.choice = -1;
+    row.include = true;
+    row.status = 'loading';
+    paintRow(row);
+    updateSaveBtn();
+    searchRow(row, run);
   }
 
   function paintSummary(overflow) {
@@ -288,6 +314,31 @@ export function createBulkImport({ getItems, onSaved }) {
     }
     text.append(title, meta);
 
+    if (row.editing) {
+      const edit = document.createElement('input');
+      edit.type = 'text';
+      edit.className = 'bulk-research';
+      edit.value = row.line.creator ? `${row.line.title} / ${row.line.creator}` : row.line.title;
+      edit.setAttribute('aria-label', '다시 찾을 검색어');
+      edit.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); research(row, edit.value); }
+        if (e.key === 'Escape') { e.stopPropagation(); row.editing = false; paintRow(row); }
+      });
+      const go = document.createElement('button');
+      go.type = 'button';
+      go.className = 'bulk-research-go';
+      go.textContent = '찾기';
+      go.addEventListener('click', () => research(row, edit.value));
+      const box = document.createElement('div');
+      box.className = 'bulk-research-box';
+      box.append(edit, go);
+      text.replaceChildren(box);
+      el.onclick = null;
+      el.append(check, cover, text);
+      setTimeout(() => { edit.focus(); edit.select(); }, 0);
+      return;
+    }
+
     if (row.candidates.length && !row.fixed) {
       const select = document.createElement('select');
       select.setAttribute('aria-label', `${row.line.title} 검색 결과 고르기`);
@@ -300,9 +351,18 @@ export function createBulkImport({ getItems, onSaved }) {
       text.appendChild(select);
     }
 
-    // 줄 아무 데나 눌러도 체크가 바뀌게(검색해서 고르기는 체크할 게 많아서) — 고르기 칸은 빼고.
+    if (!row.fixed && row.status !== 'loading' && !saving) {
+      const again = document.createElement('button');
+      again.type = 'button';
+      again.className = 'bulk-again';
+      again.textContent = '검색어 고쳐서 다시 찾기';
+      again.addEventListener('click', () => { row.editing = true; paintRow(row); });
+      text.appendChild(again);
+    }
+
+    // 줄 아무 데나 눌러도 체크가 바뀌게(검색해서 고르기는 체크할 게 많아서) — 고르기 칸·버튼은 빼고.
     el.onclick = (e) => {
-      if (check.disabled || e.target === check || e.target.closest('select')) return;
+      if (check.disabled || e.target === check || e.target.closest('select, button')) return;
       check.checked = !check.checked;
       check.dispatchEvent(new Event('change'));
     };
@@ -323,44 +383,37 @@ export function createBulkImport({ getItems, onSaved }) {
   }
 
   // ---- 3. 저장 ----
-  // 목록은 같은 날짜면 나중에 저장한 게 위라서, 아래 줄부터 저장해 쓴 순서대로 보이게 함.
-  // 하나가 실패해도 나머지는 계속하고, 실패한 줄만 남겨 다시 누를 수 있게 함.
+  // 영화·애니는 검색 결과에 감독이 없어서 고른 것만 먼저 동시에 물어보고(못 찾으면 비워 둠),
+  // 전부를 요청 한 번에 저장(쓴 순서대로 보이게 — 서버가 맞춰 줌). 실패하면 하나도 안
+  // 들어간 것이라 줄을 그대로 두고 다시 누르게 함.
   async function save() {
     if (saving) return;
-    const todo = chosen().reverse();
+    const todo = chosen();
     if (!todo.length) return;
     saving = true;
     saveBtn.disabled = true;
-    rows.forEach(paintRow);
-    const failed = new Set();
-    for (let i = 0; i < todo.length; i++) {
-      saveBtn.textContent = `저장 중 ${i + 1}/${todo.length}`;
-      const row = todo[i];
-      const picked = row.choice >= 0 ? row.candidates[row.choice] : null;
-      try {
-        if (picked && picked.screen && !picked.creator) {
-          // 영화·애니는 검색 결과에 감독이 없어서 고른 것만 물어봄 — 못 찾으면 비워 둠.
-          picked.creator = await fetchScreenCreator(picked.screen.media, picked.screen.id).catch(() => '');
-        }
-        await saveRecord(toRecord(cat, row.line, picked));
-      } catch (err) {
-        console.error(err);
-        failed.add(row);
-      }
+    rows.forEach((r) => { r.editing = false; paintRow(r); });
+    const picks = todo.map((row) => (row.choice >= 0 ? row.candidates[row.choice] : null));
+    const needCreator = picks.filter((p) => p && p.screen && !p.creator);
+    if (needCreator.length) {
+      saveBtn.textContent = '감독 찾는 중…';
+      await mapLimit(needCreator, SEARCH_CONCURRENCY + 1, (p) => fetchScreenCreator(p.screen.media, p.screen.id)
+        .then((creator) => { p.creator = creator; }, () => {}));
     }
-    saving = false;
+    saveBtn.textContent = `${todo.length}개 저장 중…`;
     const savedCat = cat;
-    if (!failed.size) {
-      close();
-      onSaved(savedCat);
+    try {
+      await saveRecords(todo.map((row, i) => toRecord(savedCat, row.line, picks[i])));
+    } catch (err) {
+      console.error(err);
+      saving = false;
+      rows.forEach(paintRow);
+      summaryEl.textContent = '저장하지 못했어요. 잠시 후 다시 눌러 주세요.';
+      updateSaveBtn();
       return;
     }
-    // 저장된 줄은 빼고, 실패한 줄과 체크를 뺐던 줄만 남김.
-    rows = rows.filter((r) => failed.has(r) || !todo.includes(r));
-    rowsEl.innerHTML = '';
-    rows.forEach((row) => { rowsEl.appendChild(row.el); paintRow(row); });
-    summaryEl.textContent = `${todo.length - failed.size}개는 추가했고, ${failed.size}개는 저장하지 못했어요. 잠시 후 다시 눌러 주세요.`;
-    updateSaveBtn();
+    saving = false;
+    close();
     onSaved(savedCat);
   }
 

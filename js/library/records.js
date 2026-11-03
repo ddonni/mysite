@@ -160,6 +160,18 @@ export function setPlaying(id, playing) {
 // 새 기록을 만들거나(editingId가 없을 때), 기존 기록을 덮어씀
 // (editingId가 있을 때). record는 { cat, title, creator, rating, memo,
 // photo_url } 모양의 평범한 객체.
+// 여러 개를 요청 한 번에(POST .../records/batch) — 목록에 보일 순서대로(첫 번째가 맨 위).
+// 서버가 한 트랜잭션으로 넣어서 실패하면 하나도 안 들어감.
+export function saveRecords(records) {
+  return fetch(`${API_BASE}/api/rooms/${roomCode}/records/batch`, {
+    method: 'POST',
+    headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+    body: JSON.stringify({ records }),
+  }).then((res) => {
+    if (!res.ok) throw new Error('save failed');
+  });
+}
+
 export function saveRecord(record, editingId) {
   const base = API_BASE + '/api/rooms/' + roomCode + '/records';
   const url = editingId ? `${base}/${editingId}` : base;
