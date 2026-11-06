@@ -10,7 +10,8 @@
 // 수정은 입력 칸만.
 //
 // 실제 서버 저장은 records.js의 uploadPhoto/saveRecord/deleteRecord를 불러 씀.
-import { CATS, uploadPhoto, saveRecord, deleteRecord, fetchScreenCreator } from './records.js';
+import { CATS, uploadPhoto, saveRecord, deleteRecord, fetchScreenCreator, fetchMusicListen } from './records.js';
+import { normalizeYouTube, getPlayer } from '../shared/youtube.js';
 import { CREATOR_FIELD, TITLE_PLACEHOLDER } from './modal/categoryFields.js';
 import { createStarPicker } from './modal/starPicker.js';
 import { createPhotoPicker } from './modal/photoPicker.js';
@@ -34,6 +35,12 @@ export function createModal({ onSaved, getItems = () => [] }) {
   const cancelBtn = document.getElementById('cancelBtn');
   const titleError = document.getElementById('titleError');
   const modalTitle = document.getElementById('modalTitle');
+  // 음악만 보이는 유튜브 링크 칸.
+  const listenField = document.getElementById('listenField');
+  const fListen = document.getElementById('fListen');
+  const listenTry = document.getElementById('listenTry');
+  const listenHint = document.getElementById('listenHint');
+  const listenError = document.getElementById('listenError');
 
   const starPicker = createStarPicker(document.getElementById('starPicker'));
   const photoPicker = createPhotoPicker({
@@ -48,7 +55,8 @@ export function createModal({ onSaved, getItems = () => [] }) {
   let editingId = null;
   // 입력 칸을 검색 화면에서 열었는지 — 그러면 취소·저장 뒤 검색 화면으로 돌아감.
   let fromSearch = false;
-  // 고른 영화·애니의 감독을 따로 물어보는 요청 번호 — 그새 다른 걸 고르면 늦은 답은 버림.
+  // 고른 영화·애니의 감독(음악은 유튜브 주소)을 따로 물어보는 요청 번호 — 그새 다른 걸
+  // 고르면 늦은 답은 버림.
   let creatorLookup = 0;
   const search = createRecordSearch({
     fTitle,
@@ -57,6 +65,7 @@ export function createModal({ onSaved, getItems = () => [] }) {
     creatorList: document.getElementById('creatorList'),
     photoPicker,
     getCat: () => currentCat,
+    onPicked: (pick) => fillListen(pick),
   });
   const searchView = createSearchView({
     getCat: () => currentCat,
@@ -77,6 +86,28 @@ export function createModal({ onSaved, getItems = () => [] }) {
     const field = CREATOR_FIELD[currentCat] || CREATOR_FIELD.book;
     creatorLabel.textContent = field.label;
     fTitle.placeholder = TITLE_PLACEHOLDER[currentCat] || TITLE_PLACEHOLDER.book;
+    listenField.hidden = currentCat !== 'music';
+  }
+
+  // ---- 유튜브 링크 칸 ----
+  function updateListenTry() {
+    listenTry.disabled = !normalizeYouTube(fListen.value);
+  }
+  fListen.addEventListener('input', () => {
+    listenLookup++; // 직접 고쳤으면 찾던 링크는 버림
+    listenError.style.display = 'none';
+    listenHint.textContent = '';
+    updateListenTry();
+  });
+  listenTry.addEventListener('click', () => {
+    const url = normalizeYouTube(fListen.value);
+    if (url) getPlayer().play({ title: fTitle.value.trim(), creator: fCreator.value.trim(), listen_url: url });
+  });
+  function setListen(url, hint = '') {
+    fListen.value = url || '';
+    listenHint.textContent = hint;
+    listenError.style.display = 'none';
+    updateListenTry();
   }
 
   function selectCatTab(cat) {
@@ -120,6 +151,8 @@ export function createModal({ onSaved, getItems = () => [] }) {
     fTitle.value = '';
     fCreator.value = '';
     fMemo.value = '';
+    setListen('');
+    listenLookup++;
     search.reset();
     photoPicker.reset();
     starPicker.setValue(0);
@@ -153,6 +186,26 @@ export function createModal({ onSaved, getItems = () => [] }) {
         if (lookup === creatorLookup && name && !fCreator.value.trim()) fCreator.value = name;
       });
     }
+    fillListen(candidate);
+  }
+
+  // 음악 검색 결과를 골랐을 때(검색 화면·제목 칸 둘 다) 유튜브 링크 칸 — 노래 목록에서
+  // 고르면 주소가 이미 있고, 앨범 줄이면 그 앨범에서 이 노래(제목 칸 값)를 찾아 봄.
+  // 다른 결과를 고르면 앞의 링크는 바뀜. 늦게 온 답은 그사이 칸을 고쳤으면 버림.
+  let listenLookup = 0;
+  function fillListen(c) {
+    if (currentCat !== 'music') return;
+    const lookup = ++listenLookup;
+    const found = '검색 결과에서 찾은 링크예요. 다른 영상이면 바꿔 넣어 주세요.';
+    if (c.listen) { setListen(c.listen, found); return; }
+    setListen('');
+    if (!c.albumId) return;
+    listenHint.textContent = '틀 수 있는 링크를 찾는 중…';
+    fetchMusicListen(c.albumId, fTitle.value.trim() || c.title).then((url) => {
+      if (lookup !== listenLookup || fListen.value.trim()) return;
+      if (url) setListen(url, found);
+      else listenHint.textContent = '링크를 못 찾았어요. 유튜브에서 복사해 넣을 수 있어요.';
+    });
   }
 
   function backToSearch() {
@@ -190,6 +243,16 @@ export function createModal({ onSaved, getItems = () => [] }) {
     }
     titleError.style.display = 'none';
 
+    // 음악의 유튜브 링크 — 비었으면 없음, 쓴 게 유튜브 주소가 아니면 저장하지 않고 알려 줌.
+    const listenRaw = currentCat === 'music' ? fListen.value.trim() : '';
+    const listen_url = listenRaw ? normalizeYouTube(listenRaw) : null;
+    if (listenRaw && !listen_url) {
+      saveBtn.disabled = false;
+      listenError.style.display = 'block';
+      fListen.focus();
+      return;
+    }
+
     saveBtn.textContent = '저장 중…';
     try {
       let photo_url = photoPicker.getUrl();
@@ -203,6 +266,7 @@ export function createModal({ onSaved, getItems = () => [] }) {
         rating: starPicker.getValue(),
         memo: fMemo.value.trim(),
         photo_url,
+        listen_url,
       }, editingId);
 
       onSaved(); // main.js가 목록을 다시 불러와 화면에 반영함
@@ -248,6 +312,7 @@ export function createModal({ onSaved, getItems = () => [] }) {
       fTitle.value = item.title || '';
       fCreator.value = item.creator || '';
       fMemo.value = item.memo || '';
+      setListen(item.listen_url || '');
       search.reset();
       photoPicker.setExisting(item.photo_url || null);
       starPicker.setValue(item.rating || 0);

@@ -14,6 +14,12 @@ const searchScreen = vi.fn();
 const fetchScreenCreator = vi.fn();
 const saveRecord = vi.fn();
 const deleteRecord = vi.fn();
+const fetchMusicListen = vi.fn();
+const play = vi.fn();
+vi.mock('../../js/shared/youtube.js', async (orig) => ({
+  ...(await orig()),
+  getPlayer: () => ({ play }),
+}));
 vi.mock('../../js/library/records.js', () => ({
   CATS: [
     { key: 'book', label: '책' }, { key: 'anime', label: '애니' },
@@ -27,6 +33,7 @@ vi.mock('../../js/library/records.js', () => ({
   searchMusic: (...a) => searchMusic(...a),
   searchScreen: (...a) => searchScreen(...a),
   fetchScreenCreator: (...a) => fetchScreenCreator(...a),
+  fetchMusicListen: (...a) => fetchMusicListen(...a),
 }));
 
 const { createModal } = await import('../../js/library/modal.js');
@@ -46,6 +53,8 @@ function mountDom() {
       <div id="photoDrop"><span id="photoDropText"></span><input type="file" id="fPhoto"></div>
       <img id="photoPreview"><span id="removePhoto"></span>
       <textarea id="fMemo"></textarea>
+      <div id="listenField" hidden><input id="fListen"><button id="listenTry"></button>
+        <div id="listenHint"></div><div id="listenError" style="display:none"></div></div>
       <button id="cancelBtn"></button><button id="saveBtn"></button>
     </div>`;
 }
@@ -67,6 +76,8 @@ beforeEach(() => {
   searchBooks.mockReset();
   searchScreen.mockReset();
   fetchScreenCreator.mockReset();
+  fetchMusicListen.mockReset().mockResolvedValue(null);
+  play.mockReset();
   mountDom();
   onSaved = vi.fn();
   modal = createModal({ onSaved });
@@ -76,75 +87,47 @@ beforeEach(() => {
 });
 
 describe('음악 탭 제목 검색', () => {
-  it('직접 쓴 가수는 "가수 제목"으로 검색', async () => {
+  const LINK = 'https://www.youtube.com/playlist?list=OLAK5uy_x&index=2';
+  const SONG = { album: 'TEAM BABY', song: '나랑 아니면', creator: '검정치마', kind: '노래', year: '2017', cover: 'https://yt3.googleusercontent.com/tb', listen: LINK, album_id: 'A1' };
+
+  it('검색 화면과 같은 검색 — 가수 칸에 쓴 값은 안 붙임', async () => {
     searchMusic.mockResolvedValue([ALBUM]);
     $('fCreator').value = '잔나비';
     typeTitle('주저하는 연인들을 위해');
     await settle();
-    expect(searchMusic).toHaveBeenCalledWith('잔나비 주저하는 연인들을 위해', expect.anything());
-    expect($('titleList').querySelector('.ac-title').textContent).toBe('LEGEND(전설)');
+    expect(searchMusic.mock.calls.map((c) => [c[0], c[2]])).toEqual([
+      ['주저하는 연인들을 위해', 'songs'], ['주저하는 연인들을 위해', undefined],
+    ]);
+    const item = $('titleList').querySelector('.ac-item.rich');
+    expect(item.querySelector('.ac-title').textContent).toBe('주저하는 연인들을 위해');
+    expect(item.querySelector('.ac-meta').textContent).toBe('JANNABI · 앨범 LEGEND(전설)');
   });
 
-  it('가수를 붙여서 0건이면 제목만으로 다시 찾고 맨 위에 알려줌', async () => {
-    searchMusic.mockImplementation((q) => Promise.resolve(q.startsWith('엉뚱 ') ? [] : [ALBUM]));
-    $('fCreator').value = '엉뚱';
-    typeTitle('주저하는 연인들을 위해');
+  it('가수 이름을 치면 그 가수의 노래 — 고르면 제목·가수·커버·유튜브 링크', async () => {
+    searchMusic.mockImplementation((q, signal, by) => Promise.resolve(by === 'songs' ? [SONG] : [{ ...ALBUM, creator: '검정치마' }]));
+    typeTitle('검정치마');
     await settle();
-    expect(searchMusic.mock.calls.map((c) => c[0])).toEqual(['엉뚱 주저하는 연인들을 위해', '주저하는 연인들을 위해']);
-    expect($('titleList').querySelector('.ac-head').textContent).toBe(
-      "'엉뚱'까지 넣으면 결과가 없어 제목만으로 찾았어요\n노래는 그 노래가 실린 앨범으로 나와요 — 앨범을 고르면 돼요",
-    );
-  });
-
-  it('앞서 고른 결과로 자동으로 채워진 가수는 다음 검색에 안 씀', async () => {
-    searchMusic.mockResolvedValue([ALBUM]);
-    typeTitle('주저하는 연인들을 위해');
-    await settle();
+    expect($('titleList').querySelector('.ac-foot').textContent).toBe('고르면 가수·앨범 커버·유튜브 링크를 채워요');
     $('titleList').querySelector('.ac-item.rich').click();
-    expect($('fCreator').value).toBe('JANNABI');
-    expect($('fTitle').value).toBe('주저하는 연인들을 위해'); // 제목은 입력한 그대로
-
-    typeTitle('밤양갱');
-    await settle();
-    expect(searchMusic).toHaveBeenLastCalledWith('밤양갱', expect.anything(), 'title');
+    expect($('fTitle').value).toBe('나랑 아니면');
+    expect($('fCreator').value).toBe('검정치마');
+    expect($('photoPreview').getAttribute('src')).toBe(SONG.cover);
+    expect($('fListen').value).toBe(LINK);
   });
 
-  it('자동으로 채워진 가수도 한 번 손대면 직접 쓴 것 — 같은 글자로 되돌려도', async () => {
-    searchMusic.mockResolvedValue([ALBUM]);
+  it('앨범 줄을 고르면 그 앨범에서 노래 링크를 물어봄', async () => {
+    searchMusic.mockImplementation((q, signal, by) => Promise.resolve(by === 'songs' ? [] : [{ ...ALBUM, album_id: 'MPREb_j' }]));
+    fetchMusicListen.mockResolvedValue(LINK);
     typeTitle('주저하는 연인들을 위해');
     await settle();
     $('titleList').querySelector('.ac-item.rich').click();
-    expect($('fCreator').value).toBe('JANNABI');
-
-    // 한 글자 지웠다가 다시 써서 원래 값으로 되돌림
-    $('fCreator').value = 'JANNAB';
-    $('fCreator').dispatchEvent(new Event('input'));
-    $('fCreator').value = 'JANNABI';
-    $('fCreator').dispatchEvent(new Event('input'));
-
-    typeTitle('뜨거운 여름밤은 가고 남은 건 볼품없지만');
     await settle();
-    expect(searchMusic).toHaveBeenLastCalledWith('JANNABI 뜨거운 여름밤은 가고 남은 건 볼품없지만', expect.anything());
-
-    // 결과를 다시 고르는 건 새 선택이라, 손댄 가수도 그 결과의 가수로 바뀜
-    searchMusic.mockResolvedValue([{ ...ALBUM, creator: '다른 가수' }]);
-    typeTitle('밤양갱');
-    await settle();
-    $('titleList').querySelector('.ac-item.rich').click();
-    expect($('fCreator').value).toBe('다른 가수');
+    expect(fetchMusicListen).toHaveBeenCalledWith('MPREb_j', '주저하는 연인들을 위해');
+    expect($('fListen').value).toBe(LINK);
   });
 
-  it('노래는 실린 앨범으로 나온다고 목록 위·아래와 제목 칸에서 알려줌', async () => {
-    expect($('fTitle').placeholder).toBe('노래 제목 — 검색하면 실린 앨범이 나와요');
-    searchMusic.mockResolvedValue([{ ...ALBUM, album: '원래', creator: '래원' }]);
-    typeTitle('뉴질랜드');
-    await settle();
-    expect($('titleList').querySelector('.ac-head').textContent).toBe('노래는 그 노래가 실린 앨범으로 나와요 — 앨범을 고르면 돼요');
-    expect($('titleList').querySelector('.ac-foot').textContent).toContain('제목은 쓴 그대로 남아요');
-    $('titleList').querySelector('.ac-item.rich').click();
-    expect($('fTitle').value).toBe('뉴질랜드');
-
-
+  it('제목 칸 안내 글씨', () => {
+    expect($('fTitle').placeholder).toBe('노래 제목 — 가수 이름으로도 찾아요');
     modal.openAdd('book'); // 다른 탭은 원래 안내 글씨
     $('manualBtn').click();
     expect($('fTitle').placeholder).toBe('제목을 입력해 보세요');
@@ -154,7 +137,7 @@ describe('음악 탭 제목 검색', () => {
     searchMusic.mockResolvedValue([]);
     typeTitle('없는노래');
     await settle();
-    expect($('titleList').querySelector('.ac-message').textContent).toBe("'없는노래' 검색 결과가 없어요. 가수를 함께 써 보세요.");
+    expect($('titleList').querySelector('.ac-message').textContent).toBe("'없는노래' 검색 결과가 없어요.");
   });
 
   it('검색이 실패하면 결과 없음과 다르게 알려줌', async () => {
@@ -260,15 +243,16 @@ describe('만든 사람 칸 검색', () => {
     expect(searchBooks).toHaveBeenLastCalledWith('소년이 온다 한강', expect.anything());
   });
 
-  it('책: 제목 칸 검색도 작가 칸에 직접 쓴 작가가 있으면 합쳐 찾음', async () => {
+  it('책: 제목 칸은 검색 화면과 같은 검색 — 작가 칸 값은 안 붙이고 제목·작가 이름 둘 다로', async () => {
     modal.openAdd('book');
     $('manualBtn').click();
     searchBooks.mockResolvedValue([HAN]);
     typeCreator('한강');
     await settle();
+    searchBooks.mockClear();
     typeTitle('소년이 온다');
     await settle();
-    expect(searchBooks).toHaveBeenLastCalledWith('소년이 온다 한강', expect.anything());
+    expect(searchBooks.mock.calls.map((c) => [c[0], c[2]])).toEqual([['소년이 온다', 'author'], ['소년이 온다', undefined]]);
   });
 
   it('책: 합쳐서 0건이면 작가 이름만으로 다시 찾고 맨 위에 알림', async () => {
@@ -294,15 +278,6 @@ describe('만든 사람 칸 검색', () => {
     expect($('photoPreview').getAttribute('src')).toBe(ALBUM.cover);
   });
 
-  it('음악: 가수 칸에서 고른 이름은 직접 쓴 가수로 — 다음 제목 검색에 들어감', async () => {
-    searchMusic.mockResolvedValue([{ ...ALBUM, creator: '검정치마' }]);
-    typeCreator('검정');
-    await settle();
-    $('creatorList').querySelector('.ac-item.rich').click();
-    typeTitle('Everything');
-    await settle();
-    expect(searchMusic).toHaveBeenLastCalledWith('검정치마 Everything', expect.anything());
-  });
 });
 
 describe('영화·애니 탭', () => {
@@ -314,7 +289,7 @@ describe('영화·애니 탭', () => {
     searchScreen.mockResolvedValue([SHINSEKAI]);
     typeTitle('신세계');
     await settle();
-    expect(searchScreen).toHaveBeenCalledWith('신세계', 'anime', expect.anything());
+    expect(searchScreen).toHaveBeenCalledWith('신세계', 'anime');
     const item = $('titleList').querySelector('.ac-item.rich');
     expect(item.querySelector('.ac-meta').textContent).toBe('新世界より · 2012 · TV');
     expect($('titleList').querySelector('.ac-foot').textContent).toContain('정보 제공: TMDB');
@@ -400,32 +375,18 @@ describe('영화·애니 탭', () => {
     expect(fetchScreenCreator).not.toHaveBeenCalled();
   });
 
-  it('두 칸 다 차 있으면 감독의 연출작 중 제목이 맞는 것만', async () => {
+  it('제목 칸은 감독 칸 값을 안 붙이고, 감독으로 찾은 작품은 감독을 따로 안 물음', async () => {
     modal.openAdd('movie');
     $('manualBtn').click();
-    searchScreen.mockResolvedValue([PARASITE, OKJA]);
-    $('fCreator').value = '봉준호';
-    $('fCreator').dispatchEvent(new Event('input'));
+    searchScreen.mockImplementation((q, kind, signal, by) => Promise.resolve(by === 'director' ? [] : [{ ...PARASITE, creator: '' }]));
+    fetchScreenCreator.mockResolvedValue('봉준호');
+    $('fCreator').value = '틀린 감독';
     typeTitle('기생');
     await settle();
-    expect(searchScreen).toHaveBeenLastCalledWith('봉준호', 'movie', expect.anything(), 'director');
-    const titles = [...$('titleList').querySelectorAll('.ac-title')].map((e) => e.textContent);
-    expect(titles).toEqual(['기생충']);
+    expect(searchScreen.mock.calls.map((c) => [c[0], c[3]])).toEqual([['기생', 'director'], ['기생', undefined]]);
     $('titleList').querySelector('.ac-item.rich').click();
     await settle();
-    expect(fetchScreenCreator).not.toHaveBeenCalled(); // 감독은 이미 앎
-  });
-
-  it('감독 연출작에 맞는 제목이 없으면 제목만으로 다시 찾고 알림', async () => {
-    modal.openAdd('movie');
-    $('manualBtn').click();
-    searchScreen.mockImplementation((q, kind, signal, by) => Promise.resolve(by === 'director' ? [PARASITE] : [{ ...OKJA, creator: '', title: '인터스텔라' }]));
-    $('fCreator').value = '봉준호';
-    $('fCreator').dispatchEvent(new Event('input'));
-    typeTitle('인터스텔라');
-    await settle();
-    expect($('titleList').querySelector('.ac-head').textContent).toBe("'봉준호'까지 넣으면 결과가 없어 제목만으로 찾았어요");
-    expect($('titleList').querySelector('.ac-title').textContent).toBe('인터스텔라');
+    expect($('fCreator').value).toBe('봉준호');
   });
 });
 
@@ -463,7 +424,7 @@ describe('카테고리 탭 바꾸기', () => {
     expect($('fCreator').value).toBe('');
     expect($('photoPreview').style.display).toBe('none');
     await settle();
-    expect(searchScreen).toHaveBeenCalledWith('괴물', 'movie', expect.anything());
+    expect(searchScreen).toHaveBeenCalledWith('괴물', 'movie');
   });
 
   it('채운 뒤 직접 고친 작가는 남김', async () => {
@@ -580,6 +541,69 @@ describe('검색 화면(새 기록)', () => {
     $('cancelBtn').click();
     expect($('searchView').hidden).toBe(false);
     expect($('overlay').classList.contains('open')).toBe(true);
+  });
+
+  it('음악 노래 목록에서 고르면 유튜브 링크가 채워지고 같이 저장됨', async () => {
+    const LINK = 'https://www.youtube.com/playlist?list=OLAK5uy_x&index=2';
+    modal.openAdd('music');
+    expect($('listenField').hidden).toBe(false);
+    searchMusic.mockImplementation((q, signal, by) => Promise.resolve(by === 'songs'
+      ? [{ album: 'TEAM BABY', song: '나랑 아니면', creator: '검정치마', kind: '노래', year: '', cover: null, listen: LINK, album_id: 'A1' }]
+      : [{ album: 'TEAM BABY', song: null, creator: '검정치마', kind: '앨범', year: '', cover: null, album_id: 'A1' }]));
+    searchFor('검정치마');
+    await settle();
+    $('sResults').querySelector('.si-main').click();
+    expect($('fListen').value).toBe(LINK);
+    $('listenTry').click();
+    expect(play).toHaveBeenCalledWith(expect.objectContaining({ title: '나랑 아니면', listen_url: LINK }));
+    $('saveBtn').click();
+    await settle();
+    expect(saveRecord).toHaveBeenCalledWith(expect.objectContaining({ cat: 'music', title: '나랑 아니면', listen_url: LINK }), null);
+  });
+
+  it('음악 앨범 줄을 고르면 그 앨범에서 노래 링크를 물어봄', async () => {
+    modal.openAdd('music');
+    searchMusic.mockImplementation((q, signal, by) => Promise.resolve(by === 'songs'
+      ? []
+      : [{ album: '넋두리', song: null, creator: '닐로', kind: '싱글', year: '', cover: null, album_id: 'MPREb_n' }]));
+    fetchMusicListen.mockResolvedValue('https://www.youtube.com/playlist?list=OLAK_n&index=1');
+    searchFor('넋두리');
+    await settle();
+    $('sResults').querySelector('.si-main').click();
+    await settle();
+    expect(fetchMusicListen).toHaveBeenCalledWith('MPREb_n', '넋두리');
+    expect($('fListen').value).toBe('https://www.youtube.com/playlist?list=OLAK_n&index=1');
+  });
+
+  it('유튜브가 아닌 링크는 저장하지 않고 알려줌, https 없이 쓴 건 붙여서 저장', async () => {
+    modal.openAdd('music');
+    $('manualBtn').click();
+    $('fTitle').value = '넋두리';
+    $('fListen').value = 'https://evil.example/x';
+    $('saveBtn').click();
+    await settle();
+    expect(saveRecord).not.toHaveBeenCalled();
+    expect($('listenError').style.display).toBe('block');
+    $('fListen').value = 'youtu.be/6Evs8LO4TeA';
+    $('saveBtn').click();
+    await settle();
+    expect(saveRecord).toHaveBeenCalledWith(expect.objectContaining({ listen_url: 'https://youtu.be/6Evs8LO4TeA' }), null);
+  });
+
+  it('음악이 아니면 링크 칸이 숨고 링크는 없음으로 저장', async () => {
+    expect($('listenField').hidden).toBe(true);
+    $('manualBtn').click();
+    $('fTitle').value = '괴물';
+    $('saveBtn').click();
+    await settle();
+    expect(saveRecord).toHaveBeenCalledWith(expect.objectContaining({ cat: 'movie', listen_url: null }), null);
+  });
+
+  it('수정하면 저장된 링크가 칸에 들어 있음', () => {
+    modal.openEdit({ id: 5, cat: 'music', title: '넋두리', creator: '닐로', memo: '', rating: 0, photo_url: null,
+      listen_url: 'https://youtu.be/6Evs8LO4TeA' });
+    expect($('listenField').hidden).toBe(false);
+    expect($('fListen').value).toBe('https://youtu.be/6Evs8LO4TeA');
   });
 
   it('수정은 입력 칸만, 취소하면 창을 닫음', () => {

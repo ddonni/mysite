@@ -82,6 +82,27 @@ describe('findWorks', () => {
     expect(found).toHaveLength(1); // 가수의 노래 목록에 있던 같은 제목은 하나로
   });
 
+  it('음악 — "제목 가수"("뉴질랜드 래원")면 그 가수의 그 노래, 순서를 바꿔 써도', async () => {
+    const songs = [
+      { album: '원래', song: '인간실격', creator: '래원 (Layone)', kind: '노래', year: '', cover: 'w', listen: 'L1' },
+      { album: '원래', song: '뉴질랜드', creator: '래원 (Layone)', kind: '노래', year: '', cover: 'w', listen: 'L2' },
+    ];
+    const albums = [{ album: '원래', song: null, creator: '래원 (Layone)', kind: '앨범', year: '', cover: 'w' }];
+    for (const q of ['뉴질랜드 래원', '래원 뉴질랜드', '뉴질랜드 Layone']) {
+      records.searchMusic.mockResolvedValueOnce(songs).mockResolvedValueOnce(albums);
+      const found = await findWorks('music', q);
+      expect(found.map((c) => [c.title, c.listen])).toEqual([['뉴질랜드', 'L2']]);
+    }
+  });
+
+  it('음악 — 노래 목록에 없어도 노래 제목 줄에선 가수 낱말을 뺌', async () => {
+    records.searchMusic
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ album: '원래', song: null, creator: '래원 (Layone)', kind: '앨범', year: '', cover: 'w', album_id: 'A' }]);
+    const [c] = await findWorks('music', '뉴질랜드 래원');
+    expect(c).toMatchObject({ title: '뉴질랜드', label: '뉴질랜드', creator: '래원 (Layone)', albumId: 'A' });
+  });
+
   it('한쪽이 실패해도 나머지로, 둘 다 실패하면 reject', async () => {
     records.searchBooks.mockRejectedValueOnce(new Error('503')).mockResolvedValueOnce([book('데미안', '헤르만 헤세')]);
     expect((await findWorks('book', '데미안')).map((c) => c.title)).toEqual(['데미안']);

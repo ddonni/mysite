@@ -2,6 +2,10 @@
 // 창 배선(탭·열기/닫기·저장)만 하도록 여기로 뺌. 두 칸의 자동 완성 위젯을 만들고, 검색
 // 결과를 골랐을 때 다른 칸·표지를 채우는 것(fillFromPick)까지 담당함.
 //
+// 제목 칸의 검색 결과는 새 기록 창 첫 화면(검색 화면)과 같은 검색(findWorks.js) — 예전엔
+// 따로 찾아서(음악은 앨범으로, 가수 칸을 붙여서) 두 곳의 결과가 달랐음(2026-11-06).
+// 그 위에 이 방·공개 방들의 기존 기록 후보를 붙임(같은 제목으로 맞추기 좋게).
+//
 // 제목 칸·만든 사람 칸 자동 완성 — 서로 독립(제목만 고른 후보로는 만든 사람을 안
 // 채움: 동명의 다른 작품이 흔하고, 만든 사람을 모르고 기록하는 경우도 많아서).
 // 예외는 검색 결과 — 특정 판본·앨범·작품 하나를 고른 것이라 나머지 칸·표지까지
@@ -23,6 +27,7 @@
 //     틀어짐).
 import { fetchSuggestions, searchBooks, searchMusic, searchScreen, fetchScreenCreator } from '../records.js';
 import { createAutocomplete } from './autocomplete.js';
+import { findWorks } from './findWorks.js';
 import { isSearchCover } from '../../shared/photoSrc.js';
 
 const isScreen = (cat) => cat === 'movie' || cat === 'anime';
@@ -65,7 +70,9 @@ export const TMDB_NOTE = '정보 제공: TMDB(TMDB의 보증을 받은 서비스
 // fTitle·fCreator: 두 입력칸, titleList·creatorList: 각 칸의 목록, photoPicker: 표지를
 // 채울 사진 위젯, getCat: 지금 카테고리. 돌려주는 reset()은 창을 새로 열 때, refresh()는
 // 카테고리 탭을 바꿀 때 modal.js가 부름.
-export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, photoPicker, getCat }) {
+// onPicked(pick): 제목 칸에서 검색 결과를 고른 뒤 — modal.js가 음악의 유튜브 링크를 채움
+// (pick.listen, 없으면 pick.albumId로 물어봄).
+export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, photoPicker, getCat, onPicked }) {
   // 검색 결과로 채워 넣은 제목·작가 — 사용자가 그 뒤 손대지 않았으면 "직접 쓴 값"이
   // 아니라서 두 칸을 합친 검색에 안 씀(typedTitle/typedArtist).
   let autoTitle = null;
@@ -115,7 +122,8 @@ export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, p
     });
   }
 
-  // field 칸에 q를 친 것 — 다른 칸에 직접 쓴 값이 있으면 합쳐서, 0건이면 q만으로.
+  // 만든 사람 칸(field='creator')에 q를 친 것 — 제목 칸에 직접 쓴 값이 있으면 합쳐서, 0건이면
+  // q만으로. (제목 칸은 findWorks — titleSuggestions.)
   // → { found: 결과 배열|null(실패), dropped: 합쳤다가 뺀 다른 칸 값 }
   function webSearch(cat, field, q, signal) {
     if (isScreen(cat)) return screenSearch(cat, field, q, signal);
@@ -140,44 +148,29 @@ export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, p
     });
   }
 
+  // 제목 칸 — 기존 기록 후보(3개까지) 뒤에 검색 화면과 같은 결과(findWorks). 같은 제목이
+  // 둘 다에 있으면 검색 결과 쪽만 남기고 "이미 기록함" 표시를 옮겨 붙임.
   function titleSuggestions(cat, q, signal) {
     const own = fetchSuggestions(cat, 'title', q, signal);
     if (!searchesWeb(cat, q)) {
       record('title', signal, { failed: false, dropped: '' });
       return own;
     }
-    return Promise.all([own.catch(() => []), webSearch(cat, 'title', q, signal)]).then(([mine, { found, dropped }]) => {
-      record('title', signal, { failed: found === null, dropped });
+    const web = findWorks(cat, q).then((list) => list, () => null);
+    return Promise.all([own.catch(() => []), web]).then(([mine, found]) => {
+      if (signal && signal.aborted) throw new DOMException('aborted', 'AbortError');
+      record('title', signal, { failed: found === null, dropped: '' });
       const results = found || [];
-      if (cat === 'book' || isScreen(cat)) {
-        const mineTitles = new Set(mine.filter((s) => s.mine).map((s) => s.value.trim()));
-        const webTitles = new Set(results.map((r) => r.title.trim()));
-        const rest = mine.filter((s) => !webTitles.has(s.value.trim()));
-        return rest.slice(0, 3).concat(results.map((r) => ({
-          value: r.title,
-          mine: mineTitles.has(r.title.trim()),
-          ...(cat === 'book'
-            ? {
-              card: { title: r.full_title, meta: bookMeta(r), cover: r.cover },
-              pick: { creator: r.creator, cover: r.cover },
-              source: 'book',
-            }
-            : {
-              card: { title: r.title, meta: screenMeta(cat, r), cover: r.cover },
-              // 감독으로 걸러 찾은 결과면 감독을 이미 앎 — 아니면 고른 뒤 따로 물어봄.
-              pick: r.creator
-                ? { creator: r.creator, cover: r.cover }
-                : { cover: r.cover, screen: { media: r.media, id: r.id } },
-              source: 'screen',
-            }),
-        })));
-      }
-      return mine.slice(0, 3).concat(results.map((m) => ({
-        // 로그인 검색이 노래까지 돌려주면 그 노래 제목, 아니면 입력한 그대로.
-        value: m.song || q,
-        card: albumCard(m),
-        pick: { creator: m.creator, cover: m.cover },
-        source: 'music',
+      const source = cat === 'book' ? 'book' : cat === 'music' ? 'music' : 'screen';
+      const mineTitles = new Set(mine.filter((s) => s.mine).map((s) => squash(s.value)));
+      const webTitles = new Set(results.map((c) => squash(c.title)));
+      const rest = mine.filter((s) => !webTitles.has(squash(s.value)));
+      return rest.slice(0, 3).concat(results.map((c) => ({
+        value: c.title,
+        mine: mineTitles.has(squash(c.title)),
+        card: { title: c.label, meta: c.meta, cover: c.cover, square: c.square },
+        pick: { creator: c.creator, cover: c.cover, screen: c.screen, listen: c.listen, albumId: c.albumId },
+        source,
       })));
     });
   }
@@ -227,10 +220,7 @@ export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, p
   function titleFooter(items) {
     if (items.some((s) => s.source === 'book')) return '책 정보 제공: Kakao';
     if (items.some((s) => s.source === 'screen')) return `고르면 감독·포스터를 채워요 · ${TMDB_NOTE}`;
-    if (items.some((s) => s.source === 'music')) {
-      const tip = typedArtist() ? '' : ' · 가수를 함께 쓰면 더 정확해요';
-      return '고르면 가수·앨범 커버를 채워요 · 제목은 쓴 그대로 남아요' + tip;
-    }
+    if (items.some((s) => s.source === 'music')) return '고르면 가수·앨범 커버·유튜브 링크를 채워요';
     return '';
   }
 
@@ -251,9 +241,6 @@ export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, p
     if (dropped && items.some((s) => s.source)) {
       lines.push(`'${dropped}'까지 넣으면 결과가 없어 ${field === 'title' ? '제목' : '이름'}만으로 찾았어요`);
     }
-    if (field === 'title' && items.some((s) => s.source === 'music')) {
-      lines.push('노래는 그 노래가 실린 앨범으로 나와요 — 앨범을 고르면 돼요');
-    }
     return lines.join('\n');
   }
 
@@ -263,8 +250,7 @@ export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, p
     const cat = getCat();
     if (!searchesWeb(cat, q)) return '';
     if (searchState[field].failed) return '지금은 검색할 수 없어요. 직접 입력해 주세요.';
-    const tip = field === 'title' && cat === 'music' && !typedArtist() ? ' 가수를 함께 써 보세요.' : '';
-    return `'${q}' 검색 결과가 없어요.${tip}`;
+    return `'${q}' 검색 결과가 없어요.`;
   }
 
   // pick: { title?, creator?, cover?, screen? } — 목록에서 고른 것 자체가 "이걸로 하겠다"는
@@ -309,7 +295,11 @@ export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, p
       getCat,
       fetchSuggestions: titleSuggestions,
       markMine: true, // 내 방에 이미 있는 제목 → "이미 기록함"
-      onPick: (s) => { if (s.pick) fillFromPick(s.pick); },
+      onPick: (s) => {
+        if (!s.pick) return;
+        fillFromPick(s.pick);
+        if (onPicked) onPicked(s.pick);
+      },
       footer: titleFooter,
       header: (items) => searchHeader('title', items),
       pendingText,
