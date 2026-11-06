@@ -6,6 +6,7 @@ import { createModal } from './modal.js';
 import { initRoomNav, setActiveCat } from '../shared/roomNav.js';
 import { featureLabel, withEunNeun, withEulReul } from './list/itemFormat.js';
 import { watchForSlow, SLOW_MESSAGE } from '../shared/slow.js';
+import { getPlayer } from '../shared/youtube.js';
 
 // 서버에서 기록을 다시 불러와 목록을 새로 그림. 추가/수정/삭제가 성공한
 // 뒤에는 항상 이 함수를 불러서 화면을 최신 상태로 맞춤. 처음 불러올 때는
@@ -56,6 +57,8 @@ initRoomNav({ navEl, currentPage: 'library' }).then(({ mine, viewingCode, readOn
     // 음악을 로비 턴테이블에 올리거나 내림 — 목록을 다시 불러오면 "턴테이블 위" 표시도 옮겨감.
     onPlay: (item, playing) => setPlaying(item.id, playing).then(reload)
       .catch(() => alert('저장에 실패했어요. 잠시 후 다시 시도해주세요.')),
+    // 유튜브 링크가 있는 음악을 화면 구석의 작은 플레이어로 틂.
+    onListen: (item) => getPlayer().play(item),
     // 이 페이지의 탭을 바꾸면 상단 메뉴의 카테고리 표시도 따라감('전체'면 아무것도 안 켬).
     onTabChange: (key) => setActiveCat(navEl, key),
   });

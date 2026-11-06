@@ -16,7 +16,8 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/library.css?v=26">
+<link rel="stylesheet" href="css/library.css?v=27">
+<link rel="stylesheet" href="css/player.css">
 <link rel="stylesheet" href="css/nav.css?v=6">
 <link rel="stylesheet" href="css/feedback.css?v=2">
 <link rel="stylesheet" href="css/inapp.css">
@@ -107,6 +108,17 @@
       <div class="field">
         <label>별점</label>
         <div class="stars" id="starPicker"></div>
+      </div>
+
+      <!-- 음악만 — 틀 유튜브 주소. 검색 결과를 고르면 찾아서 채워 둠(js/shared/youtube.js). -->
+      <div class="field listen-field" id="listenField" hidden>
+        <label for="fListen">유튜브 링크 (선택)</label>
+        <div class="listen-row">
+          <input type="text" id="fListen" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://youtu.be/…">
+          <button type="button" class="listen-try" id="listenTry">▶ 들어보기</button>
+        </div>
+        <div class="field-hint" id="listenHint"></div>
+        <div class="field-error" id="listenError" style="display:none;">유튜브 링크만 넣을 수 있어요.</div>
       </div>
 
       <div class="field">

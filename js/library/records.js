@@ -96,6 +96,13 @@ export function fetchScreenCreator(media, id) {
   }).then((data) => data.creator || '');
 }
 
+// 검색 결과의 앨범 줄에서 고른 노래를 틀 유튜브 주소 — 못 찾으면 null(실패도 null).
+export function fetchMusicListen(albumId, song) {
+  return fetch(API_BASE + '/api/search/music/listen?' + new URLSearchParams({ album_id: albumId, song }))
+    .then((res) => (res.ok ? res.json() : {}))
+    .then((data) => data.listen || null, () => null);
+}
+
 // 기록 하나를 삭제.
 export function deleteRecord(id) {
   return fetch(API_BASE + '/api/rooms/' + roomCode + '/records/' + id, {
@@ -159,7 +166,7 @@ export function setPlaying(id, playing) {
 
 // 새 기록을 만들거나(editingId가 없을 때), 기존 기록을 덮어씀
 // (editingId가 있을 때). record는 { cat, title, creator, rating, memo,
-// photo_url } 모양의 평범한 객체.
+// photo_url, listen_url } 모양의 평범한 객체(listen_url은 음악의 유튜브 주소).
 export function saveRecord(record, editingId) {
   const base = API_BASE + '/api/rooms/' + roomCode + '/records';
   const url = editingId ? `${base}/${editingId}` : base;

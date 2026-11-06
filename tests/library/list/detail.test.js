@@ -44,3 +44,23 @@ describe('턴테이블 버튼', () => {
     expect(playBtn()).toBeNull();
   });
 });
+
+describe('듣기 버튼', () => {
+  const listenBtn = () => document.querySelector('[data-act="listen"]');
+
+  it('유튜브 링크가 있는 음악엔 "▶ 듣기" — 누르면 창을 닫고 onListen(곡)', () => {
+    const onListen = vi.fn();
+    const d = createDetail(document.getElementById('d'), { onListen, readOnly: true });
+    const it_ = song({ listen_url: 'https://youtu.be/6Evs8LO4TeA' });
+    d.open(it_);
+    listenBtn().click();
+    expect(onListen).toHaveBeenCalledWith(it_);
+    expect(document.getElementById('d').hidden).toBe(true);
+  });
+
+  it('링크가 없으면 버튼 없음', () => {
+    const d = createDetail(document.getElementById('d'), { onListen: vi.fn(), readOnly: true });
+    d.open(song());
+    expect(listenBtn()).toBeNull();
+  });
+});

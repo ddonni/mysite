@@ -5,7 +5,8 @@ import { catLabel, coverHtml, featureButtonLabel, ratingStars } from './itemForm
 // 그리고(내 방일 때만) 수정하기·인생작·삭제 버튼. 버튼을 누르면 창을 닫고
 // 원래 콜백(main.js가 정함)으로 넘김 — 수정 창이 뜨거나 목록이 다시 그려지는
 // 동안 이 창이 남아 있으면 헷갈림. "정말 삭제할까요?" 확인만 창 안에서 처리함.
-export function createDetail(dialogEl, { onEdit, onDelete, onFeature, onPlay, readOnly }) {
+// onListen(it): 유튜브 링크가 있는 음악의 "▶ 듣기" — 남의 방을 구경할 때도 뜸.
+export function createDetail(dialogEl, { onEdit, onDelete, onFeature, onPlay, onListen, readOnly }) {
   if (!dialogEl) return { open() {}, close() {} };
   const inner = dialogEl.querySelector('.detail-card');
   let returnFocus = null;
@@ -45,10 +46,13 @@ export function createDetail(dialogEl, { onEdit, onDelete, onFeature, onPlay, re
         ${it.creator ? `<div class="detail-creator">${escapeHtml(it.creator)}</div>` : ''}
         ${it.rating ? `<div class="detail-rating">${ratingStars(it.rating)}<span>${it.rating.toFixed(1)}</span></div>` : ''}
         <p class="detail-memo ${it.memo ? '' : 'empty-memo'}">${it.memo ? escapeHtml(it.memo) : '남긴 감상이 없어요.'}</p>
+        ${it.cat === 'music' && it.listen_url && onListen ? '<button type="button" class="detail-listen" data-act="listen">▶ 듣기</button>' : ''}
         ${actionsHtml(it, playing)}
       </div>
     `;
     inner.querySelector('.detail-close').addEventListener('click', close);
+    const listenBtn = inner.querySelector('[data-act="listen"]');
+    if (listenBtn) listenBtn.addEventListener('click', () => { close(); onListen(it); });
     wireActions(it, { playing });
     dialogEl.hidden = false;
     inner.querySelector('.detail-close').focus();
