@@ -1,5 +1,5 @@
 import { drawDefaultAlbumArt } from '../../../shared/album.js';
-import { canvasToTexture } from '../canvasTexture.js';
+import { canvasToTexture, makeCanvasTexture } from '../canvasTexture.js';
 import { claimCanvas, drawCover, paintRecordImage } from '../coverImage.js';
 import { twoLineLabelSprite } from '../labelSprite.js';
 import { stick } from '../stick.js';
@@ -165,6 +165,42 @@ export function buildTurntable() {
   lid.position.set(0, 0.055, DECK_D / 2);
   lidPivot.add(lid);
   group.add(lidPivot);
+
+  // 재생 버튼 — 시작/정지 버튼 위에 떠 있는 동그란 ▶(트는 중엔 ■). 턴테이블 곡에 유튜브
+  // 링크가 있을 때만 보임. 누르면 방에 들어가는 대신 노래를 틀거나 끔(controls.js가
+  // userData.playButton을 보고 구분). Sprite라 어느 각도에서도 정면으로 보임.
+  const drawPlay = (playing) => (ctx, w, h) => {
+    const c = w / 2;
+    ctx.clearRect(0, 0, w, h);
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = playing ? '#f3ece0' : '#3fb8a5';
+    ctx.beginPath(); ctx.arc(c, c, c * 0.8, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = playing ? '#1a1816' : '#fffdfa';
+    if (playing) {
+      const s = c * 0.5;
+      ctx.fillRect(c - s / 2, c - s / 2, s, s);
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(c - c * 0.24, c - c * 0.36);
+      ctx.lineTo(c + c * 0.38, c);
+      ctx.lineTo(c - c * 0.24, c + c * 0.36);
+      ctx.closePath(); ctx.fill();
+    }
+  };
+  const playTex = { off: makeCanvasTexture(drawPlay(false), 128, 128), on: makeCanvasTexture(drawPlay(true), 128, 128) };
+  const playBtn = new THREE.Sprite(new THREE.SpriteMaterial({ map: playTex.off, transparent: true, depthWrite: false }));
+  playBtn.scale.set(0.26, 0.26, 1); // 방 전체가 보이는 첫 화면에서도 누르기 쉽게
+  playBtn.position.set(-0.33, top + 0.14, 0.3);
+  playBtn.userData.playButton = true;
+  playBtn.visible = false;
+  group.add(playBtn);
+  group.userData.setPlayButton = ({ visible, playing }) => {
+    playBtn.visible = !!visible;
+    playBtn.material.map = playing ? playTex.on : playTex.off;
+    playBtn.material.needsUpdate = true;
+  };
 
   let label = null; // 곡이 있을 때만 제목/가수를 띄움 — 곡이 없으면 아무 글자도 없음
 

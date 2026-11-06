@@ -7,7 +7,7 @@
 // 긴밀하게 붙어 있는 동작(같은 클릭 한 번으로 둘 다 바뀜)이라 일부러
 // 한 파일에 같이 둠 — 억지로 나누면 오히려 두 파일이 서로를 계속
 // 호출하며 복잡해지기만 함.
-export function createRoomInteraction({ canvas, camera, interactiveGroups, roomInfo, dom, onConfirm, kickBall, cameraPresets }) {
+export function createRoomInteraction({ canvas, camera, interactiveGroups, roomInfo, dom, onConfirm, kickBall, cameraPresets, onTurntablePlay }) {
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // 첫 화면(HOME)과 가구를 클릭했을 때 카메라가 다가갈 자리(FOCUS) — 가구
@@ -151,6 +151,9 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
       want.phi = Math.min(MAX_PHI, Math.max(MIN_PHI, want.phi - dy * 0.004));
     } else if (!entered) {
       checkHover(e);
+    } else {
+      // 카드가 열려 있을 땐 재생 버튼 위에서만 손가락 커서.
+      canvas.classList.toggle('hover', hitsPlayButton(e));
     }
   });
   // 손가락 하나를 떼면 핀치를 끝내고, 남은 손가락이 있으면 그걸로 회전을 이어 감.
@@ -179,7 +182,9 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
     const tapped = !pinchedSinceDown && Math.abs(e.clientX - downX) <= 4 && Math.abs(e.clientY - downY) <= 4
       && performance.now() - downT < 450;
     if (entered) {
-      // 카드가 열려있을 땐 3D 캔버스(=카드 뒤 배경) 아무 데나 탭하면 포커스가 풀림.
+      // 카드가 열려있을 땐 3D 캔버스(=카드 뒤 배경) 아무 데나 탭하면 포커스가 풀림 —
+      // 턴테이블 재생 버튼만 예외(확대해 둔 채로 틀고 끌 수 있게).
+      if (tapped && hitsPlayButton(e)) { if (onTurntablePlay) onTurntablePlay(); return; }
       if (tapped) leaveRoom();
       return;
     }
@@ -225,6 +230,10 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
     while (o) { if (o.userData && o.userData.room) return o.userData.room; o = o.parent; }
     return null;
   }
+  // 턴테이블의 재생 버튼(turntable.js) — 보이지 않을 땐 누른 걸로 치지 않음.
+  function isPlayButton(obj) {
+    return !!(obj && obj.userData && obj.userData.playButton && obj.visible);
+  }
   function isBall(obj) {
     // 공은 어느 방에도 속하지 않는 장난감이라 userData.isBall로 따로 구분함.
     let o = obj;
@@ -256,6 +265,13 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
     canvas.classList.toggle('movable', movable);
     canvas.classList.toggle('hover', hits.length > 0 && !movable);
   }
+  // 커서 아래 처음 보이는 것이 재생 버튼인지.
+  function hitsPlayButton(e) {
+    setNDC(e);
+    raycaster.setFromCamera(mouseNDC, camera);
+    const hit = raycaster.intersectObjects(interactiveGroups, true).find((h) => h.object.visible !== false);
+    return !!hit && isPlayButton(hit.object);
+  }
   function handleClick(e) {
     setNDC(e);
     raycaster.setFromCamera(mouseNDC, camera);
@@ -263,6 +279,8 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
     if (!hits.length) return;
     // 공은 누른 지점의 반대쪽으로 차냄(ball.js의 kick).
     if (isBall(hits[0].object)) { kickBall(hits[0].point, raycaster.ray.direction); return; }
+    // 턴테이블 재생 버튼은 방에 들어가지 않고 노래만 틀거나 끔.
+    if (hitsPlayButton(e)) { if (onTurntablePlay) onTurntablePlay(); return; }
     const room = roomOfObject(hits[0].object);
     if (room) enterRoom(room);
   }

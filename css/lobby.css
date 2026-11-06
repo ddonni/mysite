@@ -126,6 +126,14 @@ body{
 #card h2{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:19px;margin:4px 0 6px;}
 #card p{margin:0 0 14px;font-size:12.5px;line-height:1.6;color:var(--paper-dim);}
 #card .card-actions{display:flex;gap:8px;}
+#card:not([data-room="music"]) .card-listen{display:none;}
+#card .card-listen{
+  display:block;width:100%;margin:-4px 0 12px;text-align:left;
+  background:transparent;color:var(--teal);border:1px solid var(--void-border);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#card .card-listen[hidden]{display:none;}
+#card .card-listen:hover{border-color:var(--teal);}
 #card button{
   flex:1;font-family:inherit;font-size:12.5px;font-weight:600;
   border-radius:999px;padding:8px 12px;cursor:pointer;

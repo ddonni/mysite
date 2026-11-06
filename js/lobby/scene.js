@@ -171,6 +171,8 @@ export function buildScene(theme) {
     },
     // 매 프레임 LP를 계속 돌림.
     updateTurntable: recordConsole.userData.spin,
+    // 턴테이블의 ▶/■ 버튼 — { visible, playing }.
+    setTurntablePlay: recordConsole.userData.setPlayButton,
     // 공을 클릭했을 때 무작위 방향으로 튕겨내는 함수.
     kickBall: ball.userData.kick,
     // 매 프레임 공의 물리(중력/벽 반사/구르는 회전)를 갱신함.

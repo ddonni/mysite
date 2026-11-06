@@ -10,7 +10,9 @@
 // "시작점" 역할만 함.
 import { buildScene, DEFAULT_THEME } from './scene.js';
 import { createRoomInteraction } from './controls.js';
-import { roomContext, roomInfo, pageUrl, lobbyUrl } from './roomContext.js';
+import { roomContext, roomInfo, roomRecords, pageUrl, lobbyUrl } from './roomContext.js';
+import { pickMusic } from './showcase.js';
+import { getPlayer } from '../shared/youtube.js';
 import { initRoomChrome } from './roomChrome.js';
 import { loadRoomIntoScene } from './loadRoomIntoScene.js';
 import { webglAvailable } from './webgl.js';
@@ -102,6 +104,35 @@ function boot() {
     .finally(stopWatch);
 }
 
+// 턴테이블 곡 듣기 — 턴테이블에서 도는 곡(pickMusic)에 유튜브 링크가 있으면 턴테이블의
+// ▶ 버튼과 음악 카드의 "▶ 듣기"를 띄움. 저절로 틀지는 않음(누를 때만). 트는 중엔 둘 다
+// ■/끄기로 바뀌고, 한 번 더 누르면 끔. 카드 버튼이 음악일 때만 보이는 건 CSS(#card[data-room]).
+// toggle을 돌려줌 — 턴테이블 버튼을 누르면 controls.js가 부름.
+function wireTurntableListen(setTurntablePlay) {
+  let toggle = () => {};
+  const btn = document.getElementById('cardListen');
+  roomRecords.then((records) => {
+    const { playing: song } = pickMusic(records || []);
+    if (!song || !song.listen_url) return;
+    const player = getPlayer({ where: 'top' });
+    const name = `${song.title}${song.creator ? ` — ${song.creator}` : ''}`;
+    const isOn = () => player.current() === song;
+    const show = () => {
+      const on = isOn();
+      if (setTurntablePlay) setTurntablePlay({ visible: true, playing: on });
+      if (btn) btn.textContent = on ? `■ 끄기 · ${name}` : `▶ 듣기 · ${name}`;
+    };
+    toggle = () => (isOn() ? player.close() : player.play(song));
+    player.onChange(show);
+    if (btn) {
+      btn.hidden = false;
+      btn.addEventListener('click', () => toggle());
+    }
+    show();
+  }).catch(() => {});
+  return () => toggle();
+}
+
 function bootWithTheme(theme, ctx) {
   const canvasEl = document.getElementById('canvas3d');
   const stage = document.getElementById('stage');
@@ -125,6 +156,7 @@ function bootWithTheme(theme, ctx) {
 
   const { scene, interactiveGroups, cameraPresets, updateMotes, updateTurntable, updateBall, kickBall, ...sceneSetters } = buildScene(theme);
   loadRoomIntoScene(ctx, sceneSetters);
+  const toggleTurntable = wireTurntableListen(sceneSetters.setTurntablePlay);
 
   // 카드에서 "입장하기"를 누르면 실제로 페이지를 옮기는 함수. 화면을
   // 살짝 어둡게 페이드아웃한 뒤 이동시켜서, 뚝 끊기지 않고 자연스럽게
@@ -146,6 +178,7 @@ function bootWithTheme(theme, ctx) {
     onConfirm: goToRoom,
     cameraPresets,
     kickBall,
+    onTurntablePlay: toggleTurntable,
     dom: {
       card: document.getElementById('card'),
       cardTag: document.getElementById('cardTag'),

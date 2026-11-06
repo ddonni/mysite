@@ -16,11 +16,12 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/lobby.css?v=6">
+<link rel="stylesheet" href="css/lobby.css?v=7">
 <link rel="stylesheet" href="css/nav.css?v=6">
 <link rel="stylesheet" href="css/feedback.css?v=2">
 <link rel="stylesheet" href="css/inapp.css">
 <link rel="stylesheet" href="css/visibility.css">
+<link rel="stylesheet" href="css/player.css">
 </head>
 <body>
 
@@ -77,6 +78,8 @@
     <div class="room-tag" id="cardTag"></div>
     <h2 id="cardTitle">캔버스</h2>
     <p id="cardBody">마음 가는 대로 그려보세요.</p>
+    <!-- 음악 카드에서만, 턴테이블 곡에 유튜브 링크가 있을 때(js/lobby/main.js) -->
+    <button type="button" id="cardListen" class="card-listen" hidden></button>
     <div class="card-actions">
       <button id="cardBack">돌아가기</button>
       <button id="cardEnter">입장하기</button>

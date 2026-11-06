@@ -158,6 +158,7 @@ export function buildRecordConsole() {
 
   group.userData.turntable = deck;
   group.userData.spin = deck.userData.spin;
+  group.userData.setPlayButton = deck.userData.setPlayButton;
   // 턴테이블에서 돌 곡: LP 라벨(앨범 이미지) + 위에 뜨는 제목/가수 이름표.
   group.userData.setNowPlaying = (song) => {
     deck.userData.setFeaturedSong(song || null);
