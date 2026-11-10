@@ -16,8 +16,9 @@
 - Bash에서 `cd 경로 && 명령`을 쓰지 말 것(권한 확인 창이 자주 뜸) —
   `git -C <경로>`, `npm --prefix <경로>`, 절대 경로를 씀.
 - 커밋 메시지는 영어, 주제별로 나눔. 프론트는 push하면 바로 배포됨(GitHub Pages,
-  약 40초). **백엔드는 push만으로 운영에 안 올라감** — EC2에서 수동으로 받아서 재시작
-  (`mysite-backend/CLAUDE.md`의 "배포" 참고).
+  약 40초). **백엔드도 `main`에 push하면 자동 배포**(2026-10-28부터 — 테스트 통과 → GitHub
+  OIDC → SSM으로 그 커밋만 EC2에 올림, DB 마이그레이션은 서버가 켜질 때 자동). DB 칸을 새로
+  쓰는 기능이면 백엔드를 먼저 push. 자세한 건 `mysite-backend/CLAUDE.md`.
 
 ## 폴더 구조
 
@@ -48,53 +49,55 @@
 - 의견 보내기: 백엔드 `POST /api/feedback`(`schemas.FeedbackIn` 길이 제한, 429 제한) ↔
   `js/shared/feedback.js`(`MESSAGE_MAX`·`NAME_MAX`). 네 html 모두 메뉴의
   `data-feedback-open` 버튼 + `css/feedback.css` + 이 스크립트를 따로 불러옴.
-  받은 의견은 서버에서 psql로 봄(`mysite-backend/CLAUDE.md`).
+  받은 의견은 관리자 페이지 `admin.html`(`js/admin/`)에서 봄 — 구글 로그인 ID 토큰을
+  `Authorization: Bearer`로 보내면 백엔드 `GET /api/admin/feedback`이 서버 환경 변수
+  `ADMIN_EMAILS`에 든 이메일인지 확인함(비어 있으면 아무도 못 봄). 정리본은 `FEEDBACK.md`.
 - `GOOGLE_CLIENT_ID`: `js/shared/config.js` ↔ 백엔드 환경 변수(같은 값이어야 함).
-- 책 검색: 백엔드 `GET /api/search/book`(카카오, 키는 백엔드 `KAKAO_REST_KEY`) ↔
-  `js/library/records.js`의 `searchBooks` + `modal/recordSearch.js`의 `titleSuggestions`/`fillFromPick`
-  (책 탭·두 글자부터, 고르면 작가·표지까지 채움).
-  **고르는 건 "이걸로 하겠다"는 선택**이라 결과가 가진 제목·작가는 전에 직접 쓴 값이 있어도 바꿈
-  (`fillFromPick`). 고른 뒤에 고친 값은 다음에 또 고르기 전까지 그대로. 사진만 예외 — 직접 올린
-  사진(새 파일, S3에 올려 둔 사진)은 안 바꾸고 검색 표지(`photoSrc.js`의 `isSearchCover`)만 바꿈.
-- 음악 검색: 백엔드 `GET /api/search/music`(유튜브 뮤직, 비공식 ytmusicapi — 로그인 없이는
-  **앨범만**, 일반 검색은 3개까지. 가수 칸만으로 찾을 땐 `by=artist`로 그 가수의 앨범·싱글 최대
-  12개) ↔ `records.js`의 `searchMusic` + `modal/recordSearch.js`의 `titleSuggestions`
-  (가수 칸에 **직접 쓴** 가수가 있으면 "가수 제목"으로 검색 — 앞서 고른 결과로 자동으로
-  채워진 가수는 안 씀, 그걸로 0건이면 제목만으로 다시 찾고 목록 위에 알림, 가수 칸을
-  나중에 고쳐도 다시 검색). 검색 중엔 "검색 중…", 결과가 없으면 "'검색어' 검색 결과가
-  없어요", 검색 자체가 실패하면 "지금은 검색할 수 없어요"(책 탭도 같음).
-  만든 사람 칸도 책·음악이면 검색함(`creatorSuggestions` — 책은 `searchBooks(q, signal,
-  'author')`로 작가 이름만, 음악은 가수 이름으로 앨범). 고르면 이름·표지, 책·영화·애니는 제목까지
-  (음악은 제목 안 채움 — 결과가 앨범). 칸에 손대거나 작가 칸 결과를 고른 값은 "직접 쓴 값"
-  (`autoTitle`/`autoCreator`가 null)이라 두 칸을 합친 검색에 씀.
-  **두 칸이 다 차 있으면 어느 칸에서 치든 합쳐 검색**(`modal/recordSearch.js`의 `webSearch` — 책은
-  "제목 작가"를 카카오 기본 검색으로, 음악은 "가수 제목"). 다른 칸 값은 직접 쓴 것만 쓰고,
-  합쳐서 0건이면 지금 칸만으로 다시 찾아 목록 위에 "'…'까지 넣으면 결과가 없어 …만으로
-  찾았어요". 작가 칸을 고치고 나가면 제목 칸 목록도 합친 검색으로 다시(책·음악 모두).
-  영화·애니 탭도 두 칸 다 TMDB로 검색(`searchScreen`): 제목 칸은 제목으로, 감독 칸은
-  `by='director'`로 그 감독의 연출작. TMDB엔 "제목+감독" 검색이 없어서 두 칸이 다 차 있으면
-  연출작을 받아 제목으로 걸러냄(`screenSearch`/`titled`, 0건이면 지금 칸만으로 + 알림).
-  제목 검색 결과를 고르면 포스터, 그다음 `fetchScreenCreator`로 감독을 따로 물어 감독 칸에
-  채움 — 그사이 다른 걸 고르거나 감독 칸을 직접 고치면 늦게 온 답은 버림(`creatorLookup`). 연출작
-  결과는 감독(`creator`)을 이미 알아서 따로 안 물음. 목록 아래 TMDB 출처
-  + 보증 아님 문구는 TMDB 약관이라 지우면 안 됨.
-  두 칸 목록은 서로를 클릭·포커스로 닫거나 덮지 않고(`keepOpenOn`/`openOnFocus`), 한쪽에
-  입력을 시작하면 다른 쪽 목록을 닫음.
-  제목·만든 사람 칸은 위아래 한 묶음(`.title-group`)이고 두 칸의 추천 목록은 묶음 아래(가수
-  칸 밑)에 뜸 — 목록이 가수 칸을 가리지 않게. 한 줄 배치는 긴 제목이 잘려서 되돌림.
-  폰 키보드: `modal/fitViewport.js`가 창(`.overlay`)을 `visualViewport`에 맞추고 목록에 남은
-  높이(`--ac-room`)를 줌, 저장·취소 줄(`.modal-actions`)은 `position:sticky`로 늘 보임.
-  창이 열린 동안 `body.modal-open`(뒤 페이지 스크롤 막음) + `.overlay`·`.ac-list`에
-  `overscroll-behavior:contain` — 아이폰에서 끝까지 당기면 창이 통째로 밀리고 뒤가 보였음.
-  두 목록은 한 번에 하나만(`autocomplete.js`의 `onShow`로 나중에 열린 쪽만 남김).
-  카테고리 탭을 바꾸면(`recordSearch.js`의 `refresh`) 직접 쓴 값은 두고, 검색 결과로 채운
-  제목·작가·감독·가수와 표지(`autoTitle`/`autoCreator`/`autoCover`, 그 뒤 안 고쳤을 때만)는 지움.
-  고르면 가수·커버만 채우고 **제목은 입력한 그대로**(대개 노래 제목이라). 커버 서버
-  (yt3.googleusercontent.com)는 CORS를 줘서 중계 안 거침. 목록 그리기는 책·음악 모두
-  `autocomplete.js`의 후보 `card`({title, meta, cover, square}) 하나로.
-  표지 중계: 백엔드 `GET /api/cover` + `book_search.COVER_HOSTS` ↔ `js/shared/photoSrc.js`의
-  `RELAY_HOSTS`(같아야 함). 사진을 띄우는 곳(로비 `coverImage.js`, 목록 `itemFormat.js`,
-  추가 창 `photoPicker.js`, 검색 목록)은 전부 `photoSrc()`를 거침.
+- 새 기록 창: **검색부터**(`js/library/modal/searchView.js` → `modal/findWorks.js`). 검색어 하나로
+  이름(작가 `by=author`·감독 `by=director`) 검색과 제목 검색을 둘 다 해서 합침. 검색 버튼·Enter를
+  눌러야 찾음(한 글자 제목도 됨). 결과를 고르거나 "+ 넣기"를 누르면 값이 채워진 입력 칸(별점·감상을
+  쓰고 저장 → 다시 검색 화면, 결과는 그대로). "+ 직접 쓰기"는 빈 입력 칸. 수정은 입력 칸만.
+  입력 칸의 **제목 칸 자동 완성도 같은 `findWorks`**(2026-11-06 — 예전엔 따로 찾아서 결과가 달랐음)
+  + 위에 이 방·공개 방들의 기존 기록 후보(`GET .../suggestions`) 3개까지. 만든 사람 칸은 예전 방식
+  (`modal/recordSearch.js`의 `creatorSuggestions`/`webSearch` — 제목 칸에 직접 쓴 값이 있으면 합쳐 찾고,
+  0건이면 이름만으로 + 목록 위 알림; 음악 가수 칸은 `by=artist`로 앨범·싱글).
+  검색 중엔 "검색 중…", 결과가 없으면 "'검색어' 검색 결과가 없어요", 검색 자체가 실패하면
+  "지금은 검색할 수 없어요".
+- 책 검색: 백엔드 `GET /api/search/book`(카카오, 키는 백엔드 `KAKAO_REST_KEY`) ↔ `records.js`의
+  `searchBooks`. **고르는 건 "이걸로 하겠다"는 선택**이라 결과의 제목·작가는 전에 쓴 값이 있어도 바꿈
+  (`fillFromPick`). 사진만 예외 — 직접 올린 사진은 안 바꾸고 검색 표지(`photoSrc.js`의 `isSearchCover`)만.
+- 음악 검색: 백엔드 `GET /api/search/music`(유튜브 뮤직, 비공식 ytmusicapi — 로그인 없이는 노래
+  검색이 안 되고 앨범만 옴, 노래 제목은 iTunes로 실린 앨범을 찾음). 기록은 **노래 단위**:
+  `findWorks`의 `findSongs`가 `by=songs`(가수 페이지의 앨범·싱글 수록곡 전부 — 페이지엔 10개까지만
+  와서 `get_artist_albums`로 나머지도)와 일반 검색을 합쳐, 검색어가 가수 이름이면 그 가수의 노래,
+  "제목 가수"("뉴질랜드 래원")면 그 가수의 그 노래, 아니면 쓴 제목 그대로의 줄을 가수마다 하나씩.
+  같은 제목은 가수까지 봐서 하나만. 커버 서버(yt3.googleusercontent.com)는 CORS를 줘서 중계 안 거침.
+- 음악 재생(2026-11-06): 기록의 `listen_url`(백엔드 `schemas.is_youtube_url` ↔ `js/shared/youtube.js`의
+  `parseYouTube` — 같은 규칙, https 유튜브 영상·재생목록만). 로그인 없는 유튜브 뮤직은 노래별 영상
+  번호를 안 줘서 **앨범 재생목록 + 몇 번째 곡**(`playlist?list=OLAK5uy_…&index=N`)으로 저장 — 노래
+  목록 결과엔 `listen`이 바로 오고, 앨범 줄은 `GET /api/search/music/listen?album_id=&song=`로 물음.
+  입력 칸의 "유튜브 링크" 칸(음악만, 직접 붙여 넣어도 됨, "▶ 들어보기"). 재생은 `youtube.js`의
+  `getPlayer()` — 유튜브 IFrame API 임베드를 화면 구석 작은 창(약관상 숨기면 안 됨, 200px 이상)으로,
+  재생목록은 그 곡부터 틀고 다음 곡으로 넘어가면 멈춤. 광고는 영상 주인이 켰으면 나옴. 상세 창
+  "▶ 듣기"(방문자도), 로비 턴테이블의 ▶/■ 스프라이트 버튼(`turntable.js` `setPlayButton`, 확대
+  여부 상관없이 눌림 — `controls.js`의 `hitsPlayButton`)과 음악 카드 "▶ 듣기". **저절로 틀지 않음**
+  (사용자 결정 — 누를 때만).
+- 영화·애니 검색: 백엔드 `GET /api/search/screen`(TMDB, 키는 백엔드 `TMDB_TOKEN`) ↔ `searchScreen`.
+  영화 탭 이름은 "영화·시리즈"(드라마도 나옴, 카테고리 키는 그대로 `movie`, 벽 글씨 "MOVIE & SERIES").
+  제목 검색 결과엔 감독이 없어서 고른 것만 `fetchScreenCreator`로 따로 물음 — 그사이 다른 걸 고르거나
+  감독 칸을 고치면 늦은 답은 버림. 목록 아래 TMDB 출처 + 보증 아님 문구는 TMDB 약관이라 지우면 안 됨.
+- 입력 칸 배치: 제목·만든 사람 칸은 위아래 한 묶음(`.title-group`)이고 두 칸의 목록은 묶음 아래에 뜸
+  (목록이 가수 칸을 가리지 않게). 두 목록은 한 번에 하나만(`autocomplete.js`의 `onShow`), 서로를
+  클릭·포커스로 닫거나 덮지 않음(`keepOpenOn`/`openOnFocus`). 카테고리 탭을 바꾸면(`recordSearch.js`의
+  `refresh`) 직접 쓴 값은 두고 검색 결과로 채운 값(`autoTitle`/`autoCreator`/`autoCover`)만 지움.
+  폰 키보드: `modal/fitViewport.js`가 창을 `visualViewport`에 맞추고, 저장·취소 줄(`.modal-actions`)은
+  `position:sticky`. 창이 열린 동안 `body.modal-open` + `overscroll-behavior:contain`(아이폰에서 끝까지
+  당기면 창이 밀리고 뒤가 보였음).
+- 사진: 사진을 띄우는 곳(로비 `coverImage.js`, 목록 `itemFormat.js`, 추가 창 `photoPicker.js`, 검색
+  목록)은 전부 `photoSrc()`를 거치고 **`crossorigin="anonymous"`로** 받음 — S3·TMDB는 Origin 없는
+  요청엔 CORS 헤더 없이 1년 캐시로 답해서, 한 곳이라도 그냥 받으면 그 캐시 때문에 로비 WebGL
+  텍스처가 막혔음(사진이 캐시를 지워야 보이던 문제). 표지 중계: 백엔드 `GET /api/cover` +
+  `book_search.COVER_HOSTS` ↔ `photoSrc.js`의 `RELAY_HOSTS`(같아야 함, 카카오 표지만).
 - 구글 방 복구: `POST /api/auth/google` 응답의 `current_empty`(지금 브라우저의 방이
   비었는지, 다른 방을 복구할 때만 true/false) ↔ `js/shared/googleAuth.js`(빈 방이면
   묻지 않고 넘어가고, 아니면 확인 창 → 취소 시 안내).
@@ -115,7 +118,8 @@
   키를 따로 둠. 기록이 이미 있는 내 방엔 안 띄움. `?` 버튼은 전체 도움말(터치 기기면 "손가락으로
   밀어서"). 빈 방 말풍선·빈 가구 카드 문구("첫 책 기록하기")는 `js/lobby/onboarding.js`. 기록은
   `roomContext.js`의 `roomRecords`로 한 번만 받아 3D와 안내가 같이 씀. 음악 카드의 턴테이블
-  버튼은 "턴테이블에 올리기"/"◉ 턴테이블 위"(예전 "▶ 재생"은 진짜 소리가 나는 줄 알게 해서 바꿈).
+  버튼은 "턴테이블에 올리기"/"◉ 턴테이블 위"(예전 "▶ 재생"은 소리가 안 나는데 나는 줄 알게 해서
+  바꿨음 — 실제 재생은 위 "음악 재생"의 ▶ 듣기).
 - 개발자의 방: `config.js`의 `DEVELOPER_ROOM_CODE = 'TTHB8N'`(사용자 본인 방,
   "도현의 방"). 방문자에게만 로비 왼쪽 아래 "개발자의 방 구경하기" 링크로 뜸.
 
@@ -134,6 +138,10 @@
 3. 프론트: `/library` → `library.html`처럼 확장자 없는 주소를 처리하는 작은 정적
    서버로 `mysite`를 5500 포트에 띄움(GitHub Pages가 그렇게 동작해서
    `python -m http.server`로는 메뉴 링크가 404가 남).
+4. 검색: 로컬엔 카카오·TMDB 키가 없어서(운영 키는 가져오지 않음), 백엔드 앱 앞에 작은 미들웨어를
+   붙여 `/api/search/*`(음악 제외 — 키가 필요 없어 로컬 코드로)와 `/api/cover`만 운영 서버로 넘겨서 씀.
+   DB 칸을 새로 만든 기능이면 이미 있는 로컬 SQLite에는 `ALTER TABLE`로 칸을 직접 더함
+   (`create_all`은 있는 표를 안 고침).
 
 ## 정해둔 것 / 남은 일
 
