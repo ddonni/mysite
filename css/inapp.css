@@ -15,7 +15,7 @@
   background: var(--ia-bg); color: var(--ia-ink);
   border: 1px solid var(--ia-line); border-radius: 14px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
-  font-family: 'Manrope', system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family:'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   text-align: left; text-shadow: none;
 }
 @media (prefers-color-scheme: dark) {

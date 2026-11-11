@@ -48,7 +48,7 @@ html, body {
 }
 
 body {
-  font-family: 'Manrope', system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family:'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
 }
 
 #stage {
@@ -219,7 +219,7 @@ body {
 .room-label {
   position: fixed; z-index: 20; pointer-events: none;
   left: max(14px, env(safe-area-inset-left)); bottom: max(16px, env(safe-area-inset-bottom));
-  font-family: 'Manrope', system-ui, sans-serif; font-size: 12px; font-weight: 700;
+  font-family:'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-size: 12px; font-weight: 700;
   padding: 6px 12px; border-radius: 999px;
   color: #f3ece0; background: rgba(29, 24, 18, 0.72); border: 1px solid rgba(243, 236, 224, 0.16);
 }

@@ -32,7 +32,7 @@
 .room-body{ display:flex; flex-direction:column; gap:6px; padding:24px 16px 16px; }
 .room-head{ display:flex; align-items:center; gap:8px; min-width:0; }
 .room-name{
-  font-family:'Fraunces', Georgia, serif; font-weight:600; font-size:18px; line-height:1.25;
+  font-family:'Gowun Batang', 'Apple SD Gothic Neo', serif; font-weight:600; font-size:18px; line-height:1.25;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 .room-badge{
