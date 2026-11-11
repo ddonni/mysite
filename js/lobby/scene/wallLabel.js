@@ -2,15 +2,15 @@ import { canvasToTexture } from './canvasTexture.js';
 
 // 가구 위 벽에 칠한 큰 글씨(BOOK / MOVIE & SERIES / ANIMATION) — 처음 온 사람도
 // 각 벽이 무슨 기록인지 한눈에 알 수 있게 함. 멀리서(첫 화면) 비스듬히
-// 봐도 읽히게 두꺼운 고딕(Manrope 800) 대문자 + 아래에 짧은 밑줄. 글자
+// 봐도 읽히게 두꺼운 고딕(Pretendard 800) + 아래에 짧은 밑줄. 글자
 // 바깥은 투명. (가는 세리프는 멀리서 획이 뭉개져서 바꿈.)
 //
 // 캔버스 글꼴은 웹폰트가 로드되기 전에 그리면 기본 글꼴로 나와버려서,
-// 먼저 한 번 그려두고 Manrope가 준비되면 다시 그림.
+// 먼저 한 번 그려두고 Pretendard가 준비되면 다시 그림.
 
 const TEX_W = 2048, TEX_H = 320;
 const LABEL_H = 0.56; // 벽 위 글씨 높이(3D 단위) — 폭은 캔버스 비율대로
-const FONT = "800 200px Manrope, 'Helvetica Neue', Arial, sans-serif";
+const FONT = "800 200px 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif";
 
 function draw(ctx, text, color) {
   ctx.clearRect(0, 0, TEX_W, TEX_H);
@@ -18,7 +18,7 @@ function draw(ctx, text, color) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = FONT;
-  if ('letterSpacing' in ctx) ctx.letterSpacing = '22px';
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '14px';
   ctx.fillText(text, TEX_W / 2, TEX_H * 0.42, TEX_W * 0.96);
   const w = Math.min(TEX_W * 0.9, ctx.measureText(text).width);
   ctx.fillRect((TEX_W - w * 0.3) / 2, TEX_H * 0.86, w * 0.3, 9);
@@ -35,7 +35,8 @@ export function buildWallLabel(text, color, room) {
   tex.needsUpdate = true;
 
   if (document.fonts && document.fonts.load) {
-    document.fonts.load(FONT).then(() => {
+    // Pretendard는 글자 묶음별로 나눠 받는 글꼴이라, 이 글씨에 든 글자를 같이 넘겨야 그 묶음을 받음.
+    document.fonts.load(FONT, text).then(() => {
       draw(ctx, text, color);
       tex.needsUpdate = true;
     }).catch(() => {});

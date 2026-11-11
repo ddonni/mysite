@@ -11,10 +11,10 @@ export function twoLineLabelSprite(line1, line2) {
     ctx.shadowColor = 'rgba(0,0,0,0.85)';
     ctx.shadowBlur = 8;
     ctx.fillStyle = '#f3ece0';
-    ctx.font = '600 38px Manrope, sans-serif';
+    ctx.font = "600 38px 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif";
     ctx.fillText(line1, w / 2, h * 0.38);
     ctx.fillStyle = 'rgba(243,236,224,0.75)';
-    ctx.font = '500 28px Manrope, sans-serif';
+    ctx.font = "500 28px 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif";
     ctx.fillText(line2, w / 2, h * 0.72);
   }, 560, 200);
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));

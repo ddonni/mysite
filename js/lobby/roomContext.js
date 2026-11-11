@@ -34,8 +34,10 @@ export const roomInfo = roomContext.then((ctx) =>
 // 지금 보는 방의 기록 전체(최신순). 3D 가구 채우기(loadRoomIntoScene.js)와 처음 온
 // 사람 안내(onboarding.js — 빈 방인지, 어느 카테고리가 비었는지)가 같이 써서 한 번만
 // 받음. 실패하면 null — 쓰는 쪽은 "모름"으로 보고 안내를 안 띄움.
+// 내 방이면 토큰을 같이 보냄 — 옷장 기록은 주인에게만 옴(옷장 공개를 켜면 누구에게나).
 export const roomRecords = roomContext.then((ctx) =>
-  fetch(`${roomApi(ctx)}/records`).then((res) => (res.ok ? res.json() : null), () => null)
+  fetch(`${roomApi(ctx)}/records`, { headers: ctx.readOnly ? {} : { 'X-Room-Token': ctx.mine.token } })
+    .then((res) => (res.ok ? res.json() : null), () => null)
 );
 
 // 남의 방을 구경하는 사람의 "내 방"이 아직 비어 있는지(기록 0개). 비었으면 "나도 내 방

@@ -1,19 +1,36 @@
 // 로비 가구에 "어떤 기록을 어느 자리에 걸지" 고르는 순수 함수 — DOM/THREE와
 // 무관해서 단독으로 테스트할 수 있음(tests/lobby/showcase.test.js).
 
+// 음악·옷장의 최애 자리 수(백엔드 crud.FEATURED_PER_CAT과 같음).
 export const TOP_SLOTS = 3;
 
-// records(서버가 준 전체 목록, 이미 최신순)에서 cat 카테고리만 골라,
-//   top:  인생작 자리 3개 — 별표(featured)로 직접 고른 것만(서버가 카테고리당
-//         3개까지만 허용하지만, 혹시 더 와도 3개에서 자름). 모자란 자리는
-//         가구가 빈 액자/빈 포스터/빈 스탠드로 둠 — 기록 보관소의 인생작 줄과
-//         늘 같은 것만 걸리게.
-//   rest: top에 안 들어간 나머지 전부(최신순 유지).
-export function pickShowcase(records, cat) {
-  const mine = (records || []).filter((r) => r.cat === cat);
-  const top = mine.filter((r) => r.featured).slice(0, TOP_SLOTS);
-  const rest = mine.filter((r) => !top.includes(r));
-  return { top, rest };
+// 큰 책장(furniture/bigShelf.js) — 책·애니·영화를 구분 없이 기록한 순서대로.
+//   items:    셋 전부, 오래된 것부터(서버 목록은 최신순이라 뒤집음 — 위 칸 왼쪽이 가장 오래됨).
+//   featured: 인생작(위 벽 액자) — 셋 합쳐 SHELF_FEATURED개까지(백엔드도 같은 한도), 오래된 것부터.
+export const SHELF_CATS = ['book', 'anime', 'movie'];
+export const SHELF_FEATURED = 9;
+
+export function pickShelf(records) {
+  const mine = (records || []).filter((r) => SHELF_CATS.includes(r.cat));
+  const items = mine.slice().reverse();
+  return { items, featured: items.filter((r) => r.featured).slice(0, SHELF_FEATURED) };
+}
+
+// 옷장(furniture/wardrobe.js)에 걸 옷 — 최애옷 먼저, 그다음 최신순.
+//   hang:  봉에 거는 옷(상의·하의·아우터·원피스, 종류를 안 고른 것도) — HANG개까지.
+//   shelf: 아래칸에 세우는 신발·가방·액세서리 — SHELF개까지.
+const WARDROBE_HANG = 6;
+const WARDROBE_SHELF = 4;
+const SHELF_KINDS = new Set(['shoes', 'bag', 'acc']);
+
+export function pickWardrobe(records) {
+  const mine = (records || []).filter((r) => r.cat === 'wardrobe');
+  const ordered = [...mine.filter((r) => r.featured), ...mine.filter((r) => !r.featured)];
+  const onShelf = (r) => SHELF_KINDS.has(r.attrs && r.attrs.kind);
+  return {
+    hang: ordered.filter((r) => !onShelf(r)).slice(0, WARDROBE_HANG),
+    shelf: ordered.filter(onShelf).slice(0, WARDROBE_SHELF),
+  };
 }
 
 // 음악 코너(레코드 콘솔)에 곡을 나눠 놓는 규칙 — 다른 카테고리처럼 "콘솔

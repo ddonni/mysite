@@ -9,10 +9,9 @@
 import { roomContext, roomRecords } from './roomContext.js';
 
 const EMPTY_CARD = {
-  book: { body: '아직 책이 없어요. 첫 책을 기록하면 책장에 꽂혀요.', enter: '첫 책 기록하기' },
-  anime: { body: '아직 애니가 없어요. 기록하면 아크릴 스탠드로 진열돼요.', enter: '첫 애니 기록하기' },
-  movie: { body: '아직 영화·시리즈가 없어요. 기록하면 포스터로 한 장씩 붙어요.', enter: '첫 영화·시리즈 기록하기' },
+  shelf: { body: '아직 책장이 비어 있어요. 읽거나 본 책·애니·영화를 기록하면 순서대로 꽂혀요.', enter: '첫 기록 남기기' },
   music: { body: '아직 음악이 없어요. 기록하면 LP로 꽂히고 턴테이블에서 돌아가요.', enter: '첫 음악 기록하기' },
+  wardrobe: { body: '아직 옷장이 비어 있어요. 가진 옷을 넣으면 옷장에 걸려요. 처음엔 나만 봐요.', enter: '첫 옷 넣기' },
 };
 
 // roomInfo: main.js의 ROOM_INFO(가구 카드 문구) — 빈 카테고리 것만 고쳐 씀(controls.js가
@@ -22,8 +21,10 @@ export function initEmptyRoom(roomInfo) {
   const empty = new Set();
   Promise.all([roomContext, roomRecords]).then(([ctx, records]) => {
     if (ctx.readOnly || !Array.isArray(records)) return;
+    // 책장은 책·애니·영화 중 하나라도 있으면 빈 게 아님.
+    const has = (key) => records.some((r) => (key === 'shelf' ? ['book', 'anime', 'movie'].includes(r.cat) : r.cat === key));
     Object.keys(EMPTY_CARD).forEach((cat) => {
-      if (records.some((r) => r.cat === cat)) return;
+      if (has(cat)) return;
       empty.add(cat);
       Object.assign(roomInfo[cat], EMPTY_CARD[cat]);
     });

@@ -22,7 +22,7 @@ export function drawTitleCard(ctx, x, y, w, h, title, accent) {
   ctx.fillRect(x + w * 0.2, y + h * 0.3, w * 0.6, Math.max(2, h * 0.008));
 
   const fontPx = Math.floor(w * 0.11);
-  ctx.font = `600 ${fontPx}px Manrope, 'Apple SD Gothic Neo', sans-serif`;
+  ctx.font = `600 ${fontPx}px 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif`;
   ctx.fillStyle = 'rgba(243,236,224,0.92)';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';

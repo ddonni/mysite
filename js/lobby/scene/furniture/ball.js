@@ -1,4 +1,4 @@
-import { APOTHEM } from '../roomDimensions.js';
+import { INNER_R } from '../roomDimensions.js';
 import { makeCanvasTexture } from '../canvasTexture.js';
 
 const BALL_RADIUS = 0.22;
@@ -33,8 +33,8 @@ export function buildBall() {
 
   const velocity = new THREE.Vector3(0, 0, 0);
   const GRAVITY = -12, RESTITUTION = 0.62, WALL_BOUNCE = 0.75, AIR_DRAG = 0.998;
-  // 둥근 방 안쪽 원(벽 가구 앞)을 벗어나지 않게 튕김 — 벽 가구 깊이만큼 여유를 둠.
-  const MAX_R = APOTHEM - 0.8 - BALL_RADIUS;
+  // 방 안쪽 원(벽 가구 앞)을 벗어나지 않게 튕김.
+  const MAX_R = INNER_R - BALL_RADIUS;
 
   // 클릭할 때마다 호출 — 누른 지점(hitPoint)의 반대쪽으로 차냄: 공의 왼쪽을
   // 누르면 오른쪽으로, 앞쪽(카메라 쪽)을 누르면 안쪽으로 — 발로 차는 것처럼.

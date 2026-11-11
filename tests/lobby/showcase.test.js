@@ -1,43 +1,25 @@
-// pickShowcase는 로비 가구의 인생작 자리(카테고리마다 3개)를 고르는 순수
-// 함수 — 별표로 고른 것만 top(빈자리를 최신 기록으로 채우지 않음), 나머지는 rest로.
+// 로비 가구에 어떤 기록을 어디 둘지 고르는 순수 함수들.
 import { describe, expect, it } from 'vitest';
-import { pickShowcase, pickMusic } from '../../js/lobby/showcase.js';
+import { pickShelf, pickMusic, pickWardrobe } from '../../js/lobby/showcase.js';
 
 // 서버 응답처럼 이미 최신순으로 정렬된 목록.
 const rec = (id, cat, featured = false) => ({ id, cat, title: `t${id}`, featured });
 
-describe('pickShowcase', () => {
-  it('별표 고른 것만 top(최신순), 모자라도 최신 기록으로 채우지 않고 나머지는 rest', () => {
-    const list = [rec(1, 'book'), rec(2, 'book', true), rec(3, 'book'), rec(4, 'book', true)];
-    const { top, rest } = pickShowcase(list, 'book');
-    expect(top.map((r) => r.id)).toEqual([2, 4]);
-    expect(rest.map((r) => r.id)).toEqual([1, 3]);
+describe('pickShelf', () => {
+  it('책·애니·영화를 섞어 오래된 것부터, 음악·옷장은 빼고', () => {
+    const list = [rec(5, 'movie'), rec(4, 'music'), rec(3, 'anime'), rec(2, 'wardrobe'), rec(1, 'book')];
+    expect(pickShelf(list).items.map((r) => r.id)).toEqual([1, 3, 5]);
   });
 
-  it('별표가 하나도 없으면 top은 비고 전부 rest', () => {
-    const list = [1, 2, 3, 4].map((i) => rec(i, 'movie'));
-    const { top, rest } = pickShowcase(list, 'movie');
-    expect(top).toEqual([]);
-    expect(rest.map((r) => r.id)).toEqual([1, 2, 3, 4]);
+  it('인생작은 셋 합쳐 9개까지, 오래된 것부터', () => {
+    const list = [...Array(12)].map((_, i) => rec(12 - i, ['book', 'anime', 'movie'][i % 3], true));
+    const { featured } = pickShelf(list);
+    expect(featured).toHaveLength(9);
+    expect(featured[0].id).toBe(1);
   });
 
-  it('혹시 별표가 3개를 넘게 와도 top은 3개까지', () => {
-    const list = [1, 2, 3, 4].map((i) => rec(i, 'anime', true));
-    const { top, rest } = pickShowcase(list, 'anime');
-    expect(top.map((r) => r.id)).toEqual([1, 2, 3]);
-    expect(rest.map((r) => r.id)).toEqual([4]);
-  });
-
-  it('다른 카테고리 기록은 섞이지 않음', () => {
-    const list = [rec(1, 'anime', true), rec(2, 'movie', true), rec(3, 'anime')];
-    const { top, rest } = pickShowcase(list, 'anime');
-    expect(top.map((r) => r.id)).toEqual([1]);
-    expect(rest.map((r) => r.id)).toEqual([3]);
-  });
-
-  it('기록이 없으면 둘 다 빈 배열(가구는 빈 자리 그대로)', () => {
-    expect(pickShowcase([], 'book')).toEqual({ top: [], rest: [] });
-    expect(pickShowcase(null, 'book')).toEqual({ top: [], rest: [] });
+  it('기록이 없으면 빈 배열', () => {
+    expect(pickShelf(null)).toEqual({ items: [], featured: [] });
   });
 });
 
@@ -86,5 +68,23 @@ describe('pickMusic', () => {
   it('음악 기록이 없으면 턴테이블도 비어 있음', () => {
     expect(pickMusic([rec(1, 'book')])).toEqual({ playing: null, picks: [], rest: [] });
     expect(pickMusic(null)).toEqual({ playing: null, picks: [], rest: [] });
+  });
+});
+
+describe('pickWardrobe', () => {
+  const w = (id, kind, featured = false) => ({ id, cat: 'wardrobe', featured, attrs: kind ? { kind } : null });
+
+  it('최애옷 먼저, 신발·가방·액세서리는 아래칸으로', () => {
+    const records = [w(1, 'top'), w(2, 'shoes'), w(3, null), w(4, 'outer', true), w(5, 'bag', true), { id: 6, cat: 'book' }];
+    const { hang, shelf } = pickWardrobe(records);
+    expect(hang.map((r) => r.id)).toEqual([4, 1, 3]);
+    expect(shelf.map((r) => r.id)).toEqual([5, 2]);
+  });
+
+  it('봉엔 6벌, 아래칸엔 4개까지', () => {
+    const records = [...Array(8)].map((_, i) => w(i, 'top')).concat([...Array(6)].map((_, i) => w(20 + i, 'acc')));
+    const { hang, shelf } = pickWardrobe(records);
+    expect(hang).toHaveLength(6);
+    expect(shelf).toHaveLength(4);
   });
 });

@@ -1,5 +1,5 @@
 import { roomApi, roomRecords } from './roomContext.js';
-import { pickShowcase, pickMusic } from './showcase.js';
+import { pickShelf, pickMusic, pickWardrobe } from './showcase.js';
 
 // 지금 보는 방의 실제 데이터(스트로크/기록)를 서버에서 받아와 3D 씬의
 // 각 가구를 채움 — 이젤 캔버스, 책장과 그 위 액자, 영화 포스터 벽, 애니
@@ -7,7 +7,7 @@ import { pickShowcase, pickMusic } from './showcase.js';
 // set* 함수들을 그대로 넘기면 됨. 두 요청은 독립적이라 하나가 실패해도(catch)
 // 나머지는 그대로 채워짐 — 로비 자체가 어느 하나의 실패로 멎지 않게 함.
 export function loadRoomIntoScene(ctx, sceneSetters) {
-  const { setSketchbookPreview, setBookFrames, setLibraryBooks, setMovies, setAnime, setMusic } = sceneSetters;
+  const { setSketchbookPreview, setShelf, setMusic, setWardrobe } = sceneSetters;
 
   // 이젤 보드에 지금 보는 방의 1페이지 그림을 채워넣음. 실시간 동기화는
   // 필요 없어서(로비에서 그리는 기능도 없음) 로드 시 한 번만 조회. 읽기는
@@ -32,10 +32,10 @@ export function loadRoomIntoScene(ctx, sceneSetters) {
       // 다 채우면 그 프레임이 눈에 띄게 멈춤 — 한 프레임에 가구 하나씩 나눠 채움.
       runOnePerFrame([
         () => setMusic(pickMusic(list)),
-        () => setBookFrames(pickShowcase(list, 'book')),
-        () => setLibraryBooks(list.filter((r) => r.cat === 'book').map((r) => r.title)),
-        () => setMovies(pickShowcase(list, 'movie')),
-        () => setAnime(pickShowcase(list, 'anime')),
+        // 책·애니·영화 — 큰 책장에 기록한 순서대로, 인생작은 위 벽 액자.
+        () => setShelf(pickShelf(list)),
+        // 옷장은 주인이거나 옷장 공개를 켠 방에서만 서버가 줌 — 아니면 빈 옷걸이만.
+        () => setWardrobe(pickWardrobe(list)),
       ]);
     })
     .catch(() => {}); // 실패해도 가구들은 기본(빈) 상태로 남을 뿐, 로비 자체는 멀쩡히 작동함

@@ -7,7 +7,7 @@
 // 긴밀하게 붙어 있는 동작(같은 클릭 한 번으로 둘 다 바뀜)이라 일부러
 // 한 파일에 같이 둠 — 억지로 나누면 오히려 두 파일이 서로를 계속
 // 호출하며 복잡해지기만 함.
-export function createRoomInteraction({ canvas, camera, interactiveGroups, roomInfo, dom, onConfirm, kickBall, cameraPresets, onTurntablePlay }) {
+export function createRoomInteraction({ canvas, camera, interactiveGroups, roomInfo, dom, onConfirm, kickBall, cameraPresets, onTurntablePlay, onRecordClick }) {
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // 첫 화면(HOME)과 가구를 클릭했을 때 카메라가 다가갈 자리(FOCUS) — 가구
@@ -152,8 +152,8 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
     } else if (!entered) {
       checkHover(e);
     } else {
-      // 카드가 열려 있을 땐 재생 버튼 위에서만 손가락 커서.
-      canvas.classList.toggle('hover', hitsPlayButton(e));
+      // 카드가 열려 있을 땐 재생 버튼·책장의 기록 위에서만 손가락 커서.
+      canvas.classList.toggle('hover', hitsPlayButton(e) || (entered === 'shelf' && !!recordUnder(e)));
     }
   });
   // 손가락 하나를 떼면 핀치를 끝내고, 남은 손가락이 있으면 그걸로 회전을 이어 감.
@@ -185,6 +185,11 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
       // 카드가 열려있을 땐 3D 캔버스(=카드 뒤 배경) 아무 데나 탭하면 포커스가 풀림 —
       // 턴테이블 재생 버튼만 예외(확대해 둔 채로 틀고 끌 수 있게).
       if (tapped && hitsPlayButton(e)) { if (onTurntablePlay) onTurntablePlay(); return; }
+      // 확대한 책장에서 꽂힌 물건·액자를 누르면 그 기록으로.
+      if (tapped && entered === 'shelf' && onRecordClick) {
+        const record = recordUnder(e);
+        if (record) { onRecordClick(record); return; }
+      }
       if (tapped) leaveRoom();
       return;
     }
@@ -264,6 +269,15 @@ export function createRoomInteraction({ canvas, camera, interactiveGroups, roomI
     const movable = hits.length > 0 && !!plushOf(hits[0].object);
     canvas.classList.toggle('movable', movable);
     canvas.classList.toggle('hover', hits.length > 0 && !movable);
+  }
+  // 커서 아래 처음 보이는 것이 기록 하나(책장에 꽂힌 물건·액자 — userData.record)면 그 기록.
+  function recordUnder(e) {
+    setNDC(e);
+    raycaster.setFromCamera(mouseNDC, camera);
+    const hit = raycaster.intersectObjects(interactiveGroups, true).find((h) => h.object.visible !== false);
+    let o = hit && hit.object;
+    while (o) { if (o.userData && o.userData.record) return o.userData.record; o = o.parent; }
+    return null;
   }
   // 커서 아래 처음 보이는 것이 재생 버튼인지.
   function hitsPlayButton(e) {

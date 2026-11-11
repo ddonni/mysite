@@ -34,7 +34,7 @@ function drawAlbumFallback(ctx, w, h, title) {
   ctx.fillStyle = 'rgba(243,236,224,0.9)';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = `600 ${Math.floor(w * 0.1)}px Manrope, 'Apple SD Gothic Neo', sans-serif`;
+  ctx.font = `600 ${Math.floor(w * 0.1)}px 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif`;
   ctx.fillText(title.length > 12 ? title.slice(0, 11) + '…' : title, w / 2, h * 0.16, w * 0.86);
 }
 

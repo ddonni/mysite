@@ -24,18 +24,16 @@ import { watchForSlow, SLOW_MESSAGE } from '../shared/slow.js';
 
 const PAGES = {
   sketchbook: 'sketchbook',
-  book: 'library?cat=book',
-  anime: 'library?cat=anime',
-  movie: 'library?cat=movie',
+  shelf: 'library',
   music: 'library?cat=music',
+  wardrobe: 'library?cat=wardrobe',
 };
 // tag: 카드 맨 위 작은 영문 라벨(가구 위 벽 글씨와 같은 말).
 const ROOM_INFO = {
-  sketchbook: { tag: 'Canvas', title: '캔버스', body: '마음 가는 대로 그려보세요.' },
-  book: { tag: 'Book', title: '책', body: '읽은 책이 한 권씩 꽂혀요.' },
-  anime: { tag: 'Animation', title: '애니', body: '본 애니가 아크릴 스탠드로 진열돼요.' },
-  movie: { tag: 'Movie', title: '영화·시리즈', body: '본 영화·시리즈가 포스터로 한 장씩 붙어요.' },
-  music: { tag: 'Music', title: '음악', body: '들은 노래가 LP로 꽂혀요.' },
+  sketchbook: { tag: '그림판', title: '캔버스', body: '마음 가는 대로 그려보세요.' },
+  shelf: { tag: '책·애니·영화', title: '책장', body: '읽고 본 책·애니·영화가 기록한 순서대로 꽂혀요. 하나를 누르면 그 기록을 볼 수 있어요.' },
+  music: { tag: '턴테이블', title: '음악', body: '들은 노래가 LP로 꽂혀요.' },
+  wardrobe: { tag: '가진 옷', title: '옷장', body: '가진 옷이 옷장에 한 벌씩 걸려요.' },
 };
 
 // 도움말(? 버튼)은 바로 연결하지만, 처음 온 사람에게 자동으로 띄우는 건 방이
@@ -54,6 +52,12 @@ const emptyCats = initEmptyRoom(ROOM_INFO);
 // 왼쪽 위 상단 메뉴(캔버스/기록 보관소와 같은 것) — 방 코드·방문 폼은 그 메뉴의 ☰ 서랍에 있음.
 initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: './' }).catch(() => {});
 roomContext.then(initRoomChrome);
+// 남의 방인데 옷장을 공개하지 않았으면 옷장 카드 문구를 바꿈(옷장엔 빈 옷걸이만).
+Promise.all([roomContext, roomInfo]).then(([ctx, info]) => {
+  if (ctx.readOnly && info && !info.missing && !info.wardrobe_public) {
+    ROOM_INFO.wardrobe.body = '이 방의 옷장은 주인만 볼 수 있어요.';
+  }
+}).catch(() => {});
 
 // three.js(전역 THREE)가 로드되지 않았거나 이 브라우저가 WebGL을 못
 // 그리면, 3D는 아예 시도하지 않고 index.html에 미리 넣어둔 "그냥 링크"
@@ -161,13 +165,17 @@ function bootWithTheme(theme, ctx) {
   // 카드에서 "입장하기"를 누르면 실제로 페이지를 옮기는 함수. 화면을
   // 살짝 어둡게 페이드아웃한 뒤 이동시켜서, 뚝 끊기지 않고 자연스럽게
   // 다음 페이지로 넘어가는 느낌을 줌.
-  function goToRoom(room) {
+  function goToPage(page) {
     stage.style.transition = 'opacity .35s ease';
     ui.style.transition = 'opacity .35s ease';
     stage.style.opacity = '0';
     ui.style.opacity = '0';
-    const page = PAGES[room] + (emptyCats.has(room) ? '&new=1' : '');
     setTimeout(() => { window.location.href = pageUrl(page, ctx); }, 320);
+  }
+  // 빈 카테고리면 새 기록 창을 바로 엶(책장이 비었으면 책으로 시작).
+  function goToRoom(room) {
+    const empty = emptyCats.has(room);
+    goToPage(room === 'shelf' && empty ? 'library?cat=book&new=1' : PAGES[room] + (empty ? '&new=1' : ''));
   }
 
   const interaction = createRoomInteraction({
@@ -179,6 +187,8 @@ function bootWithTheme(theme, ctx) {
     cameraPresets,
     kickBall,
     onTurntablePlay: toggleTurntable,
+    // 확대한 책장에서 꽂힌 물건·액자를 누르면 그 기록의 상세 창(기록 보관소)으로.
+    onRecordClick: (record) => goToPage(`library?open=${encodeURIComponent(record.id)}`),
     dom: {
       card: document.getElementById('card'),
       cardTag: document.getElementById('cardTag'),
@@ -197,8 +207,8 @@ function bootWithTheme(theme, ctx) {
   // 세로 화면(폰)에선 가로 폭을 다 담으려면 카메라가 너무 멀어져서 방이 화면의 1/4 크기로
   // 작아지고 포스터가 손톱만 해짐 — 모자란 폭의 일부만 메워서(양옆 벽은 조금 잘림, 손가락으로
   // 돌려 보면 됨) 방을 크게 보여줌. 1이면 예전처럼 가로 전체, 0이면 기준 화면 그대로.
-  const PORTRAIT_FILL = 0.55;
-  const PORTRAIT_LIFT = 0.12; // 세로 화면에서 방을 화면 높이의 몇 배만큼 위로 올릴지(아래 resize)
+  const PORTRAIT_FILL = 0.5;
+  const PORTRAIT_LIFT = 0.04; // 세로 화면에서 방을 화면 높이의 몇 배만큼 위로 올릴지(아래 resize)
   const baseFog = { near: scene.fog.near, far: scene.fog.far };
   const tanHalf = (deg) => Math.tan((deg * Math.PI) / 360);
   function resize() {

@@ -1,7 +1,7 @@
-import { FACE_W, FACES, FLOOR_R, WALL_H } from './roomDimensions.js';
+import { ROOM_W, ROOM_D, ROOM_CENTER_Z, SHELL_WALLS, WALL_H } from './roomDimensions.js';
 import { wallPoint } from './roomLayout.js';
 
-// 방의 뼈대: 둥근 원목 바닥 + 꺾인 벽 여러 면(뒤쪽 반원, 앞은 트여 있어야
+// 방의 뼈대: 네모난 원목 바닥 + 벽 세 면(뒷벽·양옆, 앞은 트여 있어야
 // 카메라가 안을 들여다봄) + 걸레받이 + 가운데 러그. palette는 scene.js의
 // THEMES 중 하나(바닥/벽/러그 색만 담당 — 가구 색은 테마와 무관).
 
@@ -25,18 +25,21 @@ export function buildRoomShell(palette) {
   }
   const floorTex = new THREE.CanvasTexture(c);
   floorTex.colorSpace = THREE.SRGBColorSpace;
+  // 판자는 방 깊이 방향(z)으로 놓이게 — 텍스처 한 장이 방 전체를 덮음.
   const floor = new THREE.Mesh(
-    new THREE.CircleGeometry(FLOOR_R, 96),
+    new THREE.PlaneGeometry(ROOM_W + 0.3, ROOM_D),
     new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.9, metalness: 0.02 })
   );
   floor.rotation.x = -Math.PI / 2;
+  floor.position.z = ROOM_CENTER_Z;
   floor.receiveShadow = true;
   room.add(floor);
 
   // 바닥 바깥으로 번지는 그림자 바닥 — 원목 바닥 가장자리에서 바닥색이
-  // 이어지다가 점점 투명해져 배경으로 녹아듦. 둥근 바닥이 새까만 허공에
-  // 뚝 끊겨 떠 있는 것처럼 보이지 않게 함.
-  const FADE_R = FLOOR_R * 2.4;
+  // 이어지다가 점점 투명해져 배경으로 녹아듦. 바닥이 새까만 허공에
+  // 뚝 끊겨 떠 있는 것처럼 보이지 않게 함(벽 뒤는 벽이 가림, 주로 트인 앞쪽).
+  const FLOOR_R = Math.hypot(ROOM_W, ROOM_D) / 2;
+  const FADE_R = FLOOR_R * 2.2;
   const fc = document.createElement('canvas');
   fc.width = 512; fc.height = 512;
   const fctx = fc.getContext('2d');
@@ -57,35 +60,35 @@ export function buildRoomShell(palette) {
     new THREE.MeshStandardMaterial({ map: fadeTex, transparent: true, depthWrite: false, roughness: 1 })
   );
   fade.rotation.x = -Math.PI / 2;
-  fade.position.y = -0.02;
+  fade.position.set(0, -0.02, ROOM_CENTER_Z);
   // 방 바깥이라 그림자를 안 받음 — 받으면 벽 뒤 허공에 가구/벽 그림자가 찍힘.
   fade.receiveShadow = false;
   room.add(fade);
 
   const wallMat = new THREE.MeshStandardMaterial({ color: palette.wall, roughness: 0.95 });
   const baseMat = new THREE.MeshStandardMaterial({ color: 0x171310, roughness: 0.8 });
-  // 이웃 벽과 꺾이는 모서리에서 틈이 안 생기게 살짝 겹치도록 폭을 조금 더 줌.
-  const WALL_T = 0.12, OVER = 0.12;
-  Object.values(FACES).forEach((phi) => {
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(FACE_W + OVER, WALL_H, WALL_T), wallMat);
-    wall.position.copy(wallPoint(phi, 0, -WALL_T / 2, WALL_H / 2));
-    wall.rotation.y = -phi;
+  // 뒤 모서리에서 틈이 안 생기게 벽 두께만큼 겹치도록 폭을 조금 더 줌.
+  const WALL_T = 0.12, OVER = 0.24;
+  SHELL_WALLS.forEach((w) => {
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(w.len + OVER, WALL_H, WALL_T), wallMat);
+    wall.position.copy(wallPoint(w, 0, -WALL_T / 2, WALL_H / 2));
+    wall.rotation.y = -w.phi;
     wall.receiveShadow = true;
     // 벽이 그림자를 막아야 앞쪽 위 스포트라이트가 만든 가구 그림자가 벽을
     // 뚫고 벽 뒤 바닥에 찍히지 않음.
     wall.castShadow = true;
     room.add(wall);
-    const base = new THREE.Mesh(new THREE.BoxGeometry(FACE_W + OVER, 0.16, 0.14), baseMat);
-    base.position.copy(wallPoint(phi, 0, 0.05, 0.08));
-    base.rotation.y = -phi;
+    const base = new THREE.Mesh(new THREE.BoxGeometry(w.len, 0.16, 0.14), baseMat);
+    base.position.copy(wallPoint(w, 0, 0.05, 0.08));
+    base.rotation.y = -w.phi;
     room.add(base);
   });
 
   const rug = new THREE.Mesh(
-    new THREE.CylinderGeometry(2.3, 2.3, 0.03, 48),
+    new THREE.CylinderGeometry(2.6, 2.6, 0.03, 48),
     new THREE.MeshStandardMaterial({ color: palette.rug, roughness: 0.95 })
   );
-  rug.position.set(0, 0.015, 0.9);
+  rug.position.set(0, 0.015, 0.6);
   rug.receiveShadow = true;
   room.add(rug);
 

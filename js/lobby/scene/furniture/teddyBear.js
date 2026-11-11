@@ -118,7 +118,7 @@ export function buildTeddyBear() {
 
   group.add(aoBlob(0.42));
 
-  // 책장(furniture/bookshelf.js의 SH=2.5)만큼 커지도록 통째로 스케일업
+  // 책장 높이(2.5 안팎)에 어울리게 통째로 스케일업
   // — 원래 크기(귀 끝, 가장 높은 점까지 y≈0.65) 기준으로 배율을 계산함.
   // group의 로컬 원점이 바닥(y=0) 기준이라, 이렇게 키워도 발은 그대로
   // 바닥에 붙어있고 위로만 커짐.

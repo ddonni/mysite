@@ -10,7 +10,7 @@ export function renderRoomName(ctx, name) {
   const eyebrow = document.querySelector('#header .eyebrow');
   // 남의 방 중에서도 "개발자의 방"(config.js)이면 그렇다고 알려줌.
   const isDev = ctx.readOnly && !!DEVELOPER_ROOM_CODE && ctx.viewingCode === DEVELOPER_ROOM_CODE.toUpperCase();
-  if (eyebrow) eyebrow.textContent = isDev ? "Developer's Room" : ctx.readOnly ? "Friend's Room" : 'Archive Room';
+  if (eyebrow) eyebrow.textContent = isDev ? '개발자의 방' : ctx.readOnly ? '친구의 방' : '내 방';
   const fallback = isDev ? '개발자의 방' : ctx.readOnly ? '친구의 방' : '내 방';
   const showName = (n) => {
     if (h1) h1.textContent = n || fallback;

@@ -7,10 +7,9 @@
 // 지점 역할만 함 — 가구 하나하나의 생김새는 각자의 모듈에, 어느 벽/자리에
 // 둘지는 scene/roomLayout.js에 있음.
 //
-// 방은 둥근(다각형) 방: 벽 세 면에 왼쪽부터 애니 → 책 → 영화 가구가 하나씩
-// (벽 가구마다 위에 인생작 3개와 벽 글씨), 가운데 러그 위에 캔버스 이젤,
-// 오른쪽 앞에 음악 코너(턴테이블을 얹은 LP 보관함), 왼쪽 앞에 장식용 침대.
-// (예전 네모난 방은 git 브랜치 rect-room에 있음.)
+// 방은 네모난 방(scene/roomDimensions.js): 왼쪽 벽에 애니, 뒷벽에 책, 오른쪽 벽에 영화
+// 가구가 하나씩(벽 가구마다 위에 인생작 3개와 벽 글씨), 뒷벽 오른쪽 구석에 옷장, 가운데 러그
+// 위에 캔버스 이젤, 오른쪽 앞에 음악 코너(턴테이블을 얹은 LP 보관함), 왼쪽 앞에 장식용 침대.
 //
 // THREE는 index.html에서 <script>로 먼저 불러온 전역 변수라서 따로
 // import할 필요 없음 (UMD 빌드라 window.THREE에 붙어 있음).
@@ -20,18 +19,16 @@ import { arrangeRoom } from './scene/roomLayout.js';
 import { addLighting } from './scene/lighting.js';
 import { buildDustMotes } from './scene/dustMotes.js';
 import { buildWallLabel } from './scene/wallLabel.js';
-import { FEATURED_GAP, WALL_LABEL_Y } from './scene/roomDimensions.js';
+import { WALL_LABEL_Y } from './scene/roomDimensions.js';
 import { buildEasel } from './scene/furniture/easel.js';
-import { buildBookshelf } from './scene/furniture/bookshelf.js';
-import { buildFrame } from './scene/furniture/frame.js';
+import { buildBigShelf } from './scene/furniture/bigShelf.js';
 import { buildRecordConsole } from './scene/furniture/recordConsole.js';
-import { buildPosterWall } from './scene/furniture/posterWall.js';
-import { buildDisplayCase } from './scene/furniture/displayCase.js';
 import { buildFloorLamp } from './scene/furniture/lamps.js';
 import { buildBall } from './scene/furniture/ball.js';
 import { buildTeddyBear } from './scene/furniture/teddyBear.js';
 import { buildBunnyPlush } from './scene/furniture/bunnyPlush.js';
 import { buildBed } from './scene/furniture/bed.js';
+import { buildWardrobe } from './scene/furniture/wardrobe.js';
 
 // 방 테마 프리셋 — 바닥/벽/러그/배경 색만 바꿔서 분위기를 갈아끼움. 가구
 // 자체의 나무색이나 각 가구(캔버스/책/애니/영화/음악)의 포인트 조명 색은
@@ -86,17 +83,10 @@ export function buildScene(theme) {
 
   const room = buildRoomShell(palette);
 
-  // 벽 가구들 — 전부 "자기 벽 기준" 좌표로 지어지고 roomLayout.js가 벽에 담.
-  const shelf = buildBookshelf();
-  // 책장 위 벽에 나란히 거는 책 인생작 액자 3개 [왼쪽, 가운데, 오른쪽].
-  const bookFrames = [-1, 0, 1].map((i) => buildFrame(i * FEATURED_GAP));
-  const displayCase = buildDisplayCase();
-  const posterWall = buildPosterWall();
-  const labels = {
-    book: wallLabel('BOOK', '#74490f', 'book'),
-    anime: wallLabel('ANIMATION', '#963a61', 'anime'),
-    movie: wallLabel('MOVIE & SERIES', '#8c2a22', 'movie'),
-  };
+  // 뒷벽의 큰 책장(책·애니·영화를 섞어 꽂음, 위 벽엔 인생작 액자) — "자기 벽 기준"
+  // 좌표로 지어지고 roomLayout.js가 벽에 담.
+  const shelf = buildBigShelf();
+  const labels = { shelf: wallLabel('나의 책장', '#74490f', 'shelf') };
 
   // 가운데 소품들.
   const easel = buildEasel();
@@ -109,18 +99,15 @@ export function buildScene(theme) {
   bunny.userData.isPlush = true;
   const floorLamp = buildFloorLamp(); // 빛의 출처가 보이는 장식(클릭 대상 아님)
   const bed = buildBed(); // 사는 방처럼 보이게 하는 장식(클릭 대상 아님)
+  const wardrobe = buildWardrobe(); // 옷장 — 뒷벽 오른쪽 구석(책장 옆), 문이 열린 나무 옷장
 
   const { lights, cameraPresets } = arrangeRoom({
-    walls: [
-      { face: 'anime', items: [displayCase, labels.anime] },
-      { face: 'book', items: [shelf, ...bookFrames, labels.book] },
-      { face: 'movie', items: [posterWall, labels.movie] },
-    ],
-    easel, recordConsole, ball, teddyBear, bunny, floorLamp, bed,
+    walls: [{ face: 'shelf', items: [shelf, labels.shelf] }],
+    easel, recordConsole, ball, teddyBear, bunny, floorLamp, bed, wardrobe,
   });
 
-  room.add(shelf, ...bookFrames, displayCase, posterWall, ...Object.values(labels),
-    easel, recordConsole, ball, teddyBear, bunny, floorLamp, bed);
+  room.add(shelf, ...Object.values(labels),
+    easel, recordConsole, ball, teddyBear, bunny, floorLamp, bed, wardrobe);
   scene.add(room);
 
   addLighting(scene, lights);
@@ -135,23 +122,17 @@ export function buildScene(theme) {
     // ball도 여기 포함시켜서 클릭/호버 판정을 받지만, userData.room이
     // 없어서 방 이동으로는 안 이어지고 controls.js가 따로 kickBall로 연결함.
     // 인형들(userData.isPlush)은 방 이동 대신 끌어서 옮기는 대상(controls.js).
-    interactiveGroups: [easel, recordConsole, shelf, ...bookFrames, displayCase, posterWall, ...Object.values(labels), ball, teddyBear, bunny],
+    interactiveGroups: [easel, recordConsole, wardrobe, shelf, ...Object.values(labels), ball, teddyBear, bunny],
     // 이 배치의 카메라 위치(첫 화면/가구별 포커스) — controls.js가 씀.
     cameraPresets,
     // 아래 set* 함수들은 loadRoomIntoScene.js가 서버에서 받아온 데이터로
-    // 각 가구를 채울 때 씀. 카테고리별 인자 { top, rest }는 showcase.js의
-    // pickShowcase 결과(top = 인생작 최대 3개, rest = 나머지).
+    // 각 가구를 채울 때 씀.
     // 이젤 캔버스에 1페이지 그림을 채워넣음.
     setSketchbookPreview: easel.userData.setPreview,
-    // 책 인생작(top, 첫 번째가 가운데)을 [왼쪽, 가운데, 오른쪽] 액자에 채움 —
-    // 셋보다 적으면 남는 자리는 기본 아이콘 그대로.
-    setBookFrames: ({ top }) => {
-      [top[1], top[0], top[2]].forEach((work, i) => bookFrames[i].userData.setFeaturedWork(work || null));
-    },
-    // 책 기록 전체의 제목 목록으로 책장에 그 개수만큼 책을 꽂아넣음.
-    setLibraryBooks: shelf.userData.setBooks,
-    setMovies: posterWall.userData.setMovies,
-    setAnime: displayCase.userData.setAnime,
+    // 책장(showcase.js의 pickShelf 결과 { items, featured }).
+    setShelf: shelf.userData.setShelf,
+    // 옷(showcase.js의 pickWardrobe 결과 { hang, shelf }).
+    setWardrobe: wardrobe.userData.setWardrobe,
     // 음악(showcase.js의 pickMusic 결과): 턴테이블에 playing, 그 옆 받침에
     // 나머지 최애음악(picks), 콘솔 칸 안에 그 밖의 곡(rest — LP 옆면만).
     setMusic: ({ playing, picks, rest }) => {

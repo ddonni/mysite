@@ -13,14 +13,14 @@ export function addLighting(scene, lights) {
   const hemi = new THREE.HemisphereLight(0x4a443d, 0x100d0a, 0.44);
   scene.add(hemi);
 
-  // 둥근 방 앞쪽 높은 곳에서 방 가운데를 향해 — 원뿔을 넓혀 네 벽을 한 번에 비춤.
-  const spot = new THREE.SpotLight(0xfff3e6, 1.92, 34, 1.1, 0.75, 1.0);
-  spot.position.set(0, 9.2, 6.2);
-  spot.target.position.set(0, 0.5, -2.2);
+  // 방 앞쪽 높은 곳에서 방 가운데를 향해 — 원뿔을 넓혀 세 벽을 한 번에 비춤.
+  const spot = new THREE.SpotLight(0xfff3e6, 1.92, 40, 1.15, 0.75, 1.0);
+  spot.position.set(0, 10.5, 7.5);
+  spot.target.position.set(0, 0.5, -2.6);
   spot.castShadow = true;
   spot.shadow.mapSize.set(2048, 2048);
   spot.shadow.camera.near = 3;
-  spot.shadow.camera.far = 24;
+  spot.shadow.camera.far = 30;
   scene.add(spot, spot.target);
 
   (lights || []).forEach(([color, intensity, x, y, z]) => {

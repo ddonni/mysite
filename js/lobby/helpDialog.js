@@ -45,12 +45,11 @@ const FURNITURE = `
   <li><b>가구를 누르면 그 기록으로 들어가요.</b>
     <span class="help-map">
       <span><i style="background:var(--ember)"></i>이젤 → 캔버스</span>
-      <span><i style="background:var(--gold)"></i>책장 → 책</span>
-      <span><i style="background:var(--rose)"></i>진열장 → 애니</span>
-      <span><i style="background:var(--crimson)"></i>포스터 벽 → 영화·시리즈</span>
+      <span><i style="background:var(--gold)"></i>책장 → 책·애니·영화</span>
       <span><i style="background:var(--teal)"></i>턴테이블 → 음악</span>
+      <span><i style="background:var(--sage)"></i>옷장 → 옷장</span>
     </span>
-    오른쪽 아래 버튼으로도 바로 갈 수 있어요.
+    책장을 확대한 뒤 꽂힌 걸 누르면 그 기록이 열려요. 오른쪽 아래 버튼으로도 바로 갈 수 있어요.
   </li>`;
 
 function ownerHelp() {
