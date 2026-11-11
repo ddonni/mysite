@@ -11,11 +11,16 @@ import { CATS } from './records.js';
 import { renderCards } from './list/cardsView.js';
 import { createDetail } from './list/detail.js';
 import { featureLabel, withEuro } from './list/itemFormat.js';
-import { TOP_SLOTS, pickMusic } from '../lobby/showcase.js';
+import { TOP_SLOTS, SHELF_CATS, SHELF_FEATURED, pickMusic } from '../lobby/showcase.js';
 
 const EMPTY_ALL = '아직 기록이 없어요. 오른쪽 위 + 기록하기에서 본 작품을 찾아 한꺼번에 넣어 보세요.';
 const EMPTY_CAT = '아직 이 카테고리엔 기록이 없어요. 오른쪽 위 + 기록하기로 남겨보세요.';
 const EMPTY_READONLY = '아직 기록이 없어요.';
+const EMPTY_WARDROBE = '아직 옷장이 비어 있어요. 오른쪽 위 + 기록하기로 가진 옷을 하나씩 넣어 보세요.';
+const EMPTY_WARDROBE_READONLY = '보여 줄 옷이 없어요.';
+
+// "전체" 탭은 감상 기록(책·애니·영화·음악)만 — 옷장은 성격이 달라서 자기 탭에서만 보임.
+const inAll = (it) => it.cat !== 'wardrobe';
 
 export function createList({ onEdit, onDelete, onFeature, onPlay, onListen, onTabChange, readOnly, initialTab }) {
   const tabsEl = document.getElementById('tabs');
@@ -49,7 +54,9 @@ export function createList({ onEdit, onDelete, onFeature, onPlay, onListen, onTa
     const all = [{ key: 'all', label: '전체' }, ...CATS];
     tabsEl.innerHTML = '';
     all.forEach((t) => {
-      const count = t.key === 'all' ? currentItems.length : currentItems.filter((i) => i.cat === t.key).length;
+      const count = t.key === 'all' ? currentItems.filter(inAll).length : currentItems.filter((i) => i.cat === t.key).length;
+      // 남의 방에서 옷장이 안 보이면(비공개거나 비었으면) 탭도 숨김.
+      if (t.key === 'wardrobe' && readOnly && count === 0 && activeTab !== 'wardrobe') return;
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'tab';
@@ -61,45 +68,60 @@ export function createList({ onEdit, onDelete, onFeature, onPlay, onListen, onTa
     });
   }
 
-  // 카테고리 탭에서만 맨 위에 인생작(최대 3개)을 크게 보여줌 — 방의 가구 위에
-  // 걸린 것과 같은 것들. 내 방이면 남는 자리를 방의 빈 스탠드처럼 빈칸으로
-  // 채워서 "여기에 더 걸 수 있다"는 걸 보여줌(남의 방이면 고른 것만).
+  // 맨 위 인생작 줄 — 로비에 걸리는 것과 같은 것들.
+  //  - 전체 탭: 책·애니·영화 인생작 전부(책장 위 액자, 셋 합쳐 SHELF_FEATURED개).
+  //  - 책·애니·영화 탭: 그 카테고리의 인생작(개수 제한은 셋 합쳐서라 탭마다 다름).
+  //  - 음악·옷장 탭: 최애 TOP_SLOTS개.
+  // 내 방이면 남는 자리에 "여기에 더 걸 수 있다"는 빈칸 하나(음악·옷장은 남는 자리 전부).
   function renderFeatured(list) {
-    if (activeTab === 'all' || list.length === 0) { featuredEl.hidden = true; return; }
-    const featured = list.filter((i) => i.featured).slice(0, TOP_SLOTS);
+    const shelfCat = activeTab === 'all' || SHELF_CATS.includes(activeTab);
+    if (list.length === 0) { featuredEl.hidden = true; return; }
+    // 전체 탭엔 음악도 섞여 있지만, 인생작 줄은 책장 위 액자와 같게 책·애니·영화만.
+    const featured = list.filter((i) => i.featured && (activeTab !== 'all' || SHELF_CATS.includes(i.cat)))
+      .slice(0, shelfCat ? SHELF_FEATURED : TOP_SLOTS);
     if (featured.length === 0 && readOnly) { featuredEl.hidden = true; return; }
     featuredEl.hidden = false;
-    featuredTitle.textContent = featureLabel(activeTab);
+    featuredTitle.textContent = activeTab === 'all' ? '인생작' : featureLabel(activeTab);
     // 내 방의 최애음악 줄에선 카드마다 "턴테이블에 올리기"로 바로 턴테이블에 올릴 수 있음.
     const onPlayCard = activeTab === 'music' && !readOnly ? (it) => onPlay(it, true) : undefined;
-    renderCards(featuredGrid, featured, { onOpen: openDetail, showCat: false, emptyText: '', playingId, onPlay: onPlayCard });
+    renderCards(featuredGrid, featured, { onOpen: openDetail, showCat: activeTab === 'all', emptyText: '', playingId, onPlay: onPlayCard });
     if (readOnly) return;
-    for (let i = featured.length; i < TOP_SLOTS; i++) {
+    const shelfFeatured = currentItems.filter((i) => i.featured && SHELF_CATS.includes(i.cat)).length;
+    const free = shelfCat ? Math.min(1, SHELF_FEATURED - shelfFeatured) : TOP_SLOTS - featured.length;
+    const label = activeTab === 'all' ? '인생작' : featureLabel(activeTab);
+    const where = shelfCat ? '책장 위에' : '여기';
+    for (let i = 0; i < free; i++) {
       const slot = document.createElement('div');
       slot.className = 'card slot';
-      slot.innerHTML = `<div class="cover slot-cover"><span>기록을 눌러<br>"${withEuro(featureLabel(activeTab))}"를<br>고르면 여기 걸려요</span></div>`;
+      slot.innerHTML = `<div class="cover slot-cover"><span>기록을 눌러<br>"${withEuro(label)}"를<br>고르면 ${where} 걸려요</span></div>`;
       featuredGrid.appendChild(slot);
     }
   }
 
   function renderBody() {
     document.getElementById('totalCount').textContent = currentItems.length;
-    const list = (activeTab === 'all' ? currentItems : currentItems.filter((i) => i.cat === activeTab))
+    const list = (activeTab === 'all' ? currentItems.filter(inAll) : currentItems.filter((i) => i.cat === activeTab))
       .slice()
       .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     renderFeatured(list);
     const cat = CATS.find((c) => c.key === activeTab);
-    allTitle.textContent = cat ? `모든 ${cat.label}` : '';
+    allTitle.textContent = cat ? `모든 ${cat.key === 'wardrobe' ? '옷' : cat.label}` : '';
     allTitle.hidden = featuredEl.hidden;
     renderCards(listEl, list, {
       onOpen: openDetail,
       playingId,
       showCat: activeTab === 'all',
-      emptyText: readOnly ? EMPTY_READONLY : activeTab === 'all' ? EMPTY_ALL : EMPTY_CAT,
+      emptyText: activeTab === 'wardrobe' ? (readOnly ? EMPTY_WARDROBE_READONLY : EMPTY_WARDROBE)
+        : readOnly ? EMPTY_READONLY : activeTab === 'all' ? EMPTY_ALL : EMPTY_CAT,
     });
   }
 
   return {
+    // 로비 책장에서 물건을 눌러 왔을 때(library?open=id) 그 기록의 상세 창을 엶.
+    openById(id) {
+      const it = currentItems.find((i) => String(i.id) === String(id));
+      if (it) openDetail(it);
+    },
     // 지금 보고 있는 탭('all' 또는 카테고리) — "+ 기록하기"의 기본 카테고리로 씀.
     activeTab: () => activeTab,
     selectTab,

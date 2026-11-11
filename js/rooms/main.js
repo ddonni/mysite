@@ -14,6 +14,7 @@ const CATS = [
   { key: 'anime', label: '애니' },
   { key: 'movie', label: '영화·시리즈' },
   { key: 'music', label: '음악' },
+  { key: 'wardrobe', label: '옷장' },
 ];
 // 카드 위 띠 색 — 그 방 테마의 벽/러그 색(js/lobby/scene.js의 THEMES와 맞춤).
 // scene.js를 import하면 3D 가구 모듈까지 끌려와서(THREE 필요) 색만 따로 둠.

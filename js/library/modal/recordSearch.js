@@ -151,6 +151,8 @@ export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, p
   // 제목 칸 — 기존 기록 후보(3개까지) 뒤에 검색 화면과 같은 결과(findWorks). 같은 제목이
   // 둘 다에 있으면 검색 결과 쪽만 남기고 "이미 기록함" 표시를 옮겨 붙임.
   function titleSuggestions(cat, q, signal) {
+    // 옷장은 자동 완성 없음 — 서버 suggestions도 옷장은 안 받음(남의 옷장이 후보로 새지 않게).
+    if (cat === 'wardrobe') return Promise.resolve([]);
     const own = fetchSuggestions(cat, 'title', q, signal);
     if (!searchesWeb(cat, q)) {
       record('title', signal, { failed: false, dropped: '' });
@@ -179,6 +181,7 @@ export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, p
   // 고르면 칸엔 결과의 이름(예: "헤세" → "헤르만 헤세"), 표지도 채움. 책·영화·애니는
   // 제목까지, 음악은 제목을 안 채움(결과가 앨범이라 노래 제목과 다름 — 제목 칸은 사용자가 씀).
   function creatorSuggestions(cat, q, signal) {
+    if (cat === 'wardrobe') return Promise.resolve([]);
     const own = fetchSuggestions(cat, 'creator', q, signal);
     if (!searchesWeb(cat, q)) {
       record('creator', signal, { failed: false, dropped: '' });

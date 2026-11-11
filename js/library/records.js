@@ -12,6 +12,9 @@ export const CATS = [
   { key: 'anime', label: '애니' },
   { key: 'movie', label: '영화·시리즈' },
   { key: 'music', label: '음악' },
+  // 옷장은 감상 기록이 아니라 가진 옷 — 별점 대신 종류·색·계절(attrs, modal/wardrobeFields.js).
+  // 처음엔 방 주인만 봄(옷장 공개를 켜야 방문자에게 보임 — 서버가 목록에서 뺌).
+  { key: 'wardrobe', label: '옷장' },
 ];
 
 // 이 방 코드를 기준으로 요청 경로를 만들고, 쓰기 요청엔 소유자 토큰을
@@ -30,8 +33,9 @@ function authHeaders() {
 }
 
 // 전체 기록 목록을 가져옴.
+// 내 방이면 토큰을 같이 보냄 — 옷장은 주인에게만 오기 때문(옷장 공개를 켜면 누구에게나).
 export function fetchRecords() {
-  return fetch(API_BASE + '/api/rooms/' + roomCode + '/records').then((res) => {
+  return fetch(API_BASE + '/api/rooms/' + roomCode + '/records', { headers: authHeaders() }).then((res) => {
     // res.ok를 안 보고 바로 res.json()을 하면, 방을 못 찾는 404 같은
     // 에러 응답의 바디({"detail":"room not found"})를 정상 목록인 척
     // 그대로 넘겨버림 — list.js가 그걸 배열로 착각하고 .length/.filter를
@@ -40,6 +44,26 @@ export function fetchRecords() {
     if (!res.ok) throw new Error('fetch records failed');
     return res.json();
   });
+}
+
+// 방 정보(테마·이름·공개 여부·옷장 공개 여부).
+export function fetchRoomInfo() {
+  return fetch(API_BASE + '/api/rooms/' + roomCode).then((res) => {
+    if (!res.ok) throw new Error('fetch room failed');
+    return res.json();
+  });
+}
+
+// 옷장을 방문자에게도 보여 줄지(true) 나만 볼지(false).
+export function setWardrobePublic(isPublic) {
+  return fetch(API_BASE + '/api/rooms/' + roomCode + '/wardrobe-visibility', {
+    method: 'PUT',
+    headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+    body: JSON.stringify({ public: isPublic }),
+  }).then((res) => {
+    if (!res.ok) throw new Error('wardrobe visibility failed');
+    return res.json();
+  }).then((data) => data.wardrobe_public);
 }
 
 // 자동 완성 후보 — field는 'title'(제목 칸) 또는 'creator'(만든 사람 칸). 이 방 +

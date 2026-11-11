@@ -23,7 +23,7 @@ vi.mock('../../js/shared/youtube.js', async (orig) => ({
 vi.mock('../../js/library/records.js', () => ({
   CATS: [
     { key: 'book', label: '책' }, { key: 'anime', label: '애니' },
-    { key: 'movie', label: '영화' }, { key: 'music', label: '음악' },
+    { key: 'movie', label: '영화' }, { key: 'music', label: '음악' }, { key: 'wardrobe', label: '옷장' },
   ],
   uploadPhoto: vi.fn(),
   saveRecord: (...a) => saveRecord(...a),
@@ -47,9 +47,10 @@ function mountDom() {
         <button id="manualBtn"></button><div id="sNotice" hidden></div><ul id="sResults"></ul><p id="sFoot"></p>
         <button id="searchCloseBtn"></button></div>
       <div id="formView" hidden><div class="modal-actions"></div></div>
-      <input id="fTitle"><input id="fCreator"><label id="creatorLabel"></label>
+      <label id="titleLabel"></label><input id="fTitle"><input id="fCreator"><label id="creatorLabel"></label>
       <div id="titleList" style="display:none"></div><div id="creatorList" style="display:none"></div>
-      <div id="titleError"></div><div id="starPicker"></div>
+      <div id="titleError"></div><div id="starField"><div id="starPicker"></div></div>
+      <div id="wardrobeField" hidden></div><label id="memoLabel"></label>
       <div id="photoDrop"><span id="photoDropText"></span><input type="file" id="fPhoto"></div>
       <img id="photoPreview"><span id="removePhoto"></span>
       <textarea id="fMemo"></textarea>
@@ -612,5 +613,52 @@ describe('검색 화면(새 기록)', () => {
     expect($('searchView').hidden).toBe(true);
     $('cancelBtn').click();
     expect($('overlay').classList.contains('open')).toBe(false);
+  });
+});
+
+describe('옷장 탭', () => {
+  const chip = (group, key) => $('wardrobeField').querySelector(`[data-group="${group}"] [data-key="${key}"]`);
+
+  it('검색 화면 없이 바로 입력 칸 — 별점 대신 종류·색·계절, 칸 이름도 바뀜', () => {
+    modal.openAdd('wardrobe');
+    expect($('formView').hidden).toBe(false);
+    expect($('searchView').hidden).toBe(true);
+    expect($('starField').hidden).toBe(true);
+    expect($('wardrobeField').hidden).toBe(false);
+    expect($('titleLabel').textContent).toBe('옷 이름');
+    expect($('creatorLabel').textContent).toBe('브랜드 (선택)');
+    expect($('memoLabel').textContent).toBe('메모 (선택)');
+  });
+
+  it('고른 칸을 attrs로 저장하고 별점은 0 — 종류·색은 다시 누르면 해제', async () => {
+    saveRecord.mockResolvedValue({ id: 9 });
+    modal.openAdd('wardrobe');
+    $('fTitle').value = '흰 셔츠';
+    $('fCreator').value = '유니클로';
+    chip('kind', 'outer').click();
+    chip('kind', 'top').click();
+    chip('color', 'navy').click();
+    chip('color', 'navy').click();
+    chip('color', 'white').click();
+    chip('seasons', 'spring').click();
+    chip('seasons', 'fall').click();
+    $('saveBtn').click();
+    await settle();
+    expect(saveRecord).toHaveBeenCalledWith(expect.objectContaining({
+      cat: 'wardrobe', title: '흰 셔츠', creator: '유니클로', rating: 0,
+      attrs: { kind: 'top', color: 'white', seasons: ['spring', 'fall'] },
+    }), null);
+  });
+
+  it('수정하면 저장된 칸이 켜져 있음, 다른 카테고리는 attrs 없이', async () => {
+    modal.openEdit({ id: 3, cat: 'wardrobe', title: '코트', attrs: { kind: 'outer', color: 'black', seasons: ['winter'] } });
+    expect(chip('kind', 'outer').getAttribute('aria-pressed')).toBe('true');
+    expect(chip('seasons', 'winter').getAttribute('aria-pressed')).toBe('true');
+    expect(chip('seasons', 'summer').getAttribute('aria-pressed')).toBe('false');
+    saveRecord.mockResolvedValue({ id: 4 });
+    modal.openEdit({ id: 4, cat: 'book', title: '데미안' });
+    $('saveBtn').click();
+    await settle();
+    expect(saveRecord).toHaveBeenLastCalledWith(expect.objectContaining({ cat: 'book', attrs: null }), 4);
   });
 });

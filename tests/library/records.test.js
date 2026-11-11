@@ -23,7 +23,7 @@ describe('fetchRecords', () => {
     const result = await fetchRecords();
 
     expect(result).toEqual(items);
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/rooms/ABC123/records'));
+    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/rooms/ABC123/records'), expect.anything());
   });
 
   it('응답이 !ok면 에러 바디를 데이터인 척 넘기지 않고 reject함', async () => {

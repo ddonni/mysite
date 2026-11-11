@@ -1,5 +1,6 @@
 import { escapeHtml } from '../../shared/dom.js';
 import { catLabel, coverHtml, featureButtonLabel, ratingStars } from './itemFormat.js';
+import { wardrobeSummary } from '../modal/wardrobeFields.js';
 
 // 카드를 누르면 뜨는 상세 창 — 큰 표지, 제목/만든 사람/별점/날짜, 한 줄 감상,
 // 그리고(내 방일 때만) 수정하기·인생작·삭제 버튼. 버튼을 누르면 창을 닫고
@@ -45,7 +46,8 @@ export function createDetail(dialogEl, { onEdit, onDelete, onFeature, onPlay, on
         <h2 class="detail-title">${escapeHtml(it.title)}</h2>
         ${it.creator ? `<div class="detail-creator">${escapeHtml(it.creator)}</div>` : ''}
         ${it.rating ? `<div class="detail-rating">${ratingStars(it.rating)}<span>${it.rating.toFixed(1)}</span></div>` : ''}
-        <p class="detail-memo ${it.memo ? '' : 'empty-memo'}">${it.memo ? escapeHtml(it.memo) : '남긴 감상이 없어요.'}</p>
+        ${it.cat === 'wardrobe' && wardrobeSummary(it.attrs) ? `<div class="detail-attrs">${escapeHtml(wardrobeSummary(it.attrs))}</div>` : ''}
+        <p class="detail-memo ${it.memo ? '' : 'empty-memo'}">${it.memo ? escapeHtml(it.memo) : it.cat === 'wardrobe' ? '남긴 메모가 없어요.' : '남긴 감상이 없어요.'}</p>
         ${it.cat === 'music' && it.listen_url && onListen ? '<button type="button" class="detail-listen" data-act="listen">▶ 듣기</button>' : ''}
         ${actionsHtml(it, playing)}
       </div>

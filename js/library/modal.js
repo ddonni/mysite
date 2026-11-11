@@ -12,7 +12,8 @@
 // 실제 서버 저장은 records.js의 uploadPhoto/saveRecord/deleteRecord를 불러 씀.
 import { CATS, uploadPhoto, saveRecord, deleteRecord, fetchScreenCreator, fetchMusicListen } from './records.js';
 import { normalizeYouTube, getPlayer } from '../shared/youtube.js';
-import { CREATOR_FIELD, TITLE_PLACEHOLDER } from './modal/categoryFields.js';
+import { CREATOR_FIELD, TITLE_PLACEHOLDER, TITLE_LABEL, MEMO_FIELD, DEFAULT_MEMO } from './modal/categoryFields.js';
+import { createWardrobeFields } from './modal/wardrobeFields.js';
 import { createStarPicker } from './modal/starPicker.js';
 import { createPhotoPicker } from './modal/photoPicker.js';
 import { createRecordSearch } from './modal/recordSearch.js';
@@ -41,6 +42,13 @@ export function createModal({ onSaved, getItems = () => [] }) {
   const listenTry = document.getElementById('listenTry');
   const listenHint = document.getElementById('listenHint');
   const listenError = document.getElementById('listenError');
+
+  // 옷장만: 별점 대신 종류·색·계절 칸, 제목·감상 칸 이름도 바뀜.
+  const titleLabel = document.getElementById('titleLabel');
+  const memoLabel = document.getElementById('memoLabel');
+  const starField = document.getElementById('starField');
+  const wardrobeField = document.getElementById('wardrobeField');
+  const wardrobe = createWardrobeFields(wardrobeField);
 
   const starPicker = createStarPicker(document.getElementById('starPicker'));
   const photoPicker = createPhotoPicker({
@@ -87,6 +95,13 @@ export function createModal({ onSaved, getItems = () => [] }) {
     creatorLabel.textContent = field.label;
     fTitle.placeholder = TITLE_PLACEHOLDER[currentCat] || TITLE_PLACEHOLDER.book;
     listenField.hidden = currentCat !== 'music';
+    const isWardrobe = currentCat === 'wardrobe';
+    titleLabel.textContent = TITLE_LABEL[currentCat] || '제목';
+    starField.hidden = isWardrobe;
+    wardrobeField.hidden = !isWardrobe;
+    const memo = MEMO_FIELD[currentCat] || DEFAULT_MEMO;
+    memoLabel.textContent = memo.label;
+    fMemo.placeholder = memo.placeholder;
   }
 
   // ---- 유튜브 링크 칸 ----
@@ -124,7 +139,9 @@ export function createModal({ onSaved, getItems = () => [] }) {
     if (cat.key === currentCat) btn.classList.add('active');
     btn.addEventListener('click', () => {
       selectCatTab(cat.key);
-      if (formEl.hidden) searchView.refresh();
+      // 옷장은 찾을 곳이 없어서 검색 화면 없이 바로 입력 칸.
+      if (cat.key === 'wardrobe' && formEl.hidden) openWardrobeForm();
+      else if (formEl.hidden) searchView.refresh();
       else search.refresh();
     });
     catTabsEl.appendChild(btn);
@@ -156,7 +173,18 @@ export function createModal({ onSaved, getItems = () => [] }) {
     search.reset();
     photoPicker.reset();
     starPicker.setValue(0);
+    wardrobe.reset();
     creatorLookup++;
+  }
+
+  // 새 옷 — 검색 화면 없이 빈 입력 칸(취소하면 창을 닫음).
+  function openWardrobeForm() {
+    clearFields();
+    editingId = null;
+    fromSearch = false;
+    modalTitle.textContent = '새 옷';
+    cancelBtn.textContent = '취소';
+    showView(true);
   }
 
   // 영화·애니 검색 결과엔 감독이 없을 때가 있어서 고른 것만 따로 물어봄(못 찾으면 '').
@@ -263,10 +291,11 @@ export function createModal({ onSaved, getItems = () => [] }) {
         cat: currentCat,
         title,
         creator: fCreator.value.trim(),
-        rating: starPicker.getValue(),
+        rating: currentCat === 'wardrobe' ? 0 : starPicker.getValue(),
         memo: fMemo.value.trim(),
         photo_url,
         listen_url,
+        attrs: currentCat === 'wardrobe' ? wardrobe.getValue() : null,
       }, editingId);
 
       onSaved(); // main.js가 목록을 다시 불러와 화면에 반영함
@@ -293,6 +322,12 @@ export function createModal({ onSaved, getItems = () => [] }) {
       fromSearch = false;
       modalTitle.textContent = '새 기록';
       selectCatTab(cat);
+      if (currentCat === 'wardrobe') {
+        openWardrobeForm();
+        setOpen(true);
+        fTitle.focus();
+        return;
+      }
       clearFields();
       searchView.reset();
       showView(false);
@@ -306,7 +341,7 @@ export function createModal({ onSaved, getItems = () => [] }) {
       titleError.style.display = 'none';
       editingId = item.id;
       fromSearch = false;
-      modalTitle.textContent = '기록 수정하기';
+      modalTitle.textContent = item.cat === 'wardrobe' ? '옷 수정하기' : '기록 수정하기';
       cancelBtn.textContent = '취소';
       selectCatTab(item.cat);
       fTitle.value = item.title || '';
@@ -316,6 +351,7 @@ export function createModal({ onSaved, getItems = () => [] }) {
       search.reset();
       photoPicker.setExisting(item.photo_url || null);
       starPicker.setValue(item.rating || 0);
+      wardrobe.setValue(item.attrs || null);
       showView(true);
       setOpen(true);
     },

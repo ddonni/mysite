@@ -11,11 +11,20 @@ export const TITLE_PLACEHOLDER = {
   anime: '제목을 입력해 보세요',
   movie: '영화·시리즈 제목을 입력해 보세요',
   music: '노래 제목 — 가수 이름으로도 찾아요',
+  wardrobe: '예: 흰 옥스포드 셔츠',
 };
+
+// 옷장은 감상 기록이 아니라서 칸 이름이 다름(제목 → 옷 이름, 한 줄 감상 → 메모).
+export const TITLE_LABEL = { wardrobe: '옷 이름' };
+export const MEMO_FIELD = {
+  wardrobe: { label: '메모 (선택)', placeholder: '산 곳·사이즈·어울리는 옷 같은 것' },
+};
+export const DEFAULT_MEMO = { label: '한 줄 감상', placeholder: '어땠는지 한 줄로 남겨보세요' };
 
 export const CREATOR_FIELD = {
   book: { label: '작가' },
   anime: { label: '감독 / 제작사' },
   movie: { label: '감독' },
   music: { label: '가수' },
+  wardrobe: { label: '브랜드 (선택)' },
 };

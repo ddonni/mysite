@@ -15,12 +15,13 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/library.css?v=27">
-<link rel="stylesheet" href="css/player.css">
-<link rel="stylesheet" href="css/nav.css?v=6">
-<link rel="stylesheet" href="css/feedback.css?v=2">
-<link rel="stylesheet" href="css/inapp.css">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="css/library.css?v=29">
+<link rel="stylesheet" href="css/player.css?v=2">
+<link rel="stylesheet" href="css/nav.css?v=7">
+<link rel="stylesheet" href="css/feedback.css?v=3">
+<link rel="stylesheet" href="css/inapp.css?v=2">
 </head>
 <body>
 
@@ -38,7 +39,7 @@
 <main class="wrap">
   <header class="top">
     <div>
-      <div class="eyebrow" data-room-label>Archive</div>
+      <div class="eyebrow" data-room-label>내 방</div>
       <h1>기록 보관소</h1>
       <div class="meta"><span id="totalCount">0</span>개</div>
     </div>
@@ -48,6 +49,12 @@
   </header>
 
   <div class="tabs" id="tabs" role="group" aria-label="카테고리"></div>
+
+  <!-- 옷장 탭에서 방 주인에게만 — 방문자에게도 보여 줄지(js/library/main.js) -->
+  <div class="wardrobe-share" id="wardrobeShare" hidden>
+    <span id="wardrobeShareText"></span>
+    <button type="button" class="act" id="wardrobeShareBtn"></button>
+  </div>
 
   <section class="featured" id="featured" hidden>
     <h2 class="section-title" id="featuredTitle">인생작</h2>
@@ -93,7 +100,7 @@
            어려웠음. -->
       <div class="title-group">
         <div class="field title-field">
-          <label for="fTitle">제목</label>
+          <label for="fTitle" id="titleLabel">제목</label>
           <input type="text" id="fTitle" autocomplete="off" placeholder="제목을 입력해 보세요">
         </div>
         <div class="field creator-field">
@@ -105,10 +112,13 @@
       </div>
       <div id="titleError" class="field-error title-error" style="display:none;">제목을 적어 주세요.</div>
 
-      <div class="field">
+      <div class="field" id="starField">
         <label>별점</label>
         <div class="stars" id="starPicker"></div>
       </div>
+
+      <!-- 옷장만 — 종류·색·계절(js/library/modal/wardrobeFields.js가 칩을 그림) -->
+      <div class="wardrobe-fields" id="wardrobeField" hidden></div>
 
       <!-- 음악만 — 틀 유튜브 주소. 검색 결과를 고르면 찾아서 채워 둠(js/shared/youtube.js). -->
       <div class="field listen-field" id="listenField" hidden>
@@ -132,7 +142,7 @@
       </div>
 
       <div class="field">
-        <label>한 줄 감상</label>
+        <label for="fMemo" id="memoLabel">한 줄 감상</label>
         <textarea id="fMemo" placeholder="어땠는지 한 줄로 남겨보세요"></textarea>
       </div>
 

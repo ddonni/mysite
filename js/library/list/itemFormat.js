@@ -28,7 +28,7 @@ export function ratingStars(r) {
 
 // 카테고리마다 인생작(코드에선 featured)을 부르는 이름 — 책/애니/영화는 방의
 // 가구 위에 3개까지 걸리고, 음악은 첫 번째 최애음악이 턴테이블에서 돌아감.
-const FEATURE_LABEL = { book: '인생책', anime: '인생애니', movie: '인생영화', music: '최애음악' };
+const FEATURE_LABEL = { book: '인생책', anime: '인생애니', movie: '인생영화', music: '최애음악', wardrobe: '최애옷' };
 export function featureLabel(cat) {
   return FEATURE_LABEL[cat] || '인생작';
 }

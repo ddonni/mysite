@@ -15,11 +15,12 @@
   --c-anime:217,122,160;
   --c-movie:201,86,74;
   --c-music:74,159,201;
+  --c-wardrobe:139,170,110;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
 body{
-  font-family:'Manrope', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+  font-family:'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   background:var(--void);
   color:var(--paper);
   min-height:100vh;
@@ -35,6 +36,7 @@ body{ background:#1c1612; }
 [data-cat="anime"]{ --c:var(--c-anime); }
 [data-cat="movie"]{ --c:var(--c-movie); }
 [data-cat="music"]{ --c:var(--c-music); }
+[data-cat="wardrobe"]{ --c:var(--c-wardrobe); }
 .dot{ display:inline-block; width:7px; height:7px; border-radius:50%; background:rgb(var(--c, 183,172,152)); flex:none; }
 
 .wrap{
@@ -47,12 +49,12 @@ body{ background:#1c1612; }
 
 /* --- 머리말 --- */
 .top{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:22px; }
-.eyebrow{ font-size:11px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--ember); }
+.eyebrow{ font-size:12px; font-weight:700; letter-spacing:0.02em; color:var(--ember); }
 /* 지금 보는 방("내 방" / "개발자의 방" / "○○의 방", roomNav.js) — 한글이라 영문 대문자용
    넓은 자간을 줄임. */
 .eyebrow[data-room-label]{ font-size:12px; letter-spacing:0.02em; }
 .top h1{
-  font-family:'Fraunces', Georgia, serif; font-weight:600; font-optical-sizing:auto;
+  font-family:'Gowun Batang', 'Apple SD Gothic Neo', serif; font-weight:600;
   font-size:clamp(26px, 4.4vw, 34px); line-height:1.15; margin:4px 0 2px;
 }
 .top .meta{ font-size:13px; color:var(--paper-dim); font-variant-numeric:tabular-nums; }
@@ -126,7 +128,7 @@ body.read-only #addTabBtn{ display:none; }
 }
 .tc-cat{ position:absolute; top:16px; left:16px; font-size:10px; font-weight:700; letter-spacing:0.12em; color:rgb(var(--c)); }
 .tc-title{
-  font-family:'Fraunces', Georgia, serif; font-weight:600; font-size:17px; line-height:1.25; color:var(--paper);
+  font-family:'Gowun Batang', 'Apple SD Gothic Neo', serif; font-weight:600; font-size:17px; line-height:1.25; color:var(--paper);
   display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; word-break:keep-all;
 }
 .tc-creator{ font-size:11.5px; color:var(--paper-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -186,7 +188,7 @@ body.read-only #addTabBtn{ display:none; }
 .detail-close:hover{ color:var(--paper); background:rgba(243,236,224,0.08); }
 .detail-body{ min-width:0; display:flex; flex-direction:column; padding-top:4px; }
 .detail-cat{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--paper-dim); margin-bottom:8px; }
-.detail-title{ font-family:'Fraunces', Georgia, serif; font-weight:600; font-size:24px; line-height:1.25; margin:0 28px 4px 0; word-break:keep-all; }
+.detail-title{ font-family:'Gowun Batang', 'Apple SD Gothic Neo', serif; font-weight:600; font-size:24px; line-height:1.25; margin:0 28px 4px 0; word-break:keep-all; }
 .detail-creator{ font-size:14px; color:var(--paper-dim); margin-bottom:12px; }
 .detail-rating{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--gold); font-variant-numeric:tabular-nums; margin-bottom:14px; }
 .stars-view{ display:inline-flex; gap:2px; }
@@ -225,7 +227,7 @@ body.modal-open{ overflow:hidden; }
   border:1px solid var(--line); border-radius:16px; padding:24px;
   box-shadow:0 30px 60px rgba(0,0,0,0.55);
 }
-.modal h2{ font-family:'Fraunces', Georgia, serif; font-size:21px; font-weight:600; margin:0 0 18px; }
+.modal h2{ font-family:'Gowun Batang', 'Apple SD Gothic Neo', serif; font-size:21px; font-weight:600; margin:0 0 18px; }
 
 .cat-tabs{ display:flex; gap:6px; margin-bottom:18px; }
 .cat-tabs button{
@@ -238,6 +240,7 @@ body.modal-open{ overflow:hidden; }
 .cat-tabs button[data-key="anime"]{ --c:var(--c-anime); }
 .cat-tabs button[data-key="movie"]{ --c:var(--c-movie); }
 .cat-tabs button[data-key="music"]{ --c:var(--c-music); }
+.cat-tabs button[data-key="wardrobe"]{ --c:var(--c-wardrobe); }
 .cat-tabs button:hover{ color:var(--paper); }
 .cat-tabs button.active{ color:var(--paper); background:var(--void-2); border-color:rgb(var(--c)); }
 
@@ -413,3 +416,20 @@ body.modal-open{ overflow:hidden; }
 .s-foot{ margin:8px 0 0; font-size:10.5px; color:var(--paper-dim); text-align:right; }
 .s-foot:empty{ display:none; }
 #searchView[hidden], #formView[hidden]{ display:none; }
+
+/* 옷장 — 종류·계절 칩, 색 견본(js/library/modal/wardrobeFields.js) */
+.chips{ display:flex; flex-wrap:wrap; gap:6px; }
+.chip{
+  font:inherit; font-size:13px; color:var(--paper-dim); background:transparent;
+  border:1px solid var(--line-strong); border-radius:999px; padding:5px 12px; cursor:pointer;
+}
+.chip:hover{ color:var(--paper); }
+.chip.on{ color:var(--paper); background:rgba(var(--c-wardrobe),0.28); border-color:rgb(var(--c-wardrobe)); }
+.chip.swatch{ width:28px; height:28px; padding:0; border:2px solid var(--line-strong); }
+.chip.swatch.on{ border-color:var(--paper); box-shadow:0 0 0 2px rgb(var(--c-wardrobe)); }
+.wardrobe-share{
+  display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; margin:-6px 0 18px;
+  font-size:13px; color:var(--paper-dim);
+}
+.wardrobe-share[hidden]{ display:none; }
+.detail-attrs{ font-size:13px; color:var(--paper-dim); margin:2px 0 8px; }

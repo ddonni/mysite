@@ -1,5 +1,6 @@
 import { escapeHtml } from '../../shared/dom.js';
 import { catLabel, coverHtml, ratingText } from './itemFormat.js';
+import { wardrobeSummary } from '../modal/wardrobeFields.js';
 
 // 기록 하나 = 표지 카드 하나. 누르면 onOpen(it)으로 알려서 상세 창을 열지는
 // 호출하는 쪽(list.js)이 정함.
@@ -14,10 +15,13 @@ function renderCard(it, { onOpen, showCat, playingId, showPlayingBadge = true })
   // "전체" 탭에선 무슨 기록인지 알 수 있게 카테고리 색 점 + 이름을 붙임.
   const sub = [showCat ? `<i class="dot"></i>${catLabel(it.cat)}` : '', it.creator ? escapeHtml(it.creator) : '']
     .filter(Boolean).join(' · ');
+  // 옷은 브랜드 아래 줄에 종류·색·계절.
+  const attrs = it.cat === 'wardrobe' ? wardrobeSummary(it.attrs) : '';
   card.innerHTML = `
     ${coverHtml(it, { playing: showPlayingBadge && it.id === playingId })}
     <span class="card-title">${escapeHtml(it.title)}</span>
     ${sub ? `<span class="card-sub">${sub}</span>` : ''}
+    ${attrs ? `<span class="card-sub">${escapeHtml(attrs)}</span>` : ''}
     ${rating ? `<span class="card-rating">${rating}</span>` : ''}
   `;
   card.addEventListener('click', () => onOpen(it));
