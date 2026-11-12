@@ -8,7 +8,7 @@
 ## 작업 방식 (사용자 선호)
 
 - 대화·코드 주석·문서 전부 한국어. 주석은 "왜"를 설명하는 기존 밀도를 따름.
-- 사용자는 백엔드 쪽이 더 익숙함 — 프론트/3D 동작은 HTTP·DB 개념에 빗대 설명.
+- 사용자는 백엔드 쪽이 더 익숙함 — 프론트 동작은 HTTP·DB 개념에 빗대 설명.
 - 확인 질문은 최소로. 배포(push)나 되돌리기 어려운 일만 먼저 물어보고, 나머지는 그냥 진행.
 - **사용자가 낸 의견(기능·문구·화면 변경)은 push 전에 로컬에서 띄워서 사용자가 직접 확인하게 할 것**
   (2026-10-26 요청). 테스트 통과만으로 push하지 않음. 폰 화면은 로컬 페이지에서 브라우저 개발자도구의
@@ -37,10 +37,13 @@
 ## 두 저장소가 맞물린 곳 (한쪽을 바꾸면 다른 쪽도)
 
 - 에러 문자열(`featured_limit`, `not_music`, `page not found`, `not room owner` 등, 업로드 415/413).
-- 턴테이블 곡: 백엔드 `records.playing`(방마다 한 곡, `PUT .../records/{id}/playing`) ↔
-  `js/lobby/showcase.js`의 `pickMusic`(고른 곡 → 첫 최애음악 → 최신 곡 순).
-- 테마 목록: 백엔드 `schemas.ROOM_THEMES` ↔ `js/lobby/scene.js`의 `THEMES`
-  (색은 `js/rooms/main.js`의 `THEME_COLORS`에도 — 둘러보기 카드 띠).
+- **3D 방(로비)은 2026-11-12에 지움**(사용자 결정 — 첫 화면을 기록 카드로). 그래서 프론트가 안 쓰는
+  백엔드 기능이 남아 있음: 턴테이블 곡 `records.playing`(`PUT .../records/{id}/playing`)과 방 테마
+  `schemas.ROOM_THEMES`(테마 색은 `js/rooms/main.js`의 `THEME_COLORS`로 둘러보기 카드 띠에만 씀).
+  옛 코드는 git 기록의 `js/lobby/`.
+- **캔버스(그림판)도 2026-11-12에 지움**(사용자 결정). 백엔드의 그림 API(`/pages/{n}`, WebSocket
+  `/ws/rooms/{code}/pages/{n}`)와 `pages` 표는 남아 있지만 프론트는 안 씀. 옛 코드는 git 기록의
+  `js/sketchbook/`. `sketchbook.html`은 첫 화면으로 넘기는 주소만 남김.
 - 방 둘러보기: 백엔드 `rooms.is_public` + `GET /api/rooms`(공개·기록 있는 방만) +
   `PUT .../visibility` ↔ `rooms.html`/`js/rooms/main.js`, `js/shared/visibilityToggle.js`.
 - 자동 완성(제목 칸·만든 사람 칸, 서로 독립): 백엔드 `GET .../suggestions?field=title|creator`
@@ -79,8 +82,7 @@
   입력 칸의 "유튜브 링크" 칸(음악만, 직접 붙여 넣어도 됨, "▶ 들어보기"). 재생은 `youtube.js`의
   `getPlayer()` — 유튜브 IFrame API 임베드를 화면 구석 작은 창(약관상 숨기면 안 됨, 200px 이상)으로,
   재생목록은 그 곡부터 틀고 다음 곡으로 넘어가면 멈춤. 광고는 영상 주인이 켰으면 나옴. 상세 창
-  "▶ 듣기"(방문자도), 로비 턴테이블의 ▶/■ 스프라이트 버튼(`turntable.js` `setPlayButton`, 확대
-  여부 상관없이 눌림 — `controls.js`의 `hitsPlayButton`)과 음악 카드 "▶ 듣기". **저절로 틀지 않음**
+  "▶ 듣기"(방문자도)와 음악 카드 뒷면 "▶ 듣기". **저절로 틀지 않음**
   (사용자 결정 — 누를 때만).
 - 영화·애니 검색: 백엔드 `GET /api/search/screen`(TMDB, 키는 백엔드 `TMDB_TOKEN`) ↔ `searchScreen`.
   영화 탭 이름은 "영화·시리즈"(드라마도 나옴, 카테고리 키는 그대로 `movie`, 벽 글씨 "MOVIE & SERIES").
@@ -93,10 +95,10 @@
   폰 키보드: `modal/fitViewport.js`가 창을 `visualViewport`에 맞추고, 저장·취소 줄(`.modal-actions`)은
   `position:sticky`. 창이 열린 동안 `body.modal-open` + `overscroll-behavior:contain`(아이폰에서 끝까지
   당기면 창이 밀리고 뒤가 보였음).
-- 사진: 사진을 띄우는 곳(로비 `coverImage.js`, 목록 `itemFormat.js`, 추가 창 `photoPicker.js`, 검색
-  목록)은 전부 `photoSrc()`를 거치고 **`crossorigin="anonymous"`로** 받음 — S3·TMDB는 Origin 없는
-  요청엔 CORS 헤더 없이 1년 캐시로 답해서, 한 곳이라도 그냥 받으면 그 캐시 때문에 로비 WebGL
-  텍스처가 막혔음(사진이 캐시를 지워야 보이던 문제). 표지 중계: 백엔드 `GET /api/cover` +
+- 사진: 사진을 띄우는 곳(목록 `itemFormat.js`, 추가 창 `photoPicker.js`, 검색 목록)은 전부
+  `photoSrc()`를 거치고 **`crossorigin="anonymous"`로** 받음 — S3·TMDB는 Origin 없는 요청엔 CORS
+  헤더 없이 1년 캐시로 답해서, 한 곳이라도 그냥 받으면 그 캐시 때문에 3D 방(지금은 없음)의 WebGL
+  텍스처가 막혔음. 나중에 WebGL·canvas로 사진을 다룰 일이 생길 때를 위해 그대로 둠. 표지 중계: 백엔드 `GET /api/cover` +
   `book_search.COVER_HOSTS` ↔ `photoSrc.js`의 `RELAY_HOSTS`(같아야 함, 카카오 표지만).
 - 구글 방 복구: `POST /api/auth/google` 응답의 `current_empty`(지금 브라우저의 방이
   비었는지, 다른 방을 복구할 때만 true/false) ↔ `js/shared/googleAuth.js`(빈 방이면
@@ -111,17 +113,17 @@
   `og-image.png`(1200×630, 원본은 `tools/og-card.html` — 고치면 headless Edge
   `--screenshot --window-size=1200,630`으로 다시 찍음). 크롤러가 JS를 안 돌려서 방마다
   다른 카드는 안 함(사용자 결정). 바꾼 뒤엔 카카오 개발자 사이트 "공유 디버거"에서 캐시 초기화.
-- 처음 온 사람 안내(강사님 피드백 "뭘 해야 할지 모르겠다"): 로비 환영 카드는 `js/lobby/helpDialog.js`
-  — **기록 0개인 내 방**이면 "첫 기록 남기기"(카테고리 → `library?cat=…&new=1`로 새 기록 창을
-  바로 엶, `js/library/main.js`가 `new`를 주소에서 지움) + "예시 방 먼저 구경하기"(개발자의 방),
-  **남의 방**이면 "○○에 놀러 왔어요" + "나도 내 방 만들기". 주인·방문자 환영은 localStorage
-  키를 따로 둠. 기록이 이미 있는 내 방엔 안 띄움. `?` 버튼은 전체 도움말(터치 기기면 "손가락으로
-  밀어서"). 빈 방 말풍선·빈 가구 카드 문구("첫 책 기록하기")는 `js/lobby/onboarding.js`. 기록은
-  `roomContext.js`의 `roomRecords`로 한 번만 받아 3D와 안내가 같이 씀. 음악 카드의 턴테이블
-  버튼은 "턴테이블에 올리기"/"◉ 턴테이블 위"(예전 "▶ 재생"은 소리가 안 나는데 나는 줄 알게 해서
-  바꿨음 — 실제 재생은 위 "음악 재생"의 ▶ 듣기).
+- 처음 온 사람 안내(강사님 피드백 "뭘 해야 할지 모르겠다"): 첫 화면의 환영 카드는
+  `js/library/welcome.js` — **기록 0개인 내 방**이면 "첫 기록 남기기"(카테고리를 누르면 그 칩으로
+  바꾸고 새 기록 창을 엶) + "예시 방 먼저 구경하기"(개발자의 방), **남의 방**이면 "○○에 놀러
+  왔어요". 주인·방문자 환영은 localStorage 키를 따로 둠(3D 방 시절과 같은 키). 기록이 이미 있는
+  내 방엔 안 띄움. 위 줄 `?` 버튼은 전체 도움말. `./?cat=…&new=1`로 오면 새 기록 창을 바로 엶
+  (`js/library/main.js`가 `new`를 주소에서 지움). 남의 방이면 "+ 기록" 자리에 "내 방으로"(내 방이
+  비었으면 "나도 내 방 만들기").
+- 방 설정(방 이름·둘러보기 공개·구글 연결): 첫 화면 ☰ 서랍(`js/shared/roomSettings.js`, 내 방일
+  때만 — 구글 버튼 스크립트는 `index.html`만 불러옴). 예전엔 3D 방 머리말에 있었음.
 - 개발자의 방: `config.js`의 `DEVELOPER_ROOM_CODE = 'TTHB8N'`(사용자 본인 방,
-  "도현의 방"). 방문자에게만 로비 왼쪽 아래 "개발자의 방 구경하기" 링크로 뜸.
+  "도현의 방"). 방문자에게만 ☰ 서랍의 "개발자의 방 구경하기" 링크로 뜸.
 
 ## 로컬에서 띄워 보기
 
@@ -135,7 +137,7 @@
    넣고 `python -m uvicorn app.main:app --app-dir <mysite-backend> --port 8000`.
    client id는 정규식으로 뽑을 것(`=` 앞뒤 공백이 바뀐 적 있음). 이게 비면 구글
    로그인이 400 `invalid google token`으로 실패함.
-3. 프론트: `/library` → `library.html`처럼 확장자 없는 주소를 처리하는 작은 정적
+3. 프론트: `/rooms` → `rooms.html`처럼 확장자 없는 주소를 처리하는 작은 정적
    서버로 `mysite`를 5500 포트에 띄움(GitHub Pages가 그렇게 동작해서
    `python -m http.server`로는 메뉴 링크가 404가 남).
 4. 검색: 로컬엔 카카오·TMDB 키가 없어서(운영 키는 가져오지 않음), 백엔드 앱 앞에 작은 미들웨어를
@@ -156,6 +158,5 @@
   `photo_url`을 바꿀 예정. 업로드 전 줄이기(1200px)와 캐시 헤더는 새로 올리는 사진부터 적용됨.
 - Render 서비스와 Neon은 2026-10-25에 삭제함(병행 운영 종료). 그래서 `API_BASE`를 revert해도
   돌아갈 곳이 없음. "Render가 잠듦" 대비는 2026-10-25에 정리함: `js/shared/wake.js` →
-  `slow.js`("서버를 깨우는 중" → "연결이 느려요"), 캔버스의 서버 대기 45초 → 10초(그 뒤엔 이 기기
-  저장으로 — 서버 장애 대비라 이 폴백 자체는 유지). 예전 Render 자동 배포
+  `slow.js`("서버를 깨우는 중" → "연결이 느려요"). 예전 Render 자동 배포
   문제(2026-10-15, 원인 미확인)는 더 이상 운영에 영향 없음.
