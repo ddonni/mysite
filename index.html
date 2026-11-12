@@ -1,118 +1,152 @@
 <!DOCTYPE html>
-<html lang="ko" class="lobby-page">
+<html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>내 방</title>
+<title>내 기록</title>
 <!-- 카카오톡·인스타 링크 미리보기. 크롤러는 JS를 안 돌려서 방마다 다르게는 못 하고 공통 카드 하나 -->
-<meta name="description" content="읽고, 보고, 들은 책·애니·영화·음악을 3D 방에 모아두는 곳">
+<meta name="description" content="읽고, 보고, 들은 책·애니·영화·음악을 기록으로 모아두는 곳">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="내 방">
-<meta property="og:title" content="내 방">
-<meta property="og:description" content="읽고, 보고, 들은 책·애니·영화·음악을 3D 방에 모아두는 곳">
+<meta property="og:site_name" content="내 기록">
+<meta property="og:title" content="내 기록">
+<meta property="og:description" content="읽고, 보고, 들은 책·애니·영화·음악을 기록으로 모아두는 곳">
 <meta property="og:image" content="https://ddonni.github.io/mysite/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/lobby.css?v=7">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbit&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/library.css?v=27">
+<link rel="stylesheet" href="css/player.css">
 <link rel="stylesheet" href="css/nav.css?v=6">
 <link rel="stylesheet" href="css/feedback.css?v=2">
 <link rel="stylesheet" href="css/inapp.css">
 <link rel="stylesheet" href="css/visibility.css">
-<link rel="stylesheet" href="css/player.css">
+<!-- 카드 시안(흰 바탕·Orbit·각진 카드) — library.css 위에 덮어씀. library.css는 둘러보기도 같이 써서 그대로 둠 -->
+<link rel="stylesheet" href="css/cards.css">
 </head>
-<body>
+<body class="cards">
 
-<nav class="site-nav" aria-label="페이지 이동">
-  <!-- 위 줄: 어디서든 바로 가는 곳. 방 코드·둘러보기·의견 보내기 등은 ☰ 서랍(js/shared/roomNav.js) -->
+<!-- 위 줄 하나: ☰(방 코드·방 설정·둘러보기·의견 보내기 서랍 — js/shared/roomNav.js) · 누구의 방인지 ·
+     카테고리 칩(js/library/list.js) · + 기록. 다른 페이지의 떠 있는 메뉴(전체·책·애니…)는
+     이 칩과 겹쳐서 여기선 안 둠. -->
+<nav class="site-nav lib-bar" aria-label="페이지 이동">
   <button type="button" class="nav-menu" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navDrawer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-  <a href="./" data-page="./" class="active">홈</a>
-  <a href="sketchbook" data-page="sketchbook">캔버스</a>
-  <a href="library?cat=book" data-page="library?cat=book" data-cat="book">책</a>
-  <a href="library?cat=anime" data-page="library?cat=anime" data-cat="anime">애니</a>
-  <a href="library?cat=movie" data-page="library?cat=movie" data-cat="movie">영화·시리즈</a>
-  <a href="library?cat=music" data-page="library?cat=music" data-cat="music">음악</a>
+  <div class="logo" data-room-label>내 기록</div>
+  <div class="chips" id="tabs" role="group" aria-label="카테고리"></div>
+  <!-- 남의 방을 구경하는 중에만: 내 방으로 가는 길(js/library/main.js) -->
+  <a class="add my-room" id="myRoomCta" hidden></a>
+  <button type="button" class="add" id="addTabBtn">+ 기록</button>
 </nav>
 
-<div id="stage">
-  <canvas id="canvas3d"></canvas>
-  <div id="loading">방을 꾸미는 중…</div>
-</div>
+<main class="wrap">
 
-<div id="ui">
-  <div id="header">
-    <div class="eyebrow">Archive Room</div>
-    <h1>내 방</h1>
-    <div class="room-name" id="roomName"></div>
-    <p>읽고, 보고, 들은 것들을 모아두는 방이에요.</p>
-    <!-- 폰에서만 보임: 테마·공개 스위치·구글 버튼을 접어 두고 이걸로 펼침(roomChrome.js) -->
-    <button type="button" class="header-more" id="headerMore" aria-expanded="false" hidden>방 설정</button>
-    <!-- 남의 방을 구경하는 사람에게만 보임: 상단 메뉴의 "내 방으로"는 폰에서 메뉴를 옆으로 밀어야 보여서(roomChrome.js) -->
-    <a class="my-room-cta" id="myRoomCta" hidden></a>
-    <div class="header-controls">
-      <div class="theme-picker" id="themePicker"></div>
-      <div class="vis-box" id="visibilityBox"></div>
-    </div>
-    <div class="google-btn"></div>
-  </div>
+  <!-- 카드 격자 — 인생작(황금 카드)이 앞에, 나머지가 최신순으로(js/library/list/cardsView.js) -->
+  <div class="grid" id="list"><div class="empty">불러오는 중…</div></div>
+</main>
 
+<!-- 카드를 나눠줄 때만 잠깐 보이는 덱(화면 아래 가운데) -->
+<div class="deck" aria-hidden="true"></div>
 
-  <div class="lobby-foot">
-    <a id="devRoomLink" class="dev-room-link" hidden>개발자의 방 구경하기 →</a>
-    <div id="googleUnlink" class="google-unlink-slot"></div>
-  </div>
-
-  <!-- 내 방에 기록이 하나도 없는 동안만 — 아래 버튼에서 시작하면 된다는 말풍선(onboarding.js) -->
-  <div id="ctaHint" class="cta-hint" hidden>여기서 첫 기록을 남겨 보세요</div>
-  <div id="cta">
-    <button class="room-btn" data-room="sketchbook" aria-pressed="false"><span class="dot"></span>캔버스</button>
-    <button class="room-btn" data-room="book" aria-pressed="false"><span class="dot"></span>책</button>
-    <button class="room-btn" data-room="anime" aria-pressed="false"><span class="dot"></span>애니</button>
-    <button class="room-btn" data-room="movie" aria-pressed="false"><span class="dot"></span>영화·시리즈</button>
-    <button class="room-btn" data-room="music" aria-pressed="false"><span class="dot"></span>음악</button>
-  </div>
-
-  <div id="card" data-room="sketchbook">
-    <div class="room-tag" id="cardTag"></div>
-    <h2 id="cardTitle">캔버스</h2>
-    <p id="cardBody">마음 가는 대로 그려보세요.</p>
-    <!-- 음악 카드에서만, 턴테이블 곡에 유튜브 링크가 있을 때(js/lobby/main.js) -->
-    <button type="button" id="cardListen" class="card-listen" hidden></button>
-    <div class="card-actions">
-      <button id="cardBack">돌아가기</button>
-      <button id="cardEnter">입장하기</button>
-    </div>
-  </div>
-</div>
-
-<div id="fallbackLinks">
-  <p id="fallbackMessage">이 브라우저에서는 3D 방을 표시할 수 없어요. 바로 이동해 주세요.</p>
-  <a href="sketchbook" data-page="sketchbook">캔버스</a>
-  <a href="library?cat=book" data-page="library?cat=book">책</a>
-  <a href="library?cat=anime" data-page="library?cat=anime">애니</a>
-  <a href="library?cat=movie" data-page="library?cat=movie">영화·시리즈</a>
-  <a href="library?cat=music" data-page="library?cat=music">음악</a>
-  <a href="rooms" data-page="rooms">방 둘러보기</a>
-  <div class="room-info"></div>
-  <div class="google-btn"></div>
-</div>
-
-<!-- 3D 화면(#ui) 바깥에 둬서, 3D를 못 쓰는 폴백 화면에서도 똑같이 뜸 -->
-<button type="button" id="helpBtn" class="help-btn" aria-label="도움말 보기" title="도움말">?</button>
+<!-- 처음 온 사람 환영 카드(js/library/welcome.js) -->
 <div id="helpDialog" class="help-dialog" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
   <div class="help-card">
     <div id="helpBody"></div>
-    <button type="button" id="helpClose" class="help-close">시작하기</button>
-    <p class="help-foot" id="helpFoot">자세한 사용법은 오른쪽 위 <b>?</b> 버튼에 있어요.</p>
+    <button type="button" id="helpClose" class="help-close">닫기</button>
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.152.2/three.min.js"></script>
+<div class="detail-dialog" id="detailDialog" role="dialog" aria-modal="true" hidden>
+  <div class="detail-card"></div>
+</div>
+
+<!-- Add/Edit Modal — 새 기록은 검색 화면(js/library/modal/searchView.js)부터, 결과를 고르거나
+     직접 쓰기를 누르면 입력 칸. 수정은 입력 칸만(js/library/modal.js) -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2 id="modalTitle">새 기록</h2>
+
+    <div class="cat-tabs" id="catTabs"></div>
+
+    <div id="searchView">
+      <div class="s-row">
+        <input type="search" id="sQuery" class="s-query" autocomplete="off" enterkeyhint="search" aria-label="검색어">
+        <button type="button" class="s-btn" id="sBtn">검색</button>
+      </div>
+      <div class="s-bar">
+        <span id="sStatus" aria-live="polite"></span>
+        <button type="button" class="s-manual" id="manualBtn">+ 직접 쓰기</button>
+      </div>
+      <div class="s-notice" id="sNotice" role="status" hidden></div>
+      <ul class="s-results" id="sResults" hidden></ul>
+      <p class="s-foot" id="sFoot"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="searchCloseBtn">닫기</button>
+      </div>
+    </div>
+
+    <div id="formView" hidden>
+      <!-- 제목·만든 사람을 한 묶음으로 두고, 두 칸의 추천 목록은 묶음 아래(가수 칸
+           밑)에 펼침 — 제목 칸 목록이 바로 밑의 가수 칸을 덮어서 가수를 고쳐 쓰기
+           어려웠음. -->
+      <div class="title-group">
+        <div class="field title-field">
+          <label for="fTitle">제목</label>
+          <input type="text" id="fTitle" autocomplete="off" placeholder="제목을 입력해 보세요">
+        </div>
+        <div class="field creator-field">
+          <label for="fCreator" id="creatorLabel">작가</label>
+          <input type="text" id="fCreator" autocomplete="off">
+        </div>
+        <div class="ac-list" id="titleList" style="display:none;"></div>
+        <div class="ac-list" id="creatorList" style="display:none;"></div>
+      </div>
+      <div id="titleError" class="field-error title-error" style="display:none;">제목을 적어 주세요.</div>
+
+      <div class="field">
+        <label>별점</label>
+        <div class="stars" id="starPicker"></div>
+      </div>
+
+      <!-- 음악만 — 틀 유튜브 주소. 검색 결과를 고르면 찾아서 채워 둠(js/shared/youtube.js). -->
+      <div class="field listen-field" id="listenField" hidden>
+        <label for="fListen">유튜브 링크 (선택)</label>
+        <div class="listen-row">
+          <input type="text" id="fListen" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://youtu.be/…">
+          <button type="button" class="listen-try" id="listenTry">▶ 들어보기</button>
+        </div>
+        <div class="field-hint" id="listenHint"></div>
+        <div class="field-error" id="listenError" style="display:none;">유튜브 링크만 넣을 수 있어요.</div>
+      </div>
+
+      <div class="field">
+        <label>사진 (선택)</label>
+        <div class="photo-drop" id="photoDrop">
+          <span id="photoDropText">드래그하거나 클릭해서 선택</span>
+          <input type="file" id="fPhoto" accept="image/*">
+        </div>
+        <img id="photoPreview">
+        <span class="remove-photo" id="removePhoto">사진 지우기</span>
+      </div>
+
+      <div class="field">
+        <label>한 줄 감상</label>
+        <textarea id="fMemo" placeholder="어땠는지 한 줄로 남겨보세요"></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn ghost" id="cancelBtn">취소</button>
+        <button class="btn primary" id="saveBtn">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 구글 계정 연결 버튼(☰ 서랍의 방 설정 — js/shared/googleAuth.js) -->
 <script src="https://accounts.google.com/gsi/client"></script>
 <script type="module" src="js/shared/inAppBrowser.js"></script>
-<script type="module" src="js/lobby/main.js"></script>
+<script type="module" src="js/library/main.js"></script>
 <script type="module" src="js/shared/feedback.js"></script>
 </body>
 </html>

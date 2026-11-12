@@ -51,7 +51,7 @@ function buildDialog() {
       <p class="feedback-lead">있었으면 하는 기능, 불편했던 점 등 무엇이든 편하게 적어 주세요. 개발자만 읽습니다.</p>
       <label class="feedback-field">
         <span>내용</span>
-        <textarea name="message" rows="5" maxlength="${MESSAGE_MAX}" placeholder="예: 캔버스에서 색을 RGB 값으로 고를 수 있으면 좋겠습니다"></textarea>
+        <textarea name="message" rows="5" maxlength="${MESSAGE_MAX}" placeholder="예: 기록을 별점순으로도 볼 수 있으면 좋겠습니다"></textarea>
       </label>
       <label class="feedback-field">
         <span>이름 (선택)</span>

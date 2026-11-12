@@ -1,0 +1,389 @@
+/* 첫 화면(기록 카드) — 흰 바탕 · Orbit 글꼴 · 각진 모서리, 카드는 눌러서 뒤집고
+   인생작은 황금 카드(js/library/list/cardsView.js). library.css 위에 덮어씀:
+   library.css는 둘러보기(rooms.html)도 같이 써서 그 파일 자체는 그대로 둠. 이 파일은
+   index.html만 불러오고, 전부 body.cards 아래에서만 먹게 해둠. */
+body.cards{
+  /* library.css의 예전 카드 격자 규칙 .cards{display:grid…}가 같은 이름이라 body에도 먹어서
+     페이지 전체가 150px 칸 격자로 깨졌음 — 여기서 되돌림. */
+  display:block;
+  color-scheme:light;
+  --void:#FFFFFF;
+  --void-2:#F3F4F6;
+  --panel:#FFFFFF;
+  --line:#E6E7EA;
+  --line-strong:#D3D5DA;
+  --paper:#17181C;
+  --paper-dim:#8A8C94;
+  --ember:#17181C;
+  --gold:#D9A93A;
+  --gold-deep:#9C6B1E;
+  --gold-light:#FFE9A8;
+  --chip:#F3F4F6;
+  --back:#F6F6F4;
+  --orbit:"Orbit", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  font-family:var(--orbit);
+  font-size:14px;
+  font-synthesis:none;
+  background:#FFFFFF;
+  color:var(--paper);
+  overflow-x:hidden;
+}
+html:has(body.cards){ background:#FFFFFF; }
+body.cards button, body.cards input, body.cards textarea{ font-family:inherit; }
+
+/* --- 상단 메뉴(nav.css) — 흰 바탕에 맞춰 밝게, 각지게 ---
+   :root를 앞에 붙인 건 nav.css의 다크 모드 규칙(:root:not([data-theme="light"]) .site-nav)보다
+   우선하게 하려고 — 아니면 컴퓨터가 다크 모드일 때 ☰ 아이콘이 흰색이 돼 흰 바탕에 안 보였음. */
+:root body.cards .site-nav, :root body.cards .nav-drawer{
+  --nav-bg-rgb:255, 255, 255;
+  --nav-ink:#17181C;
+  --nav-dim:#8A8C94;
+  --nav-paper:#FFFFFF;
+  --nav-hover:#F3F4F6;
+  --nav-line:#E6E7EA;
+  --nav-accent:#17181C;
+  font-family:var(--orbit);
+}
+
+/* --- 위 줄 하나: ☰ · 누구의 방 · 칩 · + 기록 · ? --- 다른 페이지에선 왼쪽 위에 떠 있는 알약
+   메뉴(nav.css)지만, 여기선 화면 폭 전체의 얇은 줄로 펴서 위에 붙임(시안의 네비바). */
+body.cards .site-nav.lib-bar{
+  position:sticky; top:0; left:auto; width:auto; max-width:none; z-index:30;
+  display:flex; flex-wrap:nowrap; align-items:center; gap:12px;
+  min-height:52px; margin:0; border:none; border-radius:0;
+  padding:max(8px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 8px max(16px, env(safe-area-inset-left));
+  background:rgba(255,255,255,0.92); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  overflow:visible; -webkit-mask-image:none; mask-image:none;
+  font-size:14px; line-height:1.5;
+}
+body.cards .site-nav.lib-bar:hover, body.cards .site-nav.lib-bar:focus-within{ background:rgba(255,255,255,0.92); }
+body.cards .site-nav.lib-bar > *{ flex:none; }
+body.cards .site-nav .nav-menu{ border-radius:0; margin:0 -4px 0 -6px; }
+.lib-bar .logo{ font-size:17px; letter-spacing:0.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:14em; }
+/* 칩은 남는 폭을 다 쓰고, 좁으면 옆으로 밀어서 봄(줄이 두 줄로 접히지 않게). */
+body.cards .site-nav.lib-bar > .chips{
+  flex:1 1 auto; min-width:0; display:flex; gap:4px; flex-wrap:nowrap;
+  overflow-x:auto; scrollbar-width:none;
+}
+.lib-bar .chips::-webkit-scrollbar{ display:none; }
+.chip{
+  flex:none; font:inherit; font-size:13px; padding:5px 12px; border-radius:0; cursor:pointer;
+  border:none; background:transparent; color:var(--paper-dim); white-space:nowrap;
+}
+.chip:hover{ color:var(--paper); }
+.chip[aria-pressed="true"]{ background:var(--paper); color:#FFFFFF; }
+.lib-bar .add{
+  font:inherit; font-size:13px; cursor:pointer; white-space:nowrap;
+  padding:6px 14px; border-radius:0; border:none; background:var(--paper); color:#FFFFFF;
+}
+body.cards.read-only #addTabBtn{ display:none; }
+.lib-bar .add.my-room{ text-decoration:none; }
+.lib-bar .add.my-room[hidden]{ display:none; }
+@media (max-width:640px){
+  body.cards .site-nav.lib-bar{ gap:8px; padding-left:max(10px, env(safe-area-inset-left)); padding-right:max(10px, env(safe-area-inset-right)); }
+  .lib-bar .logo{ font-size:14px; max-width:6.5em; }
+  .chip{ padding:5px 8px; font-size:12.5px; }
+  .lib-bar .add{ padding:6px 10px; font-size:12.5px; }
+}
+@media (max-width:400px){
+  .lib-bar .logo{ display:none; } /* 아주 좁으면 방 이름은 ☰ 서랍 맨 위에서 봄 */
+}
+
+/* --- 페이지 틀: 화면 폭 전체 --- */
+body.cards .wrap{
+  max-width:none;
+  padding:16px max(16px, env(safe-area-inset-right)) 120px max(16px, env(safe-area-inset-left));
+}
+body.cards .chip:focus-visible, body.cards .add:focus-visible, body.cards .card:focus-visible,
+body.cards .back-btn:focus-visible, body.cards .btn:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+
+/* --- 카드 격자 --- */
+.grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:14px; }
+body.cards .empty{
+  grid-column:1 / -1; padding:40px 0; text-align:center; color:var(--paper-dim);
+  border:none; border-radius:0; font-size:13.5px;
+}
+
+/* --- 카드 한 장: 5:7, 눌러서 뒤집기 --- */
+.slot{ position:relative; min-width:0; }
+body.cards .card{
+  display:block; width:100%; padding:0; margin:0; cursor:pointer; border-radius:0;
+  perspective:900px; text-align:left; outline:none; -webkit-tap-highlight-color:transparent;
+}
+.inner{ position:relative; width:100%; aspect-ratio:5 / 7; transform-style:preserve-3d; transition:transform .6s cubic-bezier(.2,.8,.2,1); }
+.card[aria-pressed="true"] .inner{ transform:rotateY(180deg); }
+.face{ position:absolute; inset:0; overflow:hidden; backface-visibility:hidden; -webkit-backface-visibility:hidden; }
+.front{ background:#EEEEEC; }
+/* 표지가 카드 전체를 채우고, 아래 정보 칸은 그 위에 반투명하게 얹음 — 흰 칸이 그림 아래쪽을
+   잘라 먹지 않게(사용자 요청). */
+body.cards .front .cover{ position:absolute; inset:0; }
+
+/* 표지 — 사진이면 사진(library.css의 .cover 그대로), 없으면 회색 기본 그림 */
+body.cards .cover{ border-radius:0; box-shadow:none; background:#EEEEEC; }
+body.cards .card .cover, body.cards .card:hover .cover, body.cards .card:focus-visible .cover{
+  width:100%; height:100%; aspect-ratio:auto; margin:0; transform:none; box-shadow:none;
+}
+body.cards .cover img{ transition:transform .6s cubic-bezier(.2,.8,.2,1), filter .45s ease; }
+body.cards .cover.square img.bg{ filter:blur(18px) brightness(0.9); }
+body.cards .cover.square img.fg{ box-shadow:0 6px 16px rgba(0,0,0,0.18); }
+body.cards .title-card{
+  padding:0;
+  background:#EEEEEC url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 140'%3E%3Cg fill='none' stroke='%23C2C2BE' stroke-width='1.6' stroke-linejoin='round'%3E%3Crect x='33' y='54' width='34' height='28'/%3E%3Cpath d='M33 78l10-10 7 6 6-5 11 9'/%3E%3Ccircle cx='58' cy='62' r='3'/%3E%3C/g%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  transition:background-size .6s cubic-bezier(.2,.8,.2,1);
+}
+body.cards .title-card::before, body.cards .title-card .tc-cat,
+body.cards .title-card .tc-title, body.cards .title-card .tc-creator{ display:none; }
+
+/* 표지 위 표시 — 인생작(황금) */
+body.cards .badges{ top:9px; left:9px; right:auto; align-items:flex-start; z-index:2; }
+body.cards .badge{
+  font-size:9.5px; font-weight:400; letter-spacing:0.12em; line-height:1.5;
+  padding:2px 7px; border-radius:0; box-shadow:none; color:#3A2705;
+  background:linear-gradient(90deg, var(--gold-light), var(--gold));
+}
+
+.info{
+  position:absolute; left:0; right:0; bottom:0; z-index:2;
+  padding:8px 9px 7px; display:grid; gap:2px; min-width:0;
+  background:rgba(255,255,255,0.62);
+  -webkit-backdrop-filter:blur(10px) saturate(1.3); backdrop-filter:blur(10px) saturate(1.3);
+}
+.info .row{ display:flex; justify-content:space-between; align-items:center; gap:8px; min-height:14px; }
+.type{ font-size:10.5px; letter-spacing:0.08em; color:#5E6068; white-space:nowrap; }
+body.cards .card-title{ font-size:14.5px; font-weight:400; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; transition:color .3s ease; }
+
+/* 작은 별(반 별까지) — itemFormat.js의 ratingStars */
+body.cards .stars-view{ gap:1px; flex:none; }
+body.cards .stars-view .star, body.cards .stars-view svg{ width:11px; height:11px; }
+body.cards .stars-view .fg{ height:11px; }
+body.cards .stars-view .bg{ fill:rgba(23,24,28,0.18); }
+body.cards .stars-view .fg svg{ fill:var(--gold); }
+
+/* 뒷면 — 감상 */
+.back{
+  transform:rotateY(180deg); background:var(--back);
+  padding:14px; display:flex; flex-direction:column; gap:8px; font-size:13px;
+}
+.back .q{
+  font-size:15px; line-height:1.55; word-break:keep-all; overflow-wrap:anywhere;
+  overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:7;
+}
+.back .q.empty-memo{ color:var(--paper-dim); font-size:13px; }
+.back .who{ color:var(--paper-dim); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.back-actions{ margin-top:auto; display:flex; flex-wrap:wrap; gap:6px; }
+.back-btn{
+  font:inherit; font-size:12px; padding:5px 10px; border-radius:0; cursor:pointer;
+  border:none; background:var(--paper); color:#FFFFFF;
+}
+.back-btn[data-act="listen"]{ background:#FFFFFF; color:var(--paper); box-shadow:inset 0 0 0 1px var(--paper); }
+/* 호버: 카드가 살짝 떠오르고 그림자가 번지며 표지가 천천히 확대됨 */
+.slot:not(.rare) .card{ transition:transform .45s cubic-bezier(.2,.8,.2,1), box-shadow .45s cubic-bezier(.2,.8,.2,1); }
+@media (hover:hover){
+  .slot:not(.rare) .card:hover{ transform:translateY(-6px); box-shadow:0 18px 30px -18px rgba(23,24,28,.45); }
+  body.cards .card:hover .cover img{ transform:scale(1.08); filter:brightness(1.03); }
+  body.cards .card:hover .cover.square img.bg{ transform:scale(1.3); }
+  body.cards .card:hover .cover.square img.fg{ transform:translateY(-50%) scale(1.08); }
+  body.cards .card:hover .title-card{ background-size:108% 108%; }
+  body.cards .card:hover .card-title{ color:#000; }
+}
+
+/* --- 인생작: 격자 안에서 황금 카드로 --- */
+.rare .tilt{ transform:perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition:transform .25s ease-out; }
+.rare .frame{ position:relative; box-shadow:0 12px 30px -12px rgba(200,150,40,.75); }
+.rare .type{ color:var(--gold-deep); }
+.foil{
+  position:absolute; inset:0; z-index:1; pointer-events:none; mix-blend-mode:color-dodge; opacity:.5;
+  background:
+    radial-gradient(circle at var(--mx, 50%) var(--my, 30%), rgba(255,255,255,.6), transparent 38%),
+    repeating-linear-gradient(115deg,
+      hsla(0,90%,70%,.22) 0%, hsla(55,95%,65%,.22) 6%, hsla(150,85%,65%,.22) 12%,
+      hsla(210,90%,70%,.22) 18%, hsla(290,85%,72%,.22) 24%, hsla(0,90%,70%,.22) 30%);
+  background-size:100% 100%, 220% 220%;
+  background-position:0 0, var(--mx, 50%) var(--my, 50%);
+}
+.sparkle{
+  position:absolute; z-index:3; color:#FFFFFF; font-size:13px; pointer-events:none;
+  animation:twinkle 2.4s ease-in-out infinite; text-shadow:0 0 6px var(--gold);
+}
+@keyframes twinkle{ 0%, 100%{ opacity:0; transform:scale(.4) rotate(0deg); } 50%{ opacity:1; transform:scale(1) rotate(45deg); } }
+.rare .back{ background:linear-gradient(180deg, #FFF9E8, #FFF0C8); }
+/* 뒤집혀 있는 동안엔 반짝이를 숨김(뒷면 글자 위로 겹쳐서) */
+.rare .frame:has(.card[aria-pressed="true"]) .sparkle{ display:none; }
+
+/* --- 덱(카드 나눠줄 때만 보임) --- */
+.deck{
+  position:fixed; left:50%; bottom:calc(18px + env(safe-area-inset-bottom, 0px)); transform:translateX(-50%);
+  width:50px; height:70px; z-index:5; pointer-events:none; opacity:0; transition:opacity .3s ease;
+  background:repeating-linear-gradient(45deg, #2B2F3E 0 6px, #3A3F52 6px 12px);
+  box-shadow:0 3px 0 -1px #C9CBD1, 0 6px 0 -2px #DDDEE2, 0 10px 20px rgba(0,0,0,.18);
+}
+.deck.on{ opacity:1; }
+
+/* --- 처음 온 사람 환영 카드(js/library/welcome.js) --- */
+.help-dialog{
+  position:fixed; inset:0; z-index:70; background:rgba(20,20,25,.35);
+  display:flex; align-items:center; justify-content:center; padding:20px; overflow-y:auto;
+}
+.help-dialog[hidden]{ display:none; }
+.help-card{
+  width:100%; max-width:420px; background:#FFFFFF; color:var(--paper);
+  padding:24px; box-shadow:0 20px 60px rgba(0,0,0,.15);
+}
+.help-card h2{ font-size:17px; font-weight:400; margin:0 0 8px; }
+.help-lead{ margin:0 0 14px; font-size:13px; line-height:1.6; color:var(--paper-dim); }
+.help-card ul{ margin:0 0 16px; padding:0; list-style:none; display:flex; flex-direction:column; gap:11px; }
+.help-card li{ font-size:12.5px; line-height:1.6; color:var(--paper-dim); padding-left:14px; position:relative; }
+.help-card li::before{ content:""; position:absolute; left:0; top:.62em; width:5px; height:5px; background:var(--gold); }
+.help-card li b{ color:var(--paper); font-weight:400; display:block; }
+.help-step{ margin:4px 0 8px; font-size:12px; color:var(--paper); }
+.help-cats{ display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-bottom:14px; }
+.help-cat{
+  font:inherit; font-size:13px; padding:10px 4px; cursor:pointer; border:none; border-radius:0;
+  background:var(--chip); color:var(--paper);
+}
+.help-cat:hover, .help-cat:focus-visible{ background:var(--paper); color:#FFFFFF; outline:none; }
+.help-secondary{ display:block; text-align:center; font-size:12.5px; color:var(--paper-dim); margin-bottom:12px; }
+.help-secondary:hover{ color:var(--paper); }
+.help-close{
+  display:block; width:100%; padding:10px; border:none; border-radius:0; cursor:pointer;
+  font:inherit; font-size:13.5px; background:var(--paper); color:#FFFFFF;
+}
+.help-dialog[data-mode="owner"] .help-close{ background:var(--chip); color:var(--paper); }
+@media (max-width:420px){ .help-cats{ grid-template-columns:repeat(2, 1fr); } }
+
+/* --- 상세 창(자세히) --- */
+body.cards .detail-dialog, body.cards .overlay{ background:rgba(20,20,25,.35); }
+body.cards .detail-card{ border:none; border-radius:0; box-shadow:0 20px 60px rgba(0,0,0,.15); }
+body.cards .detail-cover .title-card{ background-size:100% 100%; }
+body.cards .detail-close{ border-radius:0; }
+body.cards .detail-close:hover{ background:var(--chip); }
+body.cards .detail-title{ font-family:inherit; font-weight:400; }
+body.cards .detail-memo{ background:var(--back); border-radius:0; border-left-color:var(--gold); }
+body.cards .detail-dialog .stars-view .star, body.cards .detail-dialog .stars-view svg{ width:16px; height:16px; }
+body.cards .detail-dialog .stars-view .fg{ height:16px; }
+body.cards .act{ border-radius:0; background:var(--chip); border-color:var(--chip); }
+body.cards .act:hover{ background:#E9EAED; border-color:#E9EAED; }
+body.cards .act.danger, body.cards .confirm-text{ color:#C2412F; }
+body.cards .act.danger:hover{ border-color:#C2412F; }
+body.cards .detail-listen{ border-radius:0; background:var(--paper); color:#FFFFFF; font-weight:400; }
+
+/* --- 새 기록·수정 창 --- */
+body.cards .modal{ border:none; border-radius:0; box-shadow:0 20px 60px rgba(0,0,0,.15); }
+body.cards .modal h2{ font-family:inherit; font-weight:400; font-size:17px; }
+body.cards .cat-tabs button{ border-radius:0; background:var(--chip); border-color:var(--chip); font-weight:400; }
+body.cards .cat-tabs button.active{ background:var(--paper); color:#FFFFFF; border-color:var(--paper); }
+body.cards .field label{ font-weight:400; }
+body.cards .field input[type=text], body.cards .field textarea, body.cards .s-query{
+  background:var(--chip); border:1px solid transparent; border-radius:0; color:var(--paper);
+}
+body.cards .field input::placeholder, body.cards .field textarea::placeholder, body.cards .s-query::placeholder{ color:#A5A7AE; }
+body.cards .field input:focus, body.cards .field textarea:focus, body.cards .s-query:focus{ border-color:var(--paper); }
+body.cards .field-error, body.cards .remove-photo{ color:#C2412F; }
+body.cards .listen-try{ border-radius:0; font-weight:400; }
+body.cards .ac-list{ border-radius:0; background:#FFFFFF; box-shadow:0 12px 24px rgba(0,0,0,0.12); }
+body.cards .ac-item:hover{ background:var(--chip); }
+body.cards .ac-mine{ border-radius:0; color:var(--gold-deep); border-color:var(--gold); font-weight:400; }
+body.cards .ac-head{ color:var(--gold-deep); }
+body.cards .ac-cover{ border-radius:0; background:#EEEEEC; }
+body.cards .stars .star .bg svg{ fill:#DADBDF; }
+body.cards .photo-drop{ border-radius:0; background:var(--chip); }
+body.cards .photo-drop.dragging{ border-color:var(--paper); background:#E9EAED; }
+body.cards #photoPreview{ border-radius:0; }
+body.cards .modal-actions{ background:#FFFFFF; border-radius:0; }
+body.cards .btn{ border-radius:0; font-weight:400; }
+body.cards .btn.primary{ background:var(--paper); border-color:var(--paper); color:#FFFFFF; }
+body.cards .btn.ghost{ background:var(--chip); border-color:var(--chip); color:var(--paper); }
+body.cards .btn.ghost:hover{ background:#E9EAED; border-color:#E9EAED; }
+body.cards .s-btn{ border-radius:0; background:var(--paper); color:#FFFFFF; font-weight:400; }
+body.cards .s-manual{ border-radius:0; font-weight:400; }
+body.cards .s-manual:hover{ border-color:var(--paper); color:var(--paper); }
+body.cards .s-notice{ border-radius:0; background:#FFF6E0; border-color:#F1D9A0; }
+body.cards .si{ border-radius:0; background:#FFFFFF; }
+body.cards .si-main .ac-title{ font-weight:400; }
+body.cards .si-add{ border-radius:0; color:var(--paper); border-color:var(--paper); font-weight:400; }
+body.cards .si-add:hover:not(:disabled){ background:var(--chip); }
+body.cards .si-add.on{ color:#FFFFFF; background:var(--paper); border-color:var(--paper); }
+
+/* --- 좁은 화면: 3열 --- */
+@media (max-width:640px){
+  body.cards .wrap{ padding-top:10px; }
+  .grid{ grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px; }
+  .info{ padding:6px 7px; }
+  body.cards .card-title{ font-size:12px; }
+  .info .row{ flex-wrap:wrap; gap:2px 6px; }
+  body.cards .stars-view .star, body.cards .stars-view svg{ width:9px; height:9px; }
+  body.cards .stars-view .fg{ height:9px; }
+  body.cards .badges{ top:5px; left:5px; }
+  body.cards .badge{ font-size:8px; padding:1px 5px; letter-spacing:0.04em; }
+  .back{ padding:8px; gap:5px; font-size:11px; }
+  .back .q{ font-size:12px; -webkit-line-clamp:5; }
+  .back .who{ font-size:10.5px; }
+  .back-btn{ font-size:10.5px; padding:4px 7px; }
+  .sparkle{ font-size:10px; }
+}
+@media (prefers-reduced-motion:reduce){
+  .inner, .slot:not(.rare) .card, body.cards .cover img, body.cards .title-card, .rare .tilt{ transition:none; }
+  .slot:not(.rare) .card:hover{ transform:none; }
+  .sparkle{ animation:none; opacity:.8; }
+}
+/* nav.css의 ".site-nav a:hover"(옅은 바탕)가 검은 "내 방으로" 버튼을 덮지 않게. */
+body.cards .lib-bar a.add:hover{ background:var(--paper); color:#FFFFFF; filter:brightness(1.25); }
+
+/* 앞면 정보 칸(종류·별점·제목)은 마우스를 올렸을 때만 — 평소엔 표지만 보이게(사용자 요청).
+   마우스가 없는 폰·태블릿은 올릴 수가 없어서 지금처럼 늘 보임(뒷면엔 제목이 없어서). 키보드로
+   카드에 왔을 때도 보임. */
+@media (hover:hover){
+  .info{ opacity:0; transform:translateY(6px); transition:opacity .25s ease, transform .25s ease; }
+  .card:hover .info, .card:focus-visible .info{ opacity:1; transform:none; }
+  /* 사진이 없는 카드(회색 기본 그림 — .title-card)는 뭔지 알 수 없어서 정보를 늘 보임. */
+  .card:has(.title-card) .info{ opacity:1; transform:none; }
+}
+@media (hover:hover) and (prefers-reduced-motion:reduce){
+  .info{ transform:none; transition:none; }
+}
+
+/* --- 다른 페이지(기록 둘러보기·받은 의견)에서도 같이 쓰는 것 --- */
+/* 위 줄의 칩이 링크일 때(둘러보기 → 첫 화면의 카테고리) — nav.css의 링크 모양을 덮음. */
+body.cards .lib-bar a.chip{ text-decoration:none; padding:5px 12px; border-radius:0; font-size:13px; color:var(--paper-dim); background:transparent; }
+body.cards .lib-bar a.chip:hover{ color:var(--paper); background:transparent; }
+@media (max-width:640px){ body.cards .lib-bar a.chip{ padding:5px 8px; font-size:12.5px; } }
+/* 머리말(받은 의견 페이지) — library.css의 큰 세리프 제목·주황 버튼 대신. */
+body.cards .top{ align-items:center; margin-bottom:18px; }
+body.cards .top h1{ font-family:inherit; font-weight:400; font-size:22px; margin:0 0 2px; }
+body.cards .top .meta{ color:var(--paper-dim); }
+body.cards .add-btn{
+  font:inherit; font-size:13px; padding:6px 14px; border-radius:0; border:none; cursor:pointer;
+  background:var(--paper); color:#FFFFFF; text-decoration:none; transform:none;
+}
+body.cards .add-btn.ghost{ background:var(--chip); color:var(--paper); border:none; }
+body.cards .add-btn:hover{ filter:none; transform:none; background:#000; color:#FFFFFF; }
+body.cards .add-btn.ghost:hover{ background:#E9EAED; color:var(--paper); }
+
+/* --- 의견 보내기 창(feedback.css) — 흰 바탕·각진 모양으로. :root는 다크 모드 규칙보다 우선하려고. --- */
+:root body.cards .feedback-dialog{
+  --fb-bg:#FFFFFF; --fb-ink:#17181C; --fb-dim:#8A8C94; --fb-line:#E6E7EA; --fb-field:#F3F4F6;
+  --fb-accent:#17181C; --fb-accent-ink:#FFFFFF; --fb-error:#C2412F; --fb-ok:#2f7d4f;
+  font-family:var(--orbit); background:rgba(20,20,25,.35);
+}
+body.cards .feedback-card{ border:none; border-radius:0; box-shadow:0 20px 60px rgba(0,0,0,.15); }
+body.cards .feedback-card h2, body.cards .feedback-done-title{ font-weight:400; }
+body.cards .feedback-field span{ font-weight:400; }
+body.cards .feedback-field textarea, body.cards .feedback-field input{ border-radius:0; border-color:transparent; }
+body.cards .feedback-field textarea:focus, body.cards .feedback-field input:focus{ outline:1px solid var(--fb-ink); outline-offset:0; }
+body.cards .feedback-actions button{ border-radius:0; font-weight:400; }
+body.cards .feedback-cancel, body.cards .feedback-again{ background:var(--chip); border:none; color:var(--paper); }
+
+/* 내 기록이 비어 있을 때 — 안내 한 줄 + 가운데 큰 "+ 기록"(js/library/list.js). 위 줄 아래 남은
+   화면의 가운데쯤에 오게 높이를 줌. */
+body.cards .empty.empty-add{
+  min-height:calc(100vh - 160px); padding:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
+}
+.empty-add-btn{
+  font:inherit; font-size:16px; padding:14px 30px; border:none; border-radius:0; cursor:pointer;
+  background:var(--paper); color:#FFFFFF;
+  transition:transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s cubic-bezier(.2,.8,.2,1);
+}
+.empty-add-btn:hover{ transform:translateY(-3px); box-shadow:0 14px 24px -14px rgba(23,24,28,.6); }
+.empty-add-btn:focus-visible{ outline:2px solid var(--gold); outline-offset:3px; }
+@media (prefers-reduced-motion:reduce){ .empty-add-btn{ transition:none; } .empty-add-btn:hover{ transform:none; } }

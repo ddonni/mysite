@@ -20,8 +20,8 @@ export const API_BASE = isLocalDev ? 'http://localhost:8000' : 'https://mysite-d
 // 안 뜨고, 나머지 기능은 평소대로 동작함.
 export const GOOGLE_CLIENT_ID = '227700659322-u4dcqs0hi59a1lpamaose4ks07su3a88.apps.googleusercontent.com';
 
-// "개발자의 방" — 이 사이트를 만든 사람의 방 코드. 로비 왼쪽 아래에 "개발자의
-// 방 구경하기" 링크로 걸려서(js/lobby/roomChrome.js), 처음 온 사람도 실제로
+// "개발자의 방" — 이 사이트를 만든 사람의 방 코드. ☰ 서랍에 "개발자의 방
+// 구경하기" 링크로 걸려서(js/shared/roomNav.js), 처음 온 사람도 실제로
 // 꾸며진 방을 읽기 전용으로 둘러보고 참고할 수 있음(남의 방 보기와 똑같이
 // ?room=코드로 열 뿐이라 쓰기는 서버가 막음). 빈 문자열이면 링크를 안 띄움.
 // 방 주인 본인과, 이미 그 방을 보는 중엔 안 보임.

@@ -1,47 +1,47 @@
-// 화면 위쪽의 카테고리 탭(전체/책/애니/영화/음악)과, 그 아래 인생작 줄 +
-// 표지 카드 격자를 그리는 모듈. "지금 어느 탭인지"만 상태로 들고, 카드를
-// 어떻게 그리는지는 list/cardsView.js, 카드를 눌렀을 때 뜨는 상세 창은
-// list/detail.js에 맡김.
+// 화면 위쪽의 카테고리 칩(전체/책/애니/영화/음악)과 그 아래 카드 격자를 그리는 모듈.
+// "지금 어느 칩인지"만 상태로 들고, 카드를 어떻게 그리는지는 list/cardsView.js,
+// 카드 뒷면의 "자세히"를 눌렀을 때 뜨는 상세 창은 list/detail.js에 맡김.
 //
 // "기록을 어떻게 서버와 주고받는지"는 모르고, 건네받은 items 배열을 화면에
 // 뿌리기만 함. 상세 창의 "수정하기"/"삭제"/"인생작"을 눌렀을 때 실제로 무슨
 // 일이 일어날지는 createList를 부른 쪽(main.js)이 onEdit/onDelete/onFeature
 // 콜백으로 정해줌.
 import { CATS } from './records.js';
-import { renderCards } from './list/cardsView.js';
+import { renderCards, deal } from './list/cardsView.js';
 import { createDetail } from './list/detail.js';
-import { featureLabel, withEuro } from './list/itemFormat.js';
-import { TOP_SLOTS, pickMusic } from '../lobby/showcase.js';
 
-const EMPTY_ALL = '아직 기록이 없어요. 오른쪽 위 + 기록하기에서 본 작품을 찾아 한꺼번에 넣어 보세요.';
-const EMPTY_CAT = '아직 이 카테고리엔 기록이 없어요. 오른쪽 위 + 기록하기로 남겨보세요.';
+const EMPTY_ALL = '아직 기록이 없어요.';
+const EMPTY_CAT = '아직 이 카테고리엔 기록이 없어요.';
 const EMPTY_READONLY = '아직 기록이 없어요.';
 
-export function createList({ onEdit, onDelete, onFeature, onPlay, onListen, onTabChange, readOnly, initialTab }) {
+// 인생작(황금 카드)이 앞에, 그다음은 최신순.
+export function sortForGrid(list) {
+  return list.slice().sort((a, b) =>
+    (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || (b.date || '').localeCompare(a.date || ''));
+}
+
+// onAdd(cat): 내 기록이 비어 있을 때 가운데 "+ 기록" 버튼을 누르면 — 새 기록 창을 엶.
+export function createList({ onEdit, onDelete, onFeature, onListen, onTabChange, onAdd, readOnly, initialTab }) {
   const tabsEl = document.getElementById('tabs');
   const listEl = document.getElementById('list');
-  const featuredEl = document.getElementById('featured');
-  const featuredGrid = document.getElementById('featuredGrid');
-  const featuredTitle = document.getElementById('featuredTitle');
-  const allTitle = document.getElementById('allTitle');
-  const detail = createDetail(document.getElementById('detailDialog'), { onEdit, onDelete, onFeature, onPlay, onListen, readOnly });
+  const detail = createDetail(document.getElementById('detailDialog'), { onEdit, onDelete, onFeature, onListen, readOnly });
 
   let activeTab = CATS.some((c) => c.key === initialTab) ? initialTab : 'all';
   let currentItems = [];
-  let playingId = null; // 방의 턴테이블에서 도는 곡 — 그 카드에 "턴테이블 위" 표시
-  const openDetail = (it) => detail.open(it, { playing: it.id === playingId });
+  let shownIds = null; // 지금 격자에 있는 카드 id — 다시 그릴 때 새로 생긴 카드만 나눠주려고
+  const openDetail = (it) => detail.open(it);
 
-  // 탭 바꾸기 — 이 페이지의 탭을 누르거나, 상단 메뉴의 책·애니·영화·음악을 눌렀을 때
+  // 칩 바꾸기 — 이 페이지의 칩을 누르거나, 상단 메뉴의 책·애니·영화·음악을 눌렀을 때
   // (main.js가 페이지를 다시 불러오지 않고 이걸 부름).
   function selectTab(key) {
     if (activeTab === key || !(key === 'all' || CATS.some((c) => c.key === key))) return;
     activeTab = key;
-    // 새로고침하거나 주소를 공유해도 같은 탭이 열리게 주소에도 남김.
+    // 새로고침하거나 주소를 공유해도 같은 칩이 열리게 주소에도 남김.
     const url = new URL(location.href);
     if (key === 'all') url.searchParams.delete('cat'); else url.searchParams.set('cat', key);
     history.replaceState(null, '', url);
     renderTabs();
-    renderBody();
+    renderBody({ dealAll: true });
     if (onTabChange) onTabChange(key);
   }
 
@@ -49,66 +49,50 @@ export function createList({ onEdit, onDelete, onFeature, onPlay, onListen, onTa
     const all = [{ key: 'all', label: '전체' }, ...CATS];
     tabsEl.innerHTML = '';
     all.forEach((t) => {
-      const count = t.key === 'all' ? currentItems.length : currentItems.filter((i) => i.cat === t.key).length;
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'tab';
+      btn.className = 'chip';
       btn.dataset.cat = t.key;
       btn.setAttribute('aria-pressed', String(t.key === activeTab));
-      btn.innerHTML = `${t.key === 'all' ? '' : '<i class="dot"></i>'}${t.label}<span class="n">${count}</span>`;
+      btn.textContent = t.label;
       btn.addEventListener('click', () => selectTab(t.key));
       tabsEl.appendChild(btn);
     });
   }
 
-  // 카테고리 탭에서만 맨 위에 인생작(최대 3개)을 크게 보여줌 — 방의 가구 위에
-  // 걸린 것과 같은 것들. 내 방이면 남는 자리를 방의 빈 스탠드처럼 빈칸으로
-  // 채워서 "여기에 더 걸 수 있다"는 걸 보여줌(남의 방이면 고른 것만).
-  function renderFeatured(list) {
-    if (activeTab === 'all' || list.length === 0) { featuredEl.hidden = true; return; }
-    const featured = list.filter((i) => i.featured).slice(0, TOP_SLOTS);
-    if (featured.length === 0 && readOnly) { featuredEl.hidden = true; return; }
-    featuredEl.hidden = false;
-    featuredTitle.textContent = featureLabel(activeTab);
-    // 내 방의 최애음악 줄에선 카드마다 "턴테이블에 올리기"로 바로 턴테이블에 올릴 수 있음.
-    const onPlayCard = activeTab === 'music' && !readOnly ? (it) => onPlay(it, true) : undefined;
-    renderCards(featuredGrid, featured, { onOpen: openDetail, showCat: false, emptyText: '', playingId, onPlay: onPlayCard });
-    if (readOnly) return;
-    for (let i = featured.length; i < TOP_SLOTS; i++) {
-      const slot = document.createElement('div');
-      slot.className = 'card slot';
-      slot.innerHTML = `<div class="cover slot-cover"><span>기록을 눌러<br>"${withEuro(featureLabel(activeTab))}"를<br>고르면 여기 걸려요</span></div>`;
-      featuredGrid.appendChild(slot);
-    }
-  }
-
-  function renderBody() {
-    document.getElementById('totalCount').textContent = currentItems.length;
-    const list = (activeTab === 'all' ? currentItems : currentItems.filter((i) => i.cat === activeTab))
-      .slice()
-      .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-    renderFeatured(list);
-    const cat = CATS.find((c) => c.key === activeTab);
-    allTitle.textContent = cat ? `모든 ${cat.label}` : '';
-    allTitle.hidden = featuredEl.hidden;
-    renderCards(listEl, list, {
+  // dealAll: 카드 전부를 덱에서 나눠줌(처음 열 때·칩을 바꿀 때). 아니면(추가/수정 뒤
+  // 다시 그릴 때) 새로 생긴 카드만.
+  function renderBody({ dealAll = false } = {}) {
+    const list = sortForGrid(activeTab === 'all' ? currentItems : currentItems.filter((i) => i.cat === activeTab));
+    const slots = renderCards(listEl, list, {
       onOpen: openDetail,
-      playingId,
-      showCat: activeTab === 'all',
+      onListen,
       emptyText: readOnly ? EMPTY_READONLY : activeTab === 'all' ? EMPTY_ALL : EMPTY_CAT,
     });
+    // 내 기록이 비어 있으면 안내 아래 가운데에 "+ 기록" 버튼(위 줄의 같은 버튼을 못 찾는 사람이 많아서).
+    const emptyEl = listEl.querySelector('.empty');
+    if (emptyEl && !readOnly && onAdd) {
+      emptyEl.classList.add('empty-add');
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'empty-add-btn';
+      btn.textContent = '+ 기록';
+      btn.addEventListener('click', () => onAdd(activeTab));
+      emptyEl.appendChild(btn);
+    }
+    const before = shownIds;
+    shownIds = new Set(list.map((i) => i.id));
+    deal(dealAll || !before ? slots : slots.filter((s) => !before.has(Number(s.dataset.id)) && !before.has(s.dataset.id)));
   }
 
   return {
-    // 지금 보고 있는 탭('all' 또는 카테고리) — "+ 기록하기"의 기본 카테고리로 씀.
+    // 지금 보고 있는 칩('all' 또는 카테고리) — "+ 기록"의 기본 카테고리로 씀.
     activeTab: () => activeTab,
     selectTab,
-    // 새로 받아온 items 배열로 탭+목록을 다시 그림. 서버에서 기록을
+    // 새로 받아온 items 배열로 칩+목록을 다시 그림. 서버에서 기록을
     // 새로 불러올 때마다(로드/추가/수정/삭제 후) main.js가 이 함수를 부름.
     render(items) {
       currentItems = items;
-      const { playing } = pickMusic(items);
-      playingId = playing ? playing.id : null;
       renderTabs();
       renderBody();
     },

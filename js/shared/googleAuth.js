@@ -17,11 +17,13 @@ function renderGoogleButton(containerEl) {
   // 카톡·인스타 웹뷰에선 구글이 로그인을 막아서 눌러도 오류 화면만 뜸 —
   // 버튼 대신 어디서 하면 되는지 알려줌.
   if (isInAppBrowser()) {
-    containerEl.innerHTML = '<span class="google-linked">구글 계정 연결은 크롬·사파리에서 할 수 있어요</span>';
+    containerEl.innerHTML = '<span class="google-linked">구글 계정 연동은 크롬·사파리에서 할 수 있어요</span>';
     return;
   }
 
   google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleCredential });
+  // 버튼 글자는 구글이 정한 몇 가지 중에서만 고를 수 있어서("연동"은 없음) "Google 계정으로 로그인"
+  // 그대로 둠(사용자 결정). "구글 계정 연동"이라는 제목은 버튼 위에 따로 있음(roomSettings.js).
   google.accounts.id.renderButton(containerEl, { type: 'standard', theme: 'outline', size: 'medium', text: 'signin_with' });
 }
 
@@ -52,7 +54,7 @@ export function initGoogleAuth(containerEl, mine, unlinkEl) {
 function renderUnlink(unlinkEl, mine) {
   unlinkEl.innerHTML = '<button type="button" class="google-unlink">구글 계정 연동 해제</button>';
   unlinkEl.querySelector('button').addEventListener('click', () => {
-    if (!confirm('구글 계정 연동을 해제할까요?\n해제하면 이 계정으로는 이 방을 다시 불러올 수 없어요. (방과 기록은 그대로예요)')) return;
+    if (!confirm('구글 계정 연동을 해제할까요?\n해제하면 이 계정으로는 이 기록을 다시 불러올 수 없어요. (기록은 그대로예요)')) return;
     fetch(`${API_BASE}/api/rooms/${mine.code}/google`, { method: 'DELETE', headers: { 'X-Room-Token': mine.token } })
       .then((res) => (res.ok ? window.location.reload() : Promise.reject()))
       .catch(() => alert('연동 해제에 실패했어요. 잠시 후 다시 시도해주세요.'));
@@ -76,12 +78,12 @@ function handleCredential(response) {
         // 처음 연결된 것 — 지금 방은 그대로고, 나중에 이 계정으로
         // 로그인하면 이 방을 되찾을 수 있다는 것만 알려주면 됨. 새로고침해서
         // 로그인 버튼이 "연동됨" 표시로 곧바로 바뀌게 함.
-        alert('구글 계정을 연결했어요. 다른 기기에서도 이 계정으로 로그인하면 내 방을 불러올 수 있어요.');
+        alert('구글 계정을 연동했어요. 다른 기기에서도 이 계정으로 연동하면 내 기록을 불러올 수 있어요.');
         window.location.reload();
         return;
       }
       if (stored && stored.code === code) {
-        alert('이미 이 방에 연결된 계정이에요.');
+        alert('이미 이 기록에 연결된 계정이에요.');
         return;
       }
       // 이미 다른 방에 연결된 계정으로 로그인한 경우. 새 브라우저가 저절로
@@ -90,21 +92,21 @@ function handleCredential(response) {
       // 기록을 두고 가는 되돌리기 어려운 전환이라 한 번 확인함.
       if (stored && current_empty !== true) {
         const ok = confirm(
-          `이 구글 계정에는 다른 방(${code})이 연결돼 있어요.\n` +
-          `불러오면 지금 이 브라우저의 방(${stored.code})에 남긴 기록은 더 이상 볼 수 없어요.\n\n` +
-          '[확인] 연결된 방 불러오기\n[취소] 지금 방에 그대로 있기',
+          `이 구글 계정에는 다른 기록(${code})이 연결돼 있어요.\n` +
+          `불러오면 지금 이 브라우저의 기록(${stored.code})은 더 이상 볼 수 없어요.\n\n` +
+          '[확인] 연결된 기록 불러오기\n[취소] 지금 기록에 그대로 있기',
         );
         if (!ok) {
           alert(
-            `지금 방(${stored.code})에 그대로 있어요.\n` +
-            `이 구글 계정은 방 ${code}에 연결돼 있어서, 지금 방은 다른 구글 계정으로만 연결할 수 있어요.`,
+            `지금 기록(${stored.code})에 그대로 있어요.\n` +
+            `이 구글 계정은 기록 ${code}에 연결돼 있어서, 지금 기록은 다른 구글 계정으로만 연결할 수 있어요.`,
           );
           return;
         }
       }
       adoptRoom({ code, token });
-      alert(`구글 계정에 연결된 방(${code})을 불러왔어요.`);
+      alert(`구글 계정에 연결된 기록(${code})을 불러왔어요.`);
       window.location.reload();
     })
-    .catch(() => alert('구글 로그인에 실패했어요. 잠시 후 다시 시도해주세요.'));
+    .catch(() => alert('구글 계정 연동에 실패했어요. 잠시 후 다시 시도해주세요.'));
 }

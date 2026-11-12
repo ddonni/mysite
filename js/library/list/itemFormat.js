@@ -26,8 +26,8 @@ export function ratingStars(r) {
   return `<span class="stars-view" aria-label="별점 ${v}점">${html}</span>`;
 }
 
-// 카테고리마다 인생작(코드에선 featured)을 부르는 이름 — 책/애니/영화는 방의
-// 가구 위에 3개까지 걸리고, 음악은 첫 번째 최애음악이 턴테이블에서 돌아감.
+// 카테고리마다 인생작(코드에선 featured)을 부르는 이름 — 카테고리마다 3개까지 고를 수
+// 있고, 고른 건 첫 화면 맨 앞에 황금 카드로 나옴(list/cardsView.js).
 const FEATURE_LABEL = { book: '인생책', anime: '인생애니', movie: '인생영화', music: '최애음악' };
 export function featureLabel(cat) {
   return FEATURE_LABEL[cat] || '인생작';
@@ -58,19 +58,14 @@ export function featureButtonLabel(cat, featured) {
 
 // 기록의 표지. 사진이 있으면 그 사진 — 음악은 정사각형 앨범 아트라서
 // 세로로 긴 카드에 잘리지 않게, 흐리게 늘인 같은 사진 위에 가운데 정사각형으로
-// 올림. 사진이 없으면 방의 제목 카드처럼 카테고리 색 표지에 제목을 씀.
-// playing: 이 곡이 지금 방의 턴테이블에서 도는 곡인지(showcase.js의 pickMusic).
-export function coverHtml(it, { playing = false } = {}) {
-  const tags = [
-    it.featured ? `<span class="badge">${featureLabel(it.cat)}</span>` : '',
-    playing ? '<span class="badge playing">◉ 턴테이블 위</span>' : '',
-  ].join('');
-  const badge = tags ? `<span class="badges">${tags}</span>` : '';
+// 올림. 사진이 없으면 제목 카드(카드 화면에선 cards.css가 회색 기본 그림으로 바꿈).
+export function coverHtml(it) {
+  const badge = it.featured ? `<span class="badges"><span class="badge">${featureLabel(it.cat)}</span></span>` : '';
   if (it.photo_url) {
     const src = escapeAttr(photoSrc(it.photo_url));
-    // crossorigin: 로비(coverImage.js)는 같은 사진을 CORS로 받아 WebGL 텍스처로 씀.
-    // 여기서 CORS 없이 먼저 받으면 ACAO 헤더 없는 응답이 1년(immutable) 캐시에 남아
-    // 로비가 그 캐시를 쓰다 실패함(2026-10-25 실제로 겪음) — 두 곳의 요청 방식을 맞춤.
+    // crossorigin: 예전 3D 방이 같은 사진을 CORS로 받아 WebGL 텍스처로 썼고, CORS 없이
+    // 받은 응답이 1년(immutable) 캐시에 남아 그쪽이 실패한 적이 있음(2026-10-25). 지금은
+    // 3D 방이 없지만, 나중에 WebGL·canvas로 사진을 다룰 일이 생겨도 같은 문제가 없게 그대로 둠.
     if (it.cat === 'music') {
       return `<div class="cover square"><img class="bg" src="${src}" alt="" aria-hidden="true" loading="lazy" crossorigin="anonymous"><img class="fg" src="${src}" alt="" loading="lazy" crossorigin="anonymous">${badge}</div>`;
     }

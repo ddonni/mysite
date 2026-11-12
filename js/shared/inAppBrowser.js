@@ -92,7 +92,7 @@ function renderBanner(kind, ua, href, go) {
     : '';
   bar.innerHTML = `
     <div class="inapp-text">
-      <p><b>크롬·사파리에서 열어주세요.</b> 여기선 방이 이 앱 안에만 저장돼요.</p>
+      <p><b>크롬·사파리에서 열어주세요.</b> 여기선 기록이 이 앱 안에만 저장돼요.</p>
       ${how}
     </div>
     <div class="inapp-actions">

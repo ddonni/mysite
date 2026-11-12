@@ -19,11 +19,11 @@ async function initAt(url, extraHtml = '') {
   document.body.innerHTML = `
     <nav class="site-nav">
       <button type="button" class="nav-menu" aria-expanded="false"></button>
-      <a href="./" data-page="./">홈</a>
-      <a href="library?cat=book" data-page="library?cat=book" data-cat="book">책</a>
+      <a href="./" data-page="./" data-cat="all">전체</a>
+      <a href="./?cat=book" data-page="./?cat=book" data-cat="book">책</a>
     </nav>${extraHtml}`;
   const navEl = document.querySelector('.site-nav');
-  await initRoomNav({ navEl, currentPage: 'library' });
+  await initRoomNav({ navEl, currentPage: './' });
   return navEl;
 }
 
@@ -32,31 +32,44 @@ beforeEach(() => {
 });
 
 describe('읽기 전용 표시', () => {
-  it('개발자 방을 보는 중이면 "개발자의 방 보는 중"', async () => {
-    await initAt('/library?room=DEV123');
-    expect(document.querySelector('.nav-drawer .room-tag.readonly').textContent).toContain('개발자의 방 보는 중');
+  it('개발자 방을 보는 중이면 "개발자의 기록 보는 중"', async () => {
+    await initAt('/?room=DEV123');
+    expect(document.querySelector('.nav-drawer .room-tag.readonly').textContent).toContain('개발자의 기록 보는 중');
   });
 
   it('다른 친구 방을 볼 땐 기존처럼 방 코드를 보여줌', async () => {
-    await initAt('/library?room=FRND99');
+    await initAt('/?room=FRND99');
     expect(document.querySelector('.nav-drawer .room-tag.readonly b').textContent).toBe('FRND99');
   });
 });
 
 describe('상단 메뉴와 서랍', () => {
-  it('남의 방을 볼 땐 위 줄 링크가 그 방을 유지 — 이미 쿼리가 있는 링크(library?cat=)엔 &로 붙임', async () => {
-    const nav = await initAt('/library?room=FRND99');
-    expect(nav.querySelector('a[data-cat="book"]').getAttribute('href')).toBe('library?cat=book&room=FRND99');
+  it('남의 방을 볼 땐 위 줄 링크가 그 방을 유지 — 이미 쿼리가 있는 링크(./?cat=)엔 &로 붙임', async () => {
+    const nav = await initAt('/?room=FRND99');
+    expect(nav.querySelector('a[data-cat="book"]').getAttribute('href')).toBe('./?cat=book&room=FRND99');
     expect(nav.querySelector('a[data-page="./"]').getAttribute('href')).toBe('./?room=FRND99');
   });
 
-  it('기록 보관소의 지금 카테고리를 위 줄에 표시', async () => {
-    const nav = await initAt('/library?cat=book');
+  it('첫 화면의 지금 카테고리를 위 줄에 표시 — 카테고리가 없으면 "전체"', async () => {
+    let nav = await initAt('/?cat=book');
     expect(nav.querySelector('a[data-cat="book"]').classList.contains('active')).toBe(true);
+    expect(nav.querySelector('a[data-cat="all"]').classList.contains('active')).toBe(false);
+    nav = await initAt('/');
+    expect(nav.querySelector('a[data-cat="all"]').classList.contains('active')).toBe(true);
+  });
+
+  it('서랍의 "개발자의 방 구경하기" — 다른 사람에겐 개발자 방으로, 이미 보는 중이면 숨김', async () => {
+    await initAt('/');
+    let dev = document.querySelector('.nav-drawer .drawer-dev');
+    expect(dev.hidden).toBe(false);
+    expect(dev.getAttribute('href')).toBe('./?room=DEV123');
+    await initAt('/?room=DEV123');
+    dev = [...document.querySelectorAll('.nav-drawer .drawer-dev')].pop();
+    expect(dev.hidden).toBe(true);
   });
 
   it('☰를 누르면 서랍이 열리고, 바깥을 누르거나 Esc면 닫힘', async () => {
-    const nav = await initAt('/library');
+    const nav = await initAt('/');
     const drawer = document.querySelector('.nav-drawer');
     const menu = nav.querySelector('.nav-menu');
     menu.click();
@@ -70,24 +83,42 @@ describe('상단 메뉴와 서랍', () => {
   });
 
   it('서랍의 "방 둘러보기"도 보던 방을 들고 감 — 둘러보기를 거쳐도 말없이 내 방으로 넘어가지 않게', async () => {
-    await initAt('/library?room=FRND99');
+    await initAt('/?room=FRND99');
     expect(document.querySelector('.nav-drawer a[data-page="rooms"]').getAttribute('href')).toBe('rooms?room=FRND99');
   });
 
-  it('페이지의 방 표시: 내 방이면 "내 방", 개발자 방이면 "개발자의 방"', async () => {
+  it('페이지의 방 표시: 내 방이면 "내 기록", 개발자 방이면 "개발자의 기록"', async () => {
     document.body.innerHTML = '';
-    let nav = await initAt('/library', '<div data-room-label></div>');
-    expect(document.querySelector('[data-room-label]').textContent).toBe('내 방');
-    nav = await initAt('/library?room=DEV123', '<div data-room-label></div>');
+    let nav = await initAt('/', '<div data-room-label></div>');
+    expect(document.querySelector('[data-room-label]').textContent).toBe('내 기록');
+    nav = await initAt('/?room=DEV123', '<div data-room-label></div>');
     const label = document.querySelector('[data-room-label]');
-    expect(label.textContent).toBe('개발자의 방');
+    expect(label.textContent).toBe('개발자의 기록');
     expect(label.classList.contains('visiting')).toBe(true);
   });
 
-  it('내 방이면 서랍 맨 위에 방 코드 + 링크 복사', async () => {
-    await initAt('/library');
+  it('내 기록에 이름을 지어 뒀으면 "내 기록" 대신 그 이름', async () => {
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ name: '도현의 서재' }) }));
+    try {
+      document.body.innerHTML = '';
+      await initAt('/', '<div data-room-label></div>');
+      await new Promise((r) => setTimeout(r, 0));
+      expect(document.querySelector('[data-room-label]').textContent).toBe('도현의 서재');
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+
+  it('서랍의 코드 칸은 "코드로 기록 보기"', async () => {
+    await initAt('/');
+    expect(document.querySelector('.nav-drawer .room-visit input').placeholder).toBe('코드로 기록 보기');
+  });
+
+  it('내 기록이면 서랍 맨 위에 코드 + 코드 복사', async () => {
+    await initAt('/');
     const room = document.querySelector('.nav-drawer .drawer-room');
     expect(room.querySelector('.room-tag b').textContent).toBe('MINE22');
-    expect(room.querySelector('.room-copy').textContent).toBe('링크 복사');
+    expect(room.querySelector('.room-copy').textContent).toBe('코드 복사');
   });
 });

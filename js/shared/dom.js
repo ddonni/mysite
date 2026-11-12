@@ -1,5 +1,5 @@
 // 여러 모듈에서 똑같이 필요한 아주 작은 DOM 유틸들을 모아둔 곳.
-// (roomNav.js, lobby/main.js, library/list.js, shared/googleAuth.js가 씀)
+// (roomNav.js, library/*, shared/googleAuth.js가 씀)
 
 // 사용자가 입력한 텍스트(제목/감상/이메일 등)를 innerHTML에 그대로 넣으면
 // 안 되므로(예: <script> 삽입), 브라우저의 텍스트 이스케이프 기능을 빌려

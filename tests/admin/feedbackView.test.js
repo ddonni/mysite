@@ -3,11 +3,11 @@ import { pageLabel, timeAgo, filterFeedback, isNew } from '../../js/admin/feedba
 
 describe('pageLabel', () => {
   it('보낸 화면 경로를 이름으로', () => {
-    expect(pageLabel('/mysite/')).toBe('로비');
-    expect(pageLabel('/mysite/index.html')).toBe('로비');
+    expect(pageLabel('/mysite/')).toBe('첫 화면');
+    expect(pageLabel('/mysite/index.html')).toBe('첫 화면');
     expect(pageLabel('/mysite/library')).toBe('기록 보관소');
     expect(pageLabel('/mysite/sketchbook.html')).toBe('캔버스');
-    expect(pageLabel('/mysite/rooms')).toBe('방 둘러보기');
+    expect(pageLabel('/mysite/rooms')).toBe('기록 둘러보기');
   });
 
   it('모르는 경로는 그대로, 없으면 빈 문자열', () => {

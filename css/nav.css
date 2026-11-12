@@ -1,6 +1,6 @@
-/* 네 페이지가 같이 쓰는 상단 메뉴(.site-nav)와 왼쪽 서랍(.nav-drawer) — 페이지마다
+/* 두 페이지(첫 화면·둘러보기)가 같이 쓰는 상단 메뉴(.site-nav)와 왼쪽 서랍(.nav-drawer) — 페이지마다
    스타일을 따로 갖고 있어서 페이지를 옮길 때마다 메뉴 모양이 바뀌던 걸 여기 한 곳으로
-   모음. 위 메뉴는 왼쪽 위에 떠 있는 알약 모양(☰ · 홈 · 캔버스 · 책 · 애니 · 영화 · 음악)이고,
+   모음. 위 메뉴는 왼쪽 위에 떠 있는 알약 모양(☰ · 전체 · 책 · 애니 · 영화 · 음악)이고,
    방 코드 UI 같은 나머지는 ☰로 여는 서랍에 있음(roomNav.js가 만듦). 색은 페이지 변수에
    기대지 않고 여기서 따로 정의함 — 페이지마다 색 토큰 이름/값이 서로 달라서. */
 .site-nav {
@@ -167,6 +167,39 @@ body.drawer-open { overflow: hidden; }
   background: none; cursor: pointer;
 }
 .drawer-links a:hover, .drawer-links button:hover { background: var(--nav-hover); }
+.drawer-links a[hidden] { display: none; }
+
+/* 방 설정(첫 화면의 서랍에만 — js/shared/roomSettings.js): 방 이름 · 둘러보기 공개 · 구글 연결 */
+.drawer-settings {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 12px; border-radius: 14px; background: var(--nav-paper); border: 1px solid var(--nav-line);
+}
+.drawer-settings[hidden] { display: none; }
+.drawer-section-title { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: var(--nav-dim); }
+.drawer-settings .room-name-form label { display: block; font-size: 12px; color: var(--nav-dim); margin-bottom: 4px; }
+.drawer-settings .room-name-row { display: flex; gap: 6px; }
+.drawer-settings .room-name-row input {
+  flex: 1; min-width: 0; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--nav-line);
+  font-size: 13px; font-family: inherit; background: rgb(var(--nav-bg-rgb)); color: var(--nav-ink);
+}
+.drawer-settings .room-name-row button {
+  font-size: 12.5px; font-weight: 600; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--nav-line);
+  background: none; cursor: pointer; color: var(--nav-ink); font-family: inherit;
+}
+.drawer-settings .room-name-row button:hover { background: var(--nav-hover); }
+.drawer-settings .vis-toggle { color: var(--nav-ink); }
+.drawer-settings .vis-track { background: var(--nav-hover); border-color: var(--nav-line); }
+.drawer-settings .vis-knob { background: var(--nav-ink); }
+.drawer-settings .vis-toggle[aria-checked="true"] .vis-track { background: var(--nav-accent); border-color: var(--nav-accent); }
+.drawer-settings .vis-toggle[aria-checked="true"] .vis-knob { background: var(--nav-paper); }
+.drawer-settings .vis-hint { color: var(--nav-dim); }
+.drawer-settings .google-btn:empty, .drawer-settings .google-unlink-slot:empty { display: none; }
+.drawer-settings .google-linked { font-size: 12.5px; color: var(--nav-dim); }
+.drawer-settings .google-unlink {
+  padding: 0; border: none; background: none; cursor: pointer; font-family: inherit;
+  font-size: 11.5px; color: var(--nav-dim); text-decoration: underline; opacity: 0.75;
+}
+.drawer-settings .google-unlink:hover { opacity: 1; }
 
 .nav-drawer .room-visit { display: flex; gap: 6px; margin-top: auto; padding-top: 8px; border-top: 1px solid var(--nav-line); }
 .nav-drawer .room-visit input {
@@ -201,3 +234,4 @@ body.drawer-open { overflow: hidden; }
    두 손가락으로 벌려 확대하는 건 그대로 됨. 조상의 touch-action이 자손에도 걸려서 html 하나면
    페이지 전체에 적용됨. */
 html { touch-action: manipulation; }
+.drawer-settings .google-title { font-size: 12px; color: var(--nav-dim); margin-bottom: -6px; }

@@ -1,47 +1,34 @@
-// 상세 창의 "턴테이블에 올리기/내리기" 버튼 — 음악에만, 그리고 상황에 맞는
-// 글자로 뜨는지, 누르면 onPlay가 올바른 값으로 불리는지.
+// 상세 창(카드 뒷면의 "자세히") — 내 방이면 수정하기·인생작·삭제 버튼이 뜨고 삭제는 한 번
+// 더 묻는지, 유튜브 링크가 있는 음악엔 "▶ 듣기"가 뜨는지.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDetail } from '../../../js/library/list/detail.js';
 
-let onPlay;
+let onDelete;
 let detail;
 
 beforeEach(() => {
   document.body.innerHTML = '<div id="d" hidden><div class="detail-card"></div></div>';
-  onPlay = vi.fn();
+  onDelete = vi.fn();
   detail = createDetail(document.getElementById('d'), {
-    onEdit: () => {}, onDelete: () => {}, onFeature: () => {}, onPlay, readOnly: false,
+    onEdit: () => {}, onDelete, onFeature: () => {}, readOnly: false,
   });
 });
 
-const playBtn = () => document.querySelector('[data-act="play"]');
 const song = (extra) => ({ id: 1, cat: 'music', title: '노래', rating: 0, ...extra });
 
-describe('턴테이블 버튼', () => {
-  it('턴테이블에 없는 곡엔 "올리기" — 누르면 onPlay(곡, true)', () => {
-    const it_ = song();
-    detail.open(it_, { playing: false });
-    expect(playBtn().textContent).toBe('턴테이블에 올리기');
-    playBtn().click();
-    expect(onPlay).toHaveBeenCalledWith(it_, true);
+describe('내 방 버튼', () => {
+  it('수정하기·인생작·삭제만 — 턴테이블 버튼은 없음(3D 방이 없어짐)', () => {
+    detail.open(song());
+    const acts = [...document.querySelectorAll('.detail-actions [data-act]')].map((b) => b.dataset.act);
+    expect(acts).toEqual(['edit', 'feature', 'delete']);
   });
 
-  it('직접 올린 곡엔 "내리기" — 누르면 onPlay(곡, false)', () => {
-    const it_ = song({ playing: true });
-    detail.open(it_, { playing: true });
-    expect(playBtn().textContent).toBe('턴테이블에서 내리기');
-    playBtn().click();
-    expect(onPlay).toHaveBeenCalledWith(it_, false);
-  });
-
-  it('기본 규칙으로 이미 돌고 있는 곡엔 버튼 없음', () => {
-    detail.open(song(), { playing: true });
-    expect(playBtn()).toBeNull();
-  });
-
-  it('음악이 아니면 버튼 없음', () => {
-    detail.open({ id: 2, cat: 'book', title: '책', rating: 0 }, { playing: false });
-    expect(playBtn()).toBeNull();
+  it('삭제는 한 번 더 묻고, "예, 삭제"를 눌러야 onDelete(id)', () => {
+    detail.open(song());
+    document.querySelector('[data-act="delete"]').click();
+    expect(onDelete).not.toHaveBeenCalled();
+    document.querySelector('[data-act="confirm-delete"]').click();
+    expect(onDelete).toHaveBeenCalledWith(1);
   });
 });
 

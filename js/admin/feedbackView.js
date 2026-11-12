@@ -1,7 +1,7 @@
 // 운영자 피드백 페이지(admin.html)의 화면 문구 — DOM 없음(테스트용으로 따로 뺌).
 
 // 보낸 화면 경로(feedback.js가 location.pathname을 보냄, 예: "/mysite/library") → 이름.
-const PAGE_NAMES = { '': '로비', index: '로비', library: '기록 보관소', sketchbook: '캔버스', rooms: '방 둘러보기' };
+const PAGE_NAMES = { '': '첫 화면', index: '첫 화면', library: '기록 보관소', sketchbook: '캔버스', rooms: '기록 둘러보기' };
 
 export function pageLabel(path) {
   if (!path) return '';
