@@ -1,89 +1,17 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>캔버스</title>
-  <!-- 카카오톡·인스타 링크 미리보기. 크롤러는 JS를 안 돌려서 방마다 다르게는 못 하고 공통 카드 하나 -->
-  <meta name="description" content="읽고, 보고, 들은 책·애니·영화·음악을 3D 방에 모아두는 곳">
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="내 방">
-  <meta property="og:title" content="캔버스 — 내 방">
-  <meta property="og:description" content="읽고, 보고, 들은 책·애니·영화·음악을 3D 방에 모아두는 곳">
-  <meta property="og:image" content="https://ddonni.github.io/mysite/og-image.png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta name="twitter:card" content="summary_large_image">
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=2" />
-  <link rel="stylesheet" href="css/nav.css?v=6" />
-  <link rel="stylesheet" href="css/feedback.css?v=2" />
-  <link rel="stylesheet" href="css/inapp.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>내 기록</title>
+<!-- 캔버스는 2026-11-12에 없앰 — 예전 주소(공유된 링크·즐겨찾기)는 ?room=을 들고 첫 화면으로 넘김. -->
+<script>
+  (function () {
+    var room = new URLSearchParams(location.search).get('room');
+    location.replace('./' + (room ? '?room=' + encodeURIComponent(room) : ''));
+  })();
+</script>
+<meta http-equiv="refresh" content="0; url=./">
 </head>
-<body>
-
-<nav class="site-nav" aria-label="페이지 이동">
-  <!-- 위 줄: 어디서든 바로 가는 곳. 방 코드·둘러보기·의견 보내기 등은 ☰ 서랍(js/shared/roomNav.js) -->
-  <button type="button" class="nav-menu" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navDrawer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-  <a href="./" data-page="./">홈</a>
-  <a href="sketchbook" data-page="sketchbook" class="active">캔버스</a>
-  <a href="library?cat=book" data-page="library?cat=book" data-cat="book">책</a>
-  <a href="library?cat=anime" data-page="library?cat=anime" data-cat="anime">애니</a>
-  <a href="library?cat=movie" data-page="library?cat=movie" data-cat="movie">영화·시리즈</a>
-  <a href="library?cat=music" data-page="library?cat=music" data-cat="music">음악</a>
-</nav>
-
-<div id="stage">
-  <div id="pageWrap">
-    <canvas id="canvas" aria-label="캔버스"></canvas>
-  </div>
-</div>
-
-<div id="dock">
-  <div id="panel" role="group" aria-label="그리기 도구">
-    <div class="row swatches" id="swatches"></div>
-    <div class="row">
-      <div class="sizes" id="sizes"></div>
-      <input type="color" id="customColor" title="다른 색" value="#2b2b2e" />
-    </div>
-    <div class="divider"></div>
-    <div class="row">
-      <button class="icon-btn" id="eraserBtn" title="지우개">
-        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 13 9 22H4l-1.5-1.5a2 2 0 0 1 0-2.8L14 6.2a2 2 0 0 1 2.8 0l3.5 3.5a2 2 0 0 1 0 2.8L18 15" />
-          <path d="M14 6.2 6.5 13.7" />
-        </svg>
-      </button>
-      <button class="icon-btn" id="undoBtn" title="되돌리기">
-        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 14 4 9l5-5" />
-          <path d="M4 9h10a6 6 0 0 1 0 12h-3" />
-        </svg>
-      </button>
-    </div>
-  </div>
-  <button class="icon-btn danger" id="clearBtn" title="이 페이지 전부 지우기">
-    <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M4 7h16" />
-      <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-      <path d="m6 7 1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" />
-    </svg>
-  </button>
-  <button id="handle" title="도구 열기/닫기" aria-expanded="false" aria-controls="panel">
-    <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none">
-      <path d="m14.5 3.5 6 6L8 22H2v-6Z" />
-    </svg>
-  </button>
-</div>
-
-<!-- 지금 보는 방 — "내 방" / "개발자의 방" / "○○의 방"(js/shared/roomNav.js) -->
-<div class="room-label" data-room-label></div>
-
-<div id="toast"></div>
-
-<script type="module" src="js/shared/inAppBrowser.js"></script>
-<script type="module" src="js/sketchbook/main.js"></script>
-<script type="module" src="js/shared/feedback.js"></script>
-</body>
+<body></body>
 </html>
