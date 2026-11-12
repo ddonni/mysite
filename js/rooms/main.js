@@ -1,5 +1,5 @@
 // "방 둘러보기" 페이지(rooms.html)의 시작점 — 방 주인이 공개로 켠 방들을
-// 카드로 보여주고, 누르면 그 방(로비)에 읽기 전용으로 놀러 감. 목록은 서버
+// 카드로 보여주고, 누르면 그 방(첫 화면)에 읽기 전용으로 놀러 감. 목록은 서버
 // GET /api/rooms가 정함(공개 + 기록 있는 방, 최근 활동순).
 // 위쪽엔 내 방의 공개 스위치도 둬서 여기서 바로 켜고 끌 수 있게 함.
 import { API_BASE, DEVELOPER_ROOM_CODE } from '../shared/config.js';
@@ -15,8 +15,8 @@ const CATS = [
   { key: 'movie', label: '영화·시리즈' },
   { key: 'music', label: '음악' },
 ];
-// 카드 위 띠 색 — 그 방 테마의 벽/러그 색(js/lobby/scene.js의 THEMES와 맞춤).
-// scene.js를 import하면 3D 가구 모듈까지 끌려와서(THREE 필요) 색만 따로 둠.
+// 카드 위 띠 색 — 그 방 테마의 벽/러그 색(예전 3D 방의 테마 색. 3D 방은 없어졌지만 방마다
+// 테마 값이 서버에 남아 있어서 목록 카드의 색으로만 씀).
 const THEME_COLORS = {
   wood: ['#cdbfa4', '#5a2e22'],
   night: ['#3a4759', '#2c3a5c'],
@@ -42,8 +42,8 @@ function roomCard(room, mine) {
   a.style.setProperty('--rug', rug);
   const isMine = room.code === mine.code;
   const isDev = !!DEVELOPER_ROOM_CODE && room.code === DEVELOPER_ROOM_CODE.toUpperCase();
-  const tag = isMine ? '<span class="room-badge mine">내 방</span>'
-    : isDev ? '<span class="room-badge dev">개발자의 방</span>' : '';
+  const tag = isMine ? '<span class="room-badge mine">내 기록</span>'
+    : isDev ? '<span class="room-badge dev">개발자의 기록</span>' : '';
   const counts = CATS.filter((c) => room.counts[c.key])
     .map((c) => `<span class="room-count" data-cat="${c.key}"><i class="dot"></i>${c.label} ${room.counts[c.key]}</span>`)
     .join('');
@@ -51,22 +51,22 @@ function roomCard(room, mine) {
     <span class="room-band" aria-hidden="true"></span>
     <span class="room-body">
       <span class="room-head">
-        <span class="room-name">${room.name ? escapeHtml(room.name) : '이름 없는 방'}</span>
+        <span class="room-name">${room.name ? escapeHtml(room.name) : '이름 없는 기록'}</span>
         ${tag}
       </span>
       <span class="room-code">${escapeHtml(room.code)}</span>
       <span class="room-counts">${counts}</span>
-      <span class="room-go">${isMine ? '내 방으로 →' : '구경하기 →'}</span>
+      <span class="room-go">${isMine ? '내 기록으로 →' : '구경하기 →'}</span>
     </span>
   `;
   return a;
 }
 
 function render(rooms, mine) {
-  metaEl.textContent = rooms.length ? `공개된 방 ${rooms.length}개` : '아직 공개된 방이 없어요';
+  metaEl.textContent = rooms.length ? `공개된 기록 ${rooms.length}개` : '아직 공개된 기록이 없어요';
   listEl.innerHTML = '';
   if (!rooms.length) {
-    listEl.innerHTML = '<div class="empty">아직 공개된 방이 없어요. 내 방을 공개해서 첫 번째 방이 되어 보세요.</div>';
+    listEl.innerHTML = '<div class="empty">아직 공개된 기록이 없어요. 내 기록을 공개해서 첫 번째가 되어 보세요.</div>';
     return;
   }
   rooms.forEach((r) => listEl.appendChild(roomCard(r, mine)));
@@ -78,7 +78,7 @@ initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: 'rooms' }
     .then((rooms) => render(rooms, mine))
     .catch(() => {
       metaEl.textContent = '';
-      listEl.innerHTML = '<div class="empty">방 목록을 불러오지 못했어요. 새로고침해 보세요.</div>';
+      listEl.innerHTML = '<div class="empty">기록 목록을 불러오지 못했어요. 새로고침해 보세요.</div>';
     });
   load().finally(stopWatch);
 

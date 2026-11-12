@@ -3,47 +3,46 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>방 둘러보기</title>
+<title>기록 둘러보기</title>
 <!-- 카카오톡·인스타 링크 미리보기. 크롤러는 JS를 안 돌려서 방마다 다르게는 못 하고 공통 카드 하나 -->
-<meta name="description" content="읽고, 보고, 들은 책·애니·영화·음악을 3D 방에 모아두는 곳">
+<meta name="description" content="읽고, 보고, 들은 책·애니·영화·음악을 기록으로 모아두는 곳">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="내 방">
-<meta property="og:title" content="방 둘러보기 — 내 방">
-<meta property="og:description" content="읽고, 보고, 들은 책·애니·영화·음악을 3D 방에 모아두는 곳">
+<meta property="og:site_name" content="내 기록">
+<meta property="og:title" content="기록 둘러보기 — 내 기록">
+<meta property="og:description" content="읽고, 보고, 들은 책·애니·영화·음악을 기록으로 모아두는 곳">
 <meta property="og:image" content="https://ddonni.github.io/mysite/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbit&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/library.css?v=12">
 <link rel="stylesheet" href="css/nav.css?v=6">
 <link rel="stylesheet" href="css/feedback.css?v=2">
 <link rel="stylesheet" href="css/inapp.css">
 <link rel="stylesheet" href="css/visibility.css">
 <link rel="stylesheet" href="css/rooms.css">
+<!-- 첫 화면과 같은 테마(흰 바탕·Orbit·각진 모서리) -->
+<link rel="stylesheet" href="css/cards.css">
 </head>
-<body>
+<body class="cards">
 
-<nav class="site-nav" aria-label="페이지 이동">
-  <!-- 위 줄: 어디서든 바로 가는 곳. 방 코드·둘러보기·의견 보내기 등은 ☰ 서랍(js/shared/roomNav.js) -->
+<!-- 위 줄 하나(첫 화면과 같은 모양): ☰ 서랍(js/shared/roomNav.js) · 페이지 이름 · 첫 화면의 카테고리로 가는 칩 -->
+<nav class="site-nav lib-bar" aria-label="페이지 이동">
   <button type="button" class="nav-menu" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navDrawer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-  <a href="./" data-page="./">홈</a>
-  <a href="sketchbook" data-page="sketchbook">캔버스</a>
-  <a href="library?cat=book" data-page="library?cat=book" data-cat="book">책</a>
-  <a href="library?cat=anime" data-page="library?cat=anime" data-cat="anime">애니</a>
-  <a href="library?cat=movie" data-page="library?cat=movie" data-cat="movie">영화·시리즈</a>
-  <a href="library?cat=music" data-page="library?cat=music" data-cat="music">음악</a>
+  <div class="logo">기록 둘러보기</div>
+  <div class="chips">
+    <a class="chip" href="./" data-page="./">전체</a>
+    <a class="chip" href="./?cat=book" data-page="./?cat=book">책</a>
+    <a class="chip" href="./?cat=anime" data-page="./?cat=anime">애니</a>
+    <a class="chip" href="./?cat=movie" data-page="./?cat=movie">영화·시리즈</a>
+    <a class="chip" href="./?cat=music" data-page="./?cat=music">음악</a>
+  </div>
 </nav>
 
 <main class="wrap">
-  <header class="top">
-    <div>
-      <div class="eyebrow">Rooms</div>
-      <h1>방 둘러보기</h1>
-      <div class="meta" id="roomsMeta">불러오는 중…</div>
-    </div>
-  </header>
+  <div class="meta rooms-meta" id="roomsMeta">불러오는 중…</div>
 
   <!-- 내 방 공개 여부 — 방 주인 본인만(js/rooms/main.js가 채움) -->
   <section class="my-vis" id="myVisibility" hidden>
