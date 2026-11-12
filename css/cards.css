@@ -175,7 +175,17 @@ body.cards .stars-view .fg svg{ fill:var(--gold); }
   font:inherit; font-size:12px; padding:5px 10px; border-radius:0; cursor:pointer;
   border:none; background:var(--paper); color:#FFFFFF;
 }
-.back-btn[data-act="listen"]{ background:#FFFFFF; color:var(--paper); box-shadow:inset 0 0 0 1px var(--paper); }
+.back-btn.ghost{ background:#FFFFFF; color:var(--paper); box-shadow:inset 0 0 0 1px var(--paper); }
+.back-btn.danger{ background:#C2412F; color:#FFFFFF; }
+.back-actions .confirm-text{ align-self:center; font-size:12px; color:#C2412F; margin-right:2px; }
+/* 뒷면 맨 위: 종류(+ 인생작 이름) · 오른쪽 끝 인생작 별(내 기록만). */
+.back-head{ display:flex; align-items:center; justify-content:space-between; gap:6px; min-height:22px; }
+.feat-btn{
+  flex:none; width:26px; height:26px; margin:-4px -4px 0 0; padding:0; border:none; border-radius:0; cursor:pointer;
+  font-size:17px; line-height:1; background:transparent; color:var(--gold);
+}
+.feat-btn:hover{ background:rgba(23,24,28,0.06); }
+.feat-btn:focus-visible{ outline:2px solid var(--gold); outline-offset:1px; }
 /* 호버: 카드가 살짝 떠오르고 그림자가 번지며 표지가 천천히 확대됨 */
 .slot:not(.rare) .card{ transition:transform .45s cubic-bezier(.2,.8,.2,1), box-shadow .45s cubic-bezier(.2,.8,.2,1); }
 @media (hover:hover){
@@ -251,22 +261,6 @@ body.cards .stars-view .fg svg{ fill:var(--gold); }
 .help-dialog[data-mode="owner"] .help-close{ background:var(--chip); color:var(--paper); }
 @media (max-width:420px){ .help-cats{ grid-template-columns:repeat(2, 1fr); } }
 
-/* --- 상세 창(자세히) --- */
-body.cards .detail-dialog, body.cards .overlay{ background:rgba(20,20,25,.35); }
-body.cards .detail-card{ border:none; border-radius:0; box-shadow:0 20px 60px rgba(0,0,0,.15); }
-body.cards .detail-cover .title-card{ background-size:100% 100%; }
-body.cards .detail-close{ border-radius:0; }
-body.cards .detail-close:hover{ background:var(--chip); }
-body.cards .detail-title{ font-family:inherit; font-weight:400; }
-body.cards .detail-memo{ background:var(--back); border-radius:0; border-left-color:var(--gold); }
-body.cards .detail-dialog .stars-view .star, body.cards .detail-dialog .stars-view svg{ width:16px; height:16px; }
-body.cards .detail-dialog .stars-view .fg{ height:16px; }
-body.cards .act{ border-radius:0; background:var(--chip); border-color:var(--chip); }
-body.cards .act:hover{ background:#E9EAED; border-color:#E9EAED; }
-body.cards .act.danger, body.cards .confirm-text{ color:#C2412F; }
-body.cards .act.danger:hover{ border-color:#C2412F; }
-body.cards .detail-listen{ border-radius:0; background:var(--paper); color:#FFFFFF; font-weight:400; }
-
 /* --- 새 기록·수정 창 --- */
 body.cards .modal{ border:none; border-radius:0; box-shadow:0 20px 60px rgba(0,0,0,.15); }
 body.cards .modal h2{ font-family:inherit; font-weight:400; font-size:17px; }
@@ -319,6 +313,8 @@ body.cards .si-add.on{ color:#FFFFFF; background:var(--paper); border-color:var(
   .back .q{ font-size:12px; -webkit-line-clamp:5; }
   .back .who{ font-size:10.5px; }
   .back-btn{ font-size:10.5px; padding:4px 7px; }
+  .feat-btn{ width:22px; height:22px; font-size:15px; }
+  .back-actions .confirm-text{ font-size:10.5px; width:100%; }
   .sparkle{ font-size:10px; }
 }
 @media (prefers-reduced-motion:reduce){
@@ -387,3 +383,19 @@ body.cards .empty.empty-add{
 .empty-add-btn:hover{ transform:translateY(-3px); box-shadow:0 14px 24px -14px rgba(23,24,28,.6); }
 .empty-add-btn:focus-visible{ outline:2px solid var(--gold); outline-offset:3px; }
 @media (prefers-reduced-motion:reduce){ .empty-add-btn{ transition:none; } .empty-add-btn:hover{ transform:none; } }
+
+/* 뒤집힌 카드에선 앞면이 클릭을 받지 않게 — 앞면의 정보 칸(.info)은 투명해도(opacity:0) 클릭은
+   받아서, 뒷면 아래 "자세히" 버튼 위를 덮고 있었음(누르면 카드만 다시 뒤집힘). 안 보이는 면은
+   클릭을 아예 받지 않게 함. */
+.card[aria-pressed="true"] .front{ pointer-events:none; }
+.card[aria-pressed="true"] .front .info{ opacity:0; }
+.card:not([aria-pressed="true"]) .back{ pointer-events:none; }
+/* 인생작 확인 문구는 빨강(삭제) 대신 금색 계열 */
+.back-actions .confirm-text.feature{ color:var(--gold-deep); }
+
+/* 지금 칩 오른쪽의 기록 개수(js/library/list.js의 countUp — 1부터 세며 올라감). 자리가 흔들리지
+   않게 숫자 폭을 고정. */
+.chip .chip-count{
+  display:inline-block; margin-left:6px; min-width:1ch; font-size:11px; opacity:0.7;
+  font-variant-numeric:tabular-nums;
+}

@@ -1,8 +1,10 @@
 import { escapeHtml } from '../../shared/dom.js';
-import { catLabel, coverHtml, featureLabel, ratingStars } from './itemFormat.js';
+import { catLabel, coverHtml, featureLabel, featureButtonLabel, ratingStars, withEuro } from './itemFormat.js';
 
 // 기록 하나 = 카드 한 장(css/cards.css). 앞면은 표지 + 종류·별점·제목, 누르면 뒤집혀서
-// 뒷면에 한 줄 감상·만든 사람·별점과 버튼("자세히" = 상세 창, 유튜브 링크가 있는 음악은 "▶ 듣기").
+// 뒷면에 한 줄 감상·만든 사람·별점과 버튼(내 기록이면 수정·삭제와 오른쪽 위 인생작 별, 유튜브 링크가
+// 있는 음악은 "▶ 듣기"). 예전엔 "자세히"로 상세 창을 따로 열었는데 수정이 거기 숨어 있어서 못 찾았음
+// (사용자 피드백) — 뒷면에서 바로 하게 바꾸고 상세 창은 없앰.
 // 인생작(featured)은 황금 카드 — 마우스를 따라 기울고 홀로그램 빛·반짝이가 붙음.
 //
 // 뒷면 안에 버튼이 있어서 카드 자체는 <button>이 아니라 role="button"인 div(버튼 안에
@@ -11,14 +13,54 @@ import { catLabel, coverHtml, featureLabel, ratingStars } from './itemFormat.js'
 const reduceMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const SPARKLES = [[8, 18], [82, 10], [88, 40], [12, 50], [50, 4]];
 
-// 뒷면 아래 버튼 줄.
-function backActionsHtml(it, { onListen }) {
-  const btns = ['<button type="button" class="back-btn" data-act="open">자세히</button>'];
-  if (it.cat === 'music' && it.listen_url && onListen) btns.push('<button type="button" class="back-btn" data-act="listen">▶ 듣기</button>');
-  return `<div class="back-actions">${btns.join('')}</div>`;
+// 지금 "삭제할까요?"/"인생책으로 할까요?"를 묻고 있는 카드(한 번에 하나) — 대답하지 않고 카드를
+// 다시 뒤집거나 다른 곳을 누르면 물음을 거두고 수정·삭제 버튼으로 되돌림(사용자 요청).
+let asking = null; // { card, reset }
+function stopAsking() {
+  if (!asking) return;
+  const { reset } = asking;
+  asking = null;
+  reset();
+}
+if (typeof document !== 'undefined') {
+  // 캡처 단계에서 봐야 카드 안 클릭(뒤집기)보다 먼저 판단할 수 있음.
+  document.addEventListener('click', (e) => {
+    if (asking && !asking.card.contains(e.target)) stopAsking();
+  }, true);
 }
 
-function cardHtml(it, { onListen }) {
+// 뒷면 아래 버튼 줄. 삭제는 바로 지우지 않고 이 자리에서 한 번 더 물음(confirmDeleteHtml).
+function backButtons(it, { onListen, readOnly }) {
+  const btns = [];
+  if (!readOnly) {
+    btns.push('<button type="button" class="back-btn" data-act="edit">수정</button>');
+    btns.push('<button type="button" class="back-btn ghost" data-act="delete">삭제</button>');
+  }
+  if (it.cat === 'music' && it.listen_url && onListen) btns.push('<button type="button" class="back-btn ghost" data-act="listen">▶ 듣기</button>');
+  return btns.join('');
+}
+const confirmDeleteHtml = `
+  <span class="confirm-text">삭제할까요?</span>
+  <button type="button" class="back-btn danger" data-act="confirm-delete">삭제</button>
+  <button type="button" class="back-btn ghost" data-act="cancel-delete">아니요</button>`;
+
+// 인생작 별을 눌렀을 때도 바로 바꾸지 않고 버튼 줄 자리에서 한 번 물음(삭제와 같은 방식).
+function confirmFeatureHtml(it) {
+  const label = featureLabel(it.cat);
+  const q = it.featured ? `${label}에서 뺄까요?` : `${withEuro(label)} 할까요?`;
+  return `
+  <span class="confirm-text feature">${q}</span>
+  <button type="button" class="back-btn" data-act="confirm-feature">예</button>
+  <button type="button" class="back-btn ghost" data-act="cancel-feature">아니요</button>`;
+}
+
+// 뒷면 오른쪽 위 인생작 별(내 기록만) — 채워진 별이면 인생작. 누르면 넣을지/뺄지 물음.
+function featureStarHtml(it) {
+  const label = featureButtonLabel(it.cat, it.featured); // "인생책으로" / "인생책에서 빼기"
+  return `<button type="button" class="feat-btn" data-act="feature" aria-pressed="${!!it.featured}" aria-label="${label}" title="${label}">${it.featured ? '★' : '☆'}</button>`;
+}
+
+function cardHtml(it, { onListen, readOnly }) {
   const rare = !!it.featured;
   const type = catLabel(it.cat);
   const stars = it.rating ? ratingStars(it.rating) : '';
@@ -32,11 +74,11 @@ function cardHtml(it, { onListen }) {
         </div>
       </div>
       <div class="face back">
-        <div class="type">${type}${rare ? ` · ${featureLabel(it.cat)}` : ''}</div>
+        <div class="back-head"><span class="type">${type}${rare ? ` · ${featureLabel(it.cat)}` : ''}</span>${readOnly ? '' : featureStarHtml(it)}</div>
         <div class="q${it.memo ? '' : ' empty-memo'}">${it.memo ? `“${escapeHtml(it.memo)}”` : '아직 감상을 적지 않았어요.'}</div>
         ${it.creator ? `<div class="who">${escapeHtml(it.creator)}</div>` : ''}
         ${stars}
-        ${backActionsHtml(it, { onListen })}
+        <div class="back-actions">${backButtons(it, { onListen, readOnly })}</div>
       </div>
     </div>`;
 }
@@ -59,7 +101,7 @@ function attachTilt(slot) {
   });
 }
 
-function makeSlot(it, { onOpen, onListen }) {
+function makeSlot(it, { onEdit, onDelete, onFeature, onListen, readOnly }) {
   const slot = document.createElement('div');
   slot.className = 'slot' + (it.featured ? ' rare' : '');
   slot.dataset.cat = it.cat;
@@ -71,17 +113,37 @@ function makeSlot(it, { onOpen, onListen }) {
   card.setAttribute('role', 'button');
   card.setAttribute('aria-pressed', 'false');
   card.setAttribute('aria-label', `${it.title} 기록 뒤집기`);
-  card.innerHTML = cardHtml(it, { onListen });
+  card.innerHTML = cardHtml(it, { onListen, readOnly });
   // 인생작의 홀로그램 빛은 표지 위에만(아래 글자 칸엔 안 덮이게).
   if (it.featured) card.querySelector('.cover').insertAdjacentHTML('beforeend', '<div class="foil" aria-hidden="true"></div>');
 
-  const flip = () => card.setAttribute('aria-pressed', String(card.getAttribute('aria-pressed') !== 'true'));
+  const actions = () => card.querySelector('.back-actions');
+  const restoreButtons = () => { actions().innerHTML = backButtons(it, { onListen, readOnly }); };
+  const ask = (html, focusAct) => {
+    stopAsking(); // 다른 카드가 묻고 있었으면 그건 거둠
+    actions().innerHTML = html;
+    actions().querySelector(`[data-act="${focusAct}"]`).focus();
+    asking = { card, reset: restoreButtons };
+  };
+  const flip = () => {
+    if (asking && asking.card === card) stopAsking();
+    card.setAttribute('aria-pressed', String(card.getAttribute('aria-pressed') !== 'true'));
+  };
   card.addEventListener('click', (e) => {
     const act = e.target.closest('[data-act]');
     if (!act) { flip(); return; }
     e.stopPropagation();
-    if (act.dataset.act === 'open') onOpen(it);
-    else if (act.dataset.act === 'listen') onListen(it);
+    switch (act.dataset.act) {
+      case 'edit': onEdit(it); break;
+      case 'feature': ask(confirmFeatureHtml(it), 'cancel-feature'); break;
+      case 'confirm-feature': asking = null; onFeature(it); break;
+      case 'listen': onListen(it); break;
+      case 'delete': ask(confirmDeleteHtml, 'cancel-delete'); break;
+      case 'confirm-delete': asking = null; onDelete(it.id); break;
+      case 'cancel-delete':
+      case 'cancel-feature': stopAsking(); break;
+      default: break;
+    }
   });
   card.addEventListener('keydown', (e) => {
     if (e.target !== card || (e.key !== 'Enter' && e.key !== ' ')) return;
@@ -103,14 +165,15 @@ function makeSlot(it, { onOpen, onListen }) {
 
 // 카드 여러 장을 containerEl에 채우고 그 카드(.slot)들을 돌려줌 — 나눠주기(deal)에 씀.
 // 비어 있으면 emptyText 한 줄만.
+// onEdit(it)/onDelete(id)/onFeature(it): 내 기록의 뒷면 버튼(readOnly면 안 그림).
 // onListen: 주면 유튜브 링크가 있는 음악 카드 뒷면에 "▶ 듣기".
-export function renderCards(containerEl, list, { onOpen, emptyText, onListen }) {
+export function renderCards(containerEl, list, { emptyText, onEdit, onDelete, onFeature, onListen, readOnly = false }) {
   containerEl.innerHTML = '';
   if (list.length === 0) {
     if (emptyText) containerEl.innerHTML = `<div class="empty">${emptyText}</div>`;
     return [];
   }
-  const slots = list.map((it) => makeSlot(it, { onOpen, onListen }));
+  const slots = list.map((it) => makeSlot(it, { onEdit, onDelete, onFeature, onListen, readOnly }));
   containerEl.append(...slots);
   return slots;
 }

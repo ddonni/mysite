@@ -1,18 +1,35 @@
 // 화면 위쪽의 카테고리 칩(전체/책/애니/영화/음악)과 그 아래 카드 격자를 그리는 모듈.
-// "지금 어느 칩인지"만 상태로 들고, 카드를 어떻게 그리는지는 list/cardsView.js,
-// 카드 뒷면의 "자세히"를 눌렀을 때 뜨는 상세 창은 list/detail.js에 맡김.
+// "지금 어느 칩인지"만 상태로 들고, 카드를 어떻게 그리는지(뒷면의 수정·삭제·인생작 버튼 포함)는
+// list/cardsView.js에 맡김.
 //
 // "기록을 어떻게 서버와 주고받는지"는 모르고, 건네받은 items 배열을 화면에
-// 뿌리기만 함. 상세 창의 "수정하기"/"삭제"/"인생작"을 눌렀을 때 실제로 무슨
+// 뿌리기만 함. 뒷면의 "수정"/"삭제"/인생작 별을 눌렀을 때 실제로 무슨
 // 일이 일어날지는 createList를 부른 쪽(main.js)이 onEdit/onDelete/onFeature
 // 콜백으로 정해줌.
 import { CATS } from './records.js';
 import { renderCards, deal } from './list/cardsView.js';
-import { createDetail } from './list/detail.js';
 
 const EMPTY_ALL = '아직 기록이 없어요.';
 const EMPTY_CAT = '아직 이 카테고리엔 기록이 없어요.';
 const EMPTY_READONLY = '아직 기록이 없어요.';
+
+// 지금 칩 오른쪽의 개수를 from에서 to까지 하나씩 올려 보임 — 기록이 덱에서 한 장씩 날아와
+// 놓이는 속도(cardsView.js의 deal, 50ms 간격)에 맞춰 "세는 것처럼". 많으면 1초 안에 끝나게 간격을
+// 줄임. 움직임 줄이기면 바로 최종 숫자.
+const reduceMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+let countTimer = null;
+export function countUp(el, from, to) {
+  clearTimeout(countTimer);
+  if (reduceMotion() || to <= from) { el.textContent = String(to); return; }
+  const step = Math.max(16, Math.min(50, 1000 / (to - from)));
+  let n = Math.max(from, 0);
+  const tick = () => {
+    n += 1;
+    el.textContent = String(n);
+    if (n < to) countTimer = setTimeout(tick, step);
+  };
+  tick(); // 첫 숫자(0에서 시작하면 1)는 바로 보임
+}
 
 // 인생작(황금 카드)이 앞에, 그다음은 최신순.
 export function sortForGrid(list) {
@@ -24,12 +41,11 @@ export function sortForGrid(list) {
 export function createList({ onEdit, onDelete, onFeature, onListen, onTabChange, onAdd, readOnly, initialTab }) {
   const tabsEl = document.getElementById('tabs');
   const listEl = document.getElementById('list');
-  const detail = createDetail(document.getElementById('detailDialog'), { onEdit, onDelete, onFeature, onListen, readOnly });
 
   let activeTab = CATS.some((c) => c.key === initialTab) ? initialTab : 'all';
   let currentItems = [];
   let shownIds = null; // 지금 격자에 있는 카드 id — 다시 그릴 때 새로 생긴 카드만 나눠주려고
-  const openDetail = (it) => detail.open(it);
+  let shownCount = 0; // 지금 칩 오른쪽에 보이는 개수 — 기록이 늘거나 줄었을 때 거기서부터 셈
 
   // 칩 바꾸기 — 이 페이지의 칩을 누르거나, 상단 메뉴의 책·애니·영화·음악을 눌렀을 때
   // (main.js가 페이지를 다시 불러오지 않고 이걸 부름).
@@ -55,6 +71,8 @@ export function createList({ onEdit, onDelete, onFeature, onListen, onTabChange,
       btn.dataset.cat = t.key;
       btn.setAttribute('aria-pressed', String(t.key === activeTab));
       btn.textContent = t.label;
+      // 지금 칩에만 그 칩의 기록 개수(renderBody가 1부터 세며 채움).
+      if (t.key === activeTab) btn.insertAdjacentHTML('beforeend', '<span class="chip-count" aria-hidden="true"></span>');
       btn.addEventListener('click', () => selectTab(t.key));
       tabsEl.appendChild(btn);
     });
@@ -65,7 +83,7 @@ export function createList({ onEdit, onDelete, onFeature, onListen, onTabChange,
   function renderBody({ dealAll = false } = {}) {
     const list = sortForGrid(activeTab === 'all' ? currentItems : currentItems.filter((i) => i.cat === activeTab));
     const slots = renderCards(listEl, list, {
-      onOpen: openDetail,
+      onEdit, onDelete, onFeature, readOnly,
       onListen,
       emptyText: readOnly ? EMPTY_READONLY : activeTab === 'all' ? EMPTY_ALL : EMPTY_CAT,
     });
@@ -82,6 +100,10 @@ export function createList({ onEdit, onDelete, onFeature, onListen, onTabChange,
     }
     const before = shownIds;
     shownIds = new Set(list.map((i) => i.id));
+    // 칩 개수: 처음 열 때·칩을 바꿀 때는 0부터(첫 숫자가 1), 추가/삭제 뒤엔 전에 보이던 숫자부터.
+    const countEl = tabsEl.querySelector('.chip-count');
+    if (countEl) countUp(countEl, dealAll || !before ? 0 : shownCount, list.length);
+    shownCount = list.length;
     deal(dealAll || !before ? slots : slots.filter((s) => !before.has(Number(s.dataset.id)) && !before.has(s.dataset.id)));
   }
 
