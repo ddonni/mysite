@@ -14,6 +14,7 @@ import { CATS, uploadPhoto, saveRecord, deleteRecord, fetchScreenCreator, fetchM
 import { normalizeYouTube, getPlayer } from '../shared/youtube.js';
 import { CREATOR_FIELD, TITLE_PLACEHOLDER } from './modal/categoryFields.js';
 import { createStarPicker } from './modal/starPicker.js';
+import { createDetailFields } from './modal/detailFields.js';
 import { createPhotoPicker } from './modal/photoPicker.js';
 import { createRecordSearch } from './modal/recordSearch.js';
 import { createSearchView } from './modal/searchView.js';
@@ -43,6 +44,11 @@ export function createModal({ onSaved, getItems = () => [] }) {
   const listenError = document.getElementById('listenError');
 
   const starPicker = createStarPicker(document.getElementById('starPicker'));
+  // 세부 기록(선택) — 칸이 없는 화면(테스트 등)에선 그냥 안 씀.
+  const detailRoot = document.getElementById('detailField');
+  const detail = detailRoot
+    ? createDetailFields({ rootEl: detailRoot, bodyEl: document.getElementById('detailBody') })
+    : null;
   const photoPicker = createPhotoPicker({
     input: document.getElementById('fPhoto'),
     preview: document.getElementById('photoPreview'),
@@ -85,9 +91,11 @@ export function createModal({ onSaved, getItems = () => [] }) {
   // 카테고리 탭이 바뀔 때마다 만든 사람 칸 라벨과 제목 칸 안내 글씨를 그 탭에 맞춤.
   function updateCreatorField() {
     const field = CREATOR_FIELD[currentCat] || CREATOR_FIELD.book;
-    creatorLabel.textContent = field.label;
+    // 제목만 꼭 써야 하고 나머지는 다 선택 — 만든 사람 칸에도 "(선택)"을 붙임.
+    creatorLabel.textContent = `${field.label} (선택)`;
     fTitle.placeholder = TITLE_PLACEHOLDER[currentCat] || TITLE_PLACEHOLDER.book;
     listenField.hidden = currentCat !== 'music';
+    if (detail) detail.setCat(currentCat);
   }
 
   // ---- 유튜브 링크 칸 ----
@@ -115,6 +123,14 @@ export function createModal({ onSaved, getItems = () => [] }) {
     currentCat = CATS.some((c) => c.key === cat) ? cat : 'book';
     [...catTabsEl.children].forEach((b) => b.classList.toggle('active', b.dataset.key === currentCat));
     updateCreatorField();
+  }
+
+  // 기록 수정 중엔 카테고리를 못 바꿈(사용자 요청) — 지금 카테고리 탭만 켜진 채 보이고 나머지는 눌리지 않음.
+  function lockCatTabs(locked) {
+    catTabsEl.classList.toggle('locked', locked);
+    [...catTabsEl.children].forEach((b) => {
+      b.disabled = locked && b.dataset.key !== currentCat;
+    });
   }
 
   // ---- 카테고리 탭(책/애니/영화/음악) ----
@@ -158,6 +174,7 @@ export function createModal({ onSaved, getItems = () => [] }) {
     search.reset();
     photoPicker.reset();
     starPicker.setValue(0);
+    if (detail) detail.reset();
     creatorLookup++;
   }
 
@@ -281,6 +298,7 @@ export function createModal({ onSaved, getItems = () => [] }) {
         memo: fMemo.value.trim(),
         photo_url,
         listen_url,
+        details: detail ? detail.getValue() : null,
       }, editingId);
 
       onSaved(); // main.js가 목록을 다시 불러와 화면에 반영함
@@ -303,6 +321,7 @@ export function createModal({ onSaved, getItems = () => [] }) {
   return {
     // cat: 처음 골라둘 카테고리 — 보고 있던 탭(음악 탭이면 음악). 전체 탭이면 책.
     openAdd(cat) {
+      lockCatTabs(false);
       editingId = null;
       fromSearch = false;
       modalTitle.textContent = '새 기록';
@@ -323,6 +342,7 @@ export function createModal({ onSaved, getItems = () => [] }) {
       modalTitle.textContent = '기록 수정하기';
       cancelBtn.textContent = '취소';
       selectCatTab(item.cat);
+      lockCatTabs(true);
       fTitle.value = item.title || '';
       fCreator.value = item.creator || '';
       fMemo.value = item.memo || '';
@@ -330,6 +350,7 @@ export function createModal({ onSaved, getItems = () => [] }) {
       search.reset();
       photoPicker.setExisting(item.photo_url || null);
       starPicker.setValue(item.rating || 0);
+      if (detail) detail.setValue(item.details || null);
       touched = false;
       showView(true);
       setOpen(true);

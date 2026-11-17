@@ -166,7 +166,7 @@
       <div id="titleError" class="field-error title-error" style="display:none;">제목을 적어 주세요.</div>
 
       <div class="field">
-        <label>별점</label>
+        <label>별점 (선택)</label>
         <div class="stars" id="starPicker"></div>
       </div>
 
@@ -192,8 +192,15 @@
       </div>
 
       <div class="field">
-        <label>한 줄 감상</label>
+        <label>한 줄 감상 (선택)</label>
         <textarea id="fMemo" placeholder="어땠는지 한 줄로 남겨보세요"></textarea>
+      </div>
+
+      <!-- 세부 기록(선택) — 감상 아래에 늘 펼쳐져 있음(사용자 요청). 요소별 별점·장르, 음악은 없음
+           (js/library/modal/detailFields.js) -->
+      <div class="field detail-field" id="detailField">
+        <label>자세히 (선택)</label>
+        <div class="detail-body" id="detailBody"></div>
       </div>
 
       <div class="modal-actions">

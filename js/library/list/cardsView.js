@@ -1,5 +1,15 @@
 import { escapeHtml } from '../../shared/dom.js';
 import { catLabel, coverHtml, featureLabel, featureButtonLabel, ratingStars, withEuro } from './itemFormat.js';
+import { detailSummary } from '../modal/detailFields.js';
+
+// 뒷면의 세부 기록 — 요소별 별점("스토리 4.5")과 장르 태그. 없으면 빈 문자열.
+export function detailHtml(it) {
+  const d = detailSummary(it.cat, it.details);
+  if (!d) return '';
+  const scores = d.scores.map(([label, v]) => `<span class="aspect"><span>${escapeHtml(label)}</span><b>★${v % 1 ? v.toFixed(1) : v}</b></span>`).join('');
+  const genres = d.genres.map((g) => `<span class="genre">${escapeHtml(g)}</span>`).join('');
+  return `<div class="back-details">${scores ? `<div class="aspects">${scores}</div>` : ''}${genres ? `<div class="genres">${genres}</div>` : ''}</div>`;
+}
 
 // 기록 하나 = 카드 한 장(css/cards.css). 앞면은 표지 + 종류·별점·제목, 누르면 뒤집혀서
 // 뒷면에 한 줄 감상·만든 사람·별점과 버튼(내 기록이면 수정·삭제와 오른쪽 위 인생작 별, 유튜브 링크가
@@ -88,8 +98,8 @@ function cardHtml(it, { onListen, readOnly }) {
       <div class="face back">
         <div class="back-head"><span class="type">${type}${rare ? ` · ${featureLabel(it.cat)}` : ''}</span>${readOnly ? '' : featureStarHtml(it)}</div>
         <div class="q${it.memo ? '' : ' empty-memo'}">${it.memo ? `“${escapeHtml(it.memo)}”` : '아직 감상을 적지 않았어요.'}</div>
-        ${it.creator ? `<div class="who">${escapeHtml(it.creator)}</div>` : ''}
         ${stars}
+        ${detailHtml(it)}
         <div class="back-actions">${backButtons(it, { onListen, readOnly })}</div>
       </div>
     </div>`;
