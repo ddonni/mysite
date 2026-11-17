@@ -27,8 +27,12 @@ const THEME_COLORS = {
 const listEl = document.getElementById('roomList');
 const metaEl = document.getElementById('roomsMeta');
 
+// sort: 'recent'(최근 활동순) 또는 'popular'(받은 좋아요 많은 순). 주소(?sort=popular)에도 남겨서
+// 새로고침·공유해도 같은 순서.
+let sort = new URLSearchParams(location.search).get('sort') === 'popular' ? 'popular' : 'recent';
+
 function fetchPublicRooms() {
-  return fetch(`${API_BASE}/api/rooms`).then((res) => {
+  return fetch(`${API_BASE}/api/rooms?sort=${sort}`).then((res) => {
     if (!res.ok) throw new Error('rooms_failed');
     return res.json();
   });
@@ -62,7 +66,7 @@ function roomCard(room, mine) {
           ${room.bio ? `<span class="room-bio">${escapeHtml(room.bio)}</span>` : ''}
         </span>
       </span>
-      <span class="room-code">${escapeHtml(room.code)}</span>
+      <span class="room-code">${escapeHtml(room.code)}${room.likes ? `<span class="room-likes" aria-label="좋아요 ${room.likes}개">♥ ${room.likes}</span>` : ''}</span>
       <span class="room-counts">${counts}</span>
       <span class="room-go">${isMine ? '내 기록으로 →' : '구경하기 →'}</span>
     </span>
@@ -89,6 +93,20 @@ initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: 'rooms' }
       listEl.innerHTML = '<div class="empty">기록 목록을 불러오지 못했어요. 새로고침해 보세요.</div>';
     });
   load().finally(stopWatch);
+
+  // 정렬 칩 — 누르면 그 순서로 다시 불러옴.
+  const sortBtns = [...document.querySelectorAll('.rooms-sort [data-sort]')];
+  const paintSort = () => sortBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sort === sort)));
+  paintSort();
+  sortBtns.forEach((b) => b.addEventListener('click', () => {
+    if (b.dataset.sort === sort) return;
+    sort = b.dataset.sort;
+    paintSort();
+    const url = new URL(location.href);
+    if (sort === 'popular') url.searchParams.set('sort', 'popular'); else url.searchParams.delete('sort');
+    history.replaceState(null, '', url);
+    load();
+  }));
 
   // 내 방 공개 스위치 — 바꾸면 목록도 다시 불러와서 내 방이 뜨고/빠지는 걸 바로 보여줌.
   fetch(`${API_BASE}/api/rooms/${mine.code}`)

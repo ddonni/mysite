@@ -42,7 +42,14 @@
 </nav>
 
 <main class="wrap">
-  <div class="meta rooms-meta" id="roomsMeta">불러오는 중…</div>
+  <div class="rooms-top">
+    <div class="meta rooms-meta" id="roomsMeta">불러오는 중…</div>
+    <!-- 정렬 — 최근 활동순(기본) · 인기순(받은 좋아요 많은 순, 서버 GET /api/rooms?sort=popular) -->
+    <div class="rooms-sort" role="group" aria-label="정렬">
+      <button type="button" class="chip" data-sort="recent" aria-pressed="true">최근 활동순</button>
+      <button type="button" class="chip" data-sort="popular" aria-pressed="false">인기순</button>
+    </div>
+  </div>
 
   <!-- 내 방 공개 여부 — 방 주인 본인만(js/rooms/main.js가 채움) -->
   <section class="my-vis" id="myVisibility" hidden>
