@@ -135,6 +135,20 @@ body.cards .title-card{
 body.cards .title-card::before, body.cards .title-card .tc-cat,
 body.cards .title-card .tc-title, body.cards .title-card .tc-creator{ display:none; }
 
+/* 표지 오른쪽 위 카테고리 아이콘(itemFormat.js의 catIconHtml) — 흰 네모 상자 안에 아이콘 */
+body.cards .cat-icon{
+  position:absolute; top:8px; right:8px; z-index:3;
+  display:flex; align-items:center; justify-content:center;
+  width:28px; height:28px; padding:3px; box-sizing:border-box; border-radius:6px;
+  background:rgba(255,255,255,0.92); color:#17181C; border:1px solid rgba(23,24,28,0.12);
+  box-shadow:0 1px 3px rgba(0,0,0,0.12); pointer-events:none;
+}
+body.cards .cat-icon svg{ width:100%; height:100%; display:block; }
+body.cards .cat-icon[data-cat="book"]{ background:#FFF1EA; }
+body.cards .cat-icon[data-cat="movie"]{ background:#FFF8E5; }
+body.cards .cat-icon[data-cat="music"]{ background:#EAF5FD; }
+body.cards .cat-icon[data-cat="anime"]{ background:#FDEBF2; }
+@media (max-width:640px){ body.cards .cat-icon{ top:5px; right:5px; width:22px; height:22px; padding:2px; border-radius:5px; } }
 
 /* 표지 위 표시 — 인생작(황금) */
 body.cards .badges{ top:9px; left:9px; right:auto; align-items:flex-start; z-index:2; }

@@ -1,6 +1,7 @@
 // 프로필 사진(js/shared/avatar.js)과 카드 표지의 카테고리 아이콘(itemFormat.js의 catIconHtml).
 import { describe, expect, it } from 'vitest';
 import { avatarHtml, avatarInner } from '../../js/shared/avatar.js';
+import { catIconHtml } from '../../js/library/list/itemFormat.js';
 
 describe('avatar', () => {
   it('사진이 없으면 기본 실루엣', () => {
@@ -16,5 +17,15 @@ describe('avatar', () => {
 
   it('이름에 든 따옴표는 이스케이프', () => {
     expect(avatarHtml(null, { label: '"x"의 사진' })).toContain('aria-label="&quot;x&quot;의 사진"');
+  });
+});
+
+describe('catIconHtml', () => {
+  it('카테고리마다 아이콘 상자, 모르는 카테고리는 빈 문자열', () => {
+    ['book', 'anime', 'movie', 'music'].forEach((cat) => {
+      expect(catIconHtml(cat)).toMatch(/^<span class="cat-icon"[^>]*><svg/);
+    });
+    expect(catIconHtml('anime')).toContain('>A</text>');
+    expect(catIconHtml('etc')).toBe('');
   });
 });

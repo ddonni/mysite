@@ -59,8 +59,40 @@ export function featureButtonLabel(cat, featured) {
 // 기록의 표지. 사진이 있으면 그 사진 — 음악은 정사각형 앨범 아트라서
 // 세로로 긴 카드에 잘리지 않게, 흐리게 늘인 같은 사진 위에 가운데 정사각형으로
 // 올림. 사진이 없으면 제목 카드(카드 화면에선 cards.css가 회색 기본 그림으로 바꿈).
+// 표지 오른쪽 위 카테고리 아이콘(네모 상자) — 드라마 OST처럼 표지만 봐선 무슨 기록인지 모를 때가
+// 있어서(사용자 요청). 2026-11-17 아기자기하게 색을 넣음(사용자 요청): 책 = 산호색 표지 + 크림색 책장
+// 단면 + 노란 책갈피, 영화·시리즈 = 노랑·흰 줄무늬 슬레이트, 음악 = 파란 음표, 애니 = 분홍 A.
+// 상자 바탕색은 카테고리마다 연하게(css/cards.css의 .cat-icon[data-cat]).
+const CAT_ICONS = {
+  music: '<svg viewBox="0 0 24 24"><path d="M9 17.5V5.2l11-2.2v12.3" fill="none" stroke="#2B6FA3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+    + '<path d="M9 8.6l11-2.2" stroke="#2B6FA3" stroke-width="2" stroke-linecap="round"/>'
+    + '<ellipse cx="6.2" cy="17.8" rx="3.2" ry="2.6" fill="#4AA3DF" stroke="#2B6FA3" stroke-width="1.4"/>'
+    + '<ellipse cx="17.2" cy="15.6" rx="3.2" ry="2.6" fill="#4AA3DF" stroke="#2B6FA3" stroke-width="1.4"/>'
+    + '<ellipse cx="5.2" cy="17" rx="1" ry=".6" fill="#FFFFFF" opacity=".8"/><ellipse cx="16.2" cy="14.8" rx="1" ry=".6" fill="#FFFFFF" opacity=".8"/></svg>',
+  book: '<svg viewBox="0 0 24 24" stroke-linejoin="round">'
+    + '<rect x="15.5" y="4.2" width="4.5" height="16" rx="1" fill="#FFF4DE" stroke="#7A4A36" stroke-width="1.3"/>'
+    + '<path d="M16.6 7.5h2.4M16.6 10.5h2.4M16.6 13.5h2.4M16.6 16.5h2.4" stroke="#E8CFA8" stroke-width="1"/>'
+    + '<rect x="4" y="3" width="13" height="18" rx="2" fill="#F28B6C" stroke="#7A4A36" stroke-width="1.3"/>'
+    + '<rect x="4" y="3" width="3" height="18" rx="1.2" fill="#D9694F"/>'
+    + '<rect x="9" y="7" width="6" height="3.2" rx=".8" fill="#FFF4DE"/>'
+    + '<path d="M11.5 14.2l.7 1.4 1.5.2-1.1 1 .3 1.5-1.4-.7-1.4.7.3-1.5-1.1-1 1.5-.2z" fill="#FFD25A"/>'
+    + '<path d="M13.5 3v6.5l1.3-1.1 1.3 1.1V3" fill="#FFD25A" stroke="#7A4A36" stroke-width="1"/></svg>',
+  anime: '<svg viewBox="0 0 24 24"><text x="12" y="19" text-anchor="middle" font-size="19" font-weight="900" font-family="Arial Black, Arial, sans-serif" fill="#F06292" stroke="#B83B6A" stroke-width=".8">A</text></svg>',
+  movie: '<svg viewBox="0 0 24 24" stroke-linejoin="round">'
+    + '<rect x="3" y="10" width="18" height="11" rx="2" fill="#3F4A5E" stroke="#232834" stroke-width="1.3"/>'
+    + '<path d="M6 14h8M6 17h5" stroke="#FFFFFF" stroke-width="1.3" stroke-linecap="round" opacity=".75"/>'
+    + '<circle cx="17.3" cy="16.4" r="1.6" fill="#F2C14E"/>'
+    + '<g transform="rotate(-14 3.5 9.5)"><rect x="3" y="5.6" width="18" height="4" rx="1" fill="#FFFFFF" stroke="#232834" stroke-width="1.3"/>'
+    + '<path d="M6 5.6l-2.4 4M10.5 5.6l-2.4 4M15 5.6l-2.4 4M19.5 5.6l-2.4 4" stroke="#F2C14E" stroke-width="2.2"/></g>'
+    + '<circle cx="4.2" cy="9.8" r="1" fill="#232834"/></svg>',
+};
+export function catIconHtml(cat) {
+  const icon = CAT_ICONS[cat];
+  return icon ? `<span class="cat-icon" data-cat="${cat}" role="img" aria-label="${catLabel(cat)}" title="${catLabel(cat)}">${icon}</span>` : '';
+}
+
 export function coverHtml(it) {
-  const badge = it.featured ? `<span class="badges"><span class="badge">${featureLabel(it.cat)}</span></span>` : '';
+  const badge = (it.featured ? `<span class="badges"><span class="badge">${featureLabel(it.cat)}</span></span>` : '') + catIconHtml(it.cat);
   if (it.photo_url) {
     const src = escapeAttr(photoSrc(it.photo_url));
     // crossorigin: 예전 3D 방이 같은 사진을 CORS로 받아 WebGL 텍스처로 썼고, CORS 없이
