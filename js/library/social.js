@@ -159,11 +159,13 @@ export function initSocial({ mine, viewingCode, readOnly }) {
     const nameHtml = who && !e.mine
       ? `<a class="gb-name" href="${escapeHtml(roomLink('./', who.code, mine.code))}">${name}</a>`
       : `<span class="gb-name">${e.mine ? (e.anonymous ? '나 (익명)' : '나') : name}</span>`;
+    // 방 주인이 쓴 글이면(남이 볼 때) 이름 옆에 "주인".
+    const ownerTag = e.by_owner && !e.mine ? '<span class="gb-owner">주인</span>' : '';
     return `
       <li class="gb-entry${e.mine ? ' mine' : ''}" data-id="${e.id}">
         <span class="avatar gb-avatar">${who ? avatarInner(who.avatar_url) : '<span class="anon-face" aria-hidden="true">?</span>'}</span>
         <div class="gb-body">
-          <div class="gb-meta">${nameHtml}<time>${timeAgo(e.created_at)}</time>
+          <div class="gb-meta">${nameHtml}${ownerTag}<time>${timeAgo(e.created_at)}</time>
             ${e.can_delete ? '<button type="button" class="gb-del" aria-label="이 글 지우기" title="지우기">×</button>' : ''}</div>
           <p class="gb-text">${escapeHtml(e.message)}</p>
         </div>
@@ -188,8 +190,9 @@ export function initSocial({ mine, viewingCode, readOnly }) {
   // 버튼의 글 수는 처음부터 보이게 미리 받아 둠.
   load();
 
+  // 방 주인은 자기 방명록에 구글 연동 없이도 씀(서버도 허용). 남의 방명록은 연동해야.
   async function paintComposer() {
-    const ok = await isLinked();
+    const ok = !readOnly || await isLinked();
     form.hidden = !ok;
     loginRow.hidden = ok;
   }
@@ -227,6 +230,9 @@ export function initSocial({ mine, viewingCode, readOnly }) {
 
   // 남기기 — Enter로 보내고 Shift+Enter는 줄바꿈(한글 조합 중 Enter는 무시).
   const updateSend = () => { sendBtn.disabled = !input.value.trim(); };
+  // 내 기록의 방명록엔 익명 스위치가 없음(주인 글은 늘 이름으로 — 사용자 요청).
+  anon.closest('.gb-anon').hidden = !readOnly;
+  input.placeholder = readOnly ? '방명록을 남겨 주세요 (Enter로 보내기)' : '방명록에 답을 남겨 보세요 (Enter로 보내기)';
   input.addEventListener('input', updateSend);
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); }
@@ -240,7 +246,7 @@ export function initSocial({ mine, viewingCode, readOnly }) {
       const res = await fetch(api('guestbook'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...actorHeaders },
-        body: JSON.stringify({ message, anonymous: anon.checked }),
+        body: JSON.stringify({ message, anonymous: readOnly && anon.checked }),
       });
       if (res.status === 401 || res.status === 403) { askLogin('방명록은 구글 계정을 연동한 사람만 남길 수 있어요.'); return; }
       if (res.status === 429) { showToast('잠시 후에 다시 남겨 주세요'); return; }
