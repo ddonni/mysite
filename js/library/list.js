@@ -38,7 +38,7 @@ export function sortForGrid(list) {
 }
 
 // onAdd(cat): 내 기록이 비어 있을 때 가운데 "+ 기록" 버튼을 누르면 — 새 기록 창을 엶.
-export function createList({ onEdit, onDelete, onFeature, onListen, onTabChange, onAdd, readOnly, initialTab }) {
+export function createList({ onEdit, onDelete, onFeature, onListen, onLike, onTabChange, onAdd, readOnly, initialTab }) {
   const tabsEl = document.getElementById('tabs');
   const listEl = document.getElementById('list');
 
@@ -84,7 +84,7 @@ export function createList({ onEdit, onDelete, onFeature, onListen, onTabChange,
     const list = sortForGrid(activeTab === 'all' ? currentItems : currentItems.filter((i) => i.cat === activeTab));
     const slots = renderCards(listEl, list, {
       onEdit, onDelete, onFeature, readOnly,
-      onListen,
+      onListen, onLike,
       emptyText: readOnly ? EMPTY_READONLY : activeTab === 'all' ? EMPTY_ALL : EMPTY_CAT,
     });
     // 내 기록이 비어 있으면 안내 아래 가운데에 "+ 기록" 버튼(위 줄의 같은 버튼을 못 찾는 사람이 많아서).

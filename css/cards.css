@@ -166,6 +166,19 @@ body.cards .badge{
 }
 .info .row{ display:flex; justify-content:space-between; align-items:center; gap:8px; min-height:14px; }
 .type{ font-size:10.5px; letter-spacing:0.08em; color:#5E6068; white-space:nowrap; }
+.info .row-end{ display:flex; align-items:center; gap:7px; min-width:0; }
+/* 카드 공감 하트(cardsView.js의 likeHtml) */
+.card-like{
+  display:inline-flex; align-items:center; gap:3px; padding:2px 3px; margin:-2px -3px; border:none; background:none;
+  font:inherit; font-size:11px; line-height:1; color:#5E6068; cursor:pointer;
+}
+.card-like svg{ width:15px; height:15px; display:block; }
+.card-like svg path{ fill:none; stroke:#E0485E; stroke-width:2.2; stroke-linejoin:round; }
+.card-like.on svg path, .card-like.static svg path{ fill:#E0485E; }
+.card-like.static{ cursor:default; }
+.card-like:disabled{ opacity:.6; }
+.card-like:hover svg{ transform:scale(1.12); }
+.card-like.pop svg{ animation:fab-pop .35s ease; }
 body.cards .card-title{ font-size:14.5px; font-weight:400; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; transition:color .3s ease; }
 
 /* 작은 별(반 별까지) — itemFormat.js의 ratingStars */

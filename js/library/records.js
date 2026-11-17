@@ -25,13 +25,23 @@ export function setRoom(code, token) {
   ownerToken = token;
 }
 
+// 보는 사람 자신의 방(X-Actor-*) — 카드 공감처럼 "누가"가 필요한 요청에 씀(app/social_routes.py).
+let actor = null;
+export function setActor(mine) {
+  actor = mine;
+}
+function actorHeaders() {
+  return actor ? { 'X-Actor-Code': actor.code, 'X-Actor-Token': actor.token } : {};
+}
+
 function authHeaders() {
   return ownerToken ? { 'X-Room-Token': ownerToken } : {};
 }
 
 // 전체 기록 목록을 가져옴.
+// 보는 사람 헤더를 같이 보내서 카드마다 내가 공감했는지(liked)도 받음.
 export function fetchRecords() {
-  return fetch(API_BASE + '/api/rooms/' + roomCode + '/records').then((res) => {
+  return fetch(API_BASE + '/api/rooms/' + roomCode + '/records', { headers: actorHeaders() }).then((res) => {
     // res.ok를 안 보고 바로 res.json()을 하면, 방을 못 찾는 404 같은
     // 에러 응답의 바디({"detail":"room not found"})를 정상 목록인 척
     // 그대로 넘겨버림 — list.js가 그걸 배열로 착각하고 .length/.filter를
@@ -164,5 +174,19 @@ export function saveRecord(record, editingId) {
   }).then((res) => {
     if (!res.ok) throw new Error('save failed');
     return res.json(); // 저장된 기록(id 포함) — 새 기록 창이 "+ 넣기"를 되돌릴 때 씀
+  });
+}
+
+// 카드 하나에 공감(like=true) 또는 취소. 성공하면 { count, liked }. 구글 로그인이 필요하면(401·403)
+// err.code = 'login', 그 밖의 실패는 그냥 실패.
+export function likeRecord(id, like) {
+  return fetch(API_BASE + '/api/rooms/' + roomCode + '/records/' + id + '/likes', {
+    method: like ? 'PUT' : 'DELETE',
+    headers: actorHeaders(),
+  }).then((res) => {
+    if (res.ok) return res.json();
+    const err = new Error('record like failed');
+    if (res.status === 401 || res.status === 403) err.code = 'login';
+    throw err;
   });
 }

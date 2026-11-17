@@ -22,3 +22,25 @@ describe('timeAgo', () => {
     expect(timeAgo('nope', NOW)).toBe('');
   });
 });
+
+// 카드 공감 하트(js/library/list/cardsView.js의 likeHtml).
+import { likeHtml } from '../../js/library/list/cardsView.js';
+
+describe('likeHtml', () => {
+  it('남의 기록: 누르는 버튼 — 공감했으면 채운 하트, 받은 수', () => {
+    const off = likeHtml({ likes: 0, liked: false }, true);
+    expect(off).toContain('data-act="like"');
+    expect(off).toContain('aria-pressed="false"');
+    expect(off).not.toContain('class="n"');
+    const on = likeHtml({ likes: 3, liked: true }, true);
+    expect(on).toContain('card-like on');
+    expect(on).toContain('<span class="n">3</span>');
+  });
+
+  it('내 기록: 받은 수만(누를 수 없음), 0이면 안 보임', () => {
+    expect(likeHtml({ likes: 0 }, false)).toBe('');
+    const mine = likeHtml({ likes: 2 }, false);
+    expect(mine).toContain('card-like static');
+    expect(mine).not.toContain('data-act');
+  });
+});

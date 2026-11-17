@@ -29,6 +29,18 @@ if (typeof document !== 'undefined') {
   }, true);
 }
 
+// 카드 공감 하트 — 남의 기록이면 누르는 버튼(♡ → ♥, 받은 수), 내 기록이면 받은 수만(0이면 안 보임).
+// 자기 기록엔 못 누름(서버도 막음).
+const HEART = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.8 4.5c2.1 0 3.7 1.2 5.2 3 1.5-1.8 3.1-3 5.2-3 3.8 0 5.9 3.9 4.4 7.3C19.5 16.4 12 21 12 21z"/></svg>';
+export function likeHtml(it, readOnly) {
+  const n = it.likes || 0;
+  if (!readOnly) {
+    return n ? `<span class="card-like static" title="받은 공감 ${n}개" aria-label="받은 공감 ${n}개">${HEART}<span class="n">${n}</span></span>` : '';
+  }
+  const label = it.liked ? '공감 취소' : '이 기록에 공감하기';
+  return `<button type="button" class="card-like${it.liked ? ' on' : ''}" data-act="like" aria-pressed="${!!it.liked}" aria-label="${label}" title="${label}">${HEART}${n ? `<span class="n">${n}</span>` : ''}</button>`;
+}
+
 // 뒷면 아래 버튼 줄. 삭제는 바로 지우지 않고 이 자리에서 한 번 더 물음(confirmDeleteHtml).
 function backButtons(it, { onListen, readOnly }) {
   const btns = [];
@@ -69,7 +81,7 @@ function cardHtml(it, { onListen, readOnly }) {
       <div class="face front">
         ${coverHtml(it)}
         <div class="info">
-          <div class="row"><span class="type">${type}</span>${stars}</div>
+          <div class="row"><span class="type">${type}</span><span class="row-end">${stars}${likeHtml(it, readOnly)}</span></div>
           <div class="card-title">${escapeHtml(it.title)}</div>
         </div>
       </div>
@@ -101,7 +113,7 @@ function attachTilt(slot) {
   });
 }
 
-function makeSlot(it, { onEdit, onDelete, onFeature, onListen, readOnly }) {
+function makeSlot(it, { onEdit, onDelete, onFeature, onListen, onLike, readOnly }) {
   const slot = document.createElement('div');
   slot.className = 'slot' + (it.featured ? ' rare' : '');
   slot.dataset.cat = it.cat;
@@ -138,6 +150,20 @@ function makeSlot(it, { onEdit, onDelete, onFeature, onListen, readOnly }) {
       case 'feature': ask(confirmFeatureHtml(it), 'cancel-feature'); break;
       case 'confirm-feature': asking = null; onFeature(it); break;
       case 'listen': onListen(it); break;
+      // 공감 — 바뀐 수·상태로 하트만 다시 그림(목록 전체를 다시 불러오지 않음). onLike가 null을
+      // 돌려주면(로그인 안내를 띄웠거나 실패) 그대로 둠.
+      case 'like':
+        if (!onLike || act.disabled) break;
+        act.disabled = true;
+        Promise.resolve(onLike(it)).then((res) => {
+          if (res) { it.likes = res.count; it.liked = res.liked; }
+          const fresh = document.createElement('span');
+          fresh.innerHTML = likeHtml(it, readOnly);
+          const next = fresh.firstElementChild;
+          if (next && res && res.liked) next.classList.add('pop');
+          act.replaceWith(...(next ? [next] : []));
+        });
+        break;
       case 'delete': ask(confirmDeleteHtml, 'cancel-delete'); break;
       case 'confirm-delete': asking = null; onDelete(it.id); break;
       case 'cancel-delete':
@@ -167,13 +193,14 @@ function makeSlot(it, { onEdit, onDelete, onFeature, onListen, readOnly }) {
 // 비어 있으면 emptyText 한 줄만.
 // onEdit(it)/onDelete(id)/onFeature(it): 내 기록의 뒷면 버튼(readOnly면 안 그림).
 // onListen: 주면 유튜브 링크가 있는 음악 카드 뒷면에 "▶ 듣기".
-export function renderCards(containerEl, list, { emptyText, onEdit, onDelete, onFeature, onListen, readOnly = false }) {
+// onLike(it): 남의 기록 카드의 공감 하트 — { count, liked }(또는 null) Promise.
+export function renderCards(containerEl, list, { emptyText, onEdit, onDelete, onFeature, onListen, onLike, readOnly = false }) {
   containerEl.innerHTML = '';
   if (list.length === 0) {
     if (emptyText) containerEl.innerHTML = `<div class="empty">${emptyText}</div>`;
     return [];
   }
-  const slots = list.map((it) => makeSlot(it, { onEdit, onDelete, onFeature, onListen, readOnly }));
+  const slots = list.map((it) => makeSlot(it, { onEdit, onDelete, onFeature, onListen, onLike, readOnly }));
   containerEl.append(...slots);
   return slots;
 }

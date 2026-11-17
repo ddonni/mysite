@@ -2,7 +2,7 @@
 // welcome.js(처음 온 사람 안내)를 만들어서 서로 연결하고, 첫 목록을 불러옴.
 // (예전엔 첫 화면이 3D 방이었고 이 화면은 library.html "기록 보관소"였음 — library.html은
 // 이제 쿼리를 들고 여기로 넘어오기만 함.)
-import { fetchRecords, deleteRecord, setFeatured, setRoom } from './records.js';
+import { fetchRecords, deleteRecord, setFeatured, setRoom, setActor, likeRecord } from './records.js';
 import { createList } from './list.js';
 import { createModal } from './modal.js';
 import { initWelcome } from './welcome.js';
@@ -83,10 +83,11 @@ const navEl = document.querySelector('.site-nav');
 initRoomNav({ navEl, currentPage: './', settings: true }).then((ctx) => {
   const { mine, viewingCode, readOnly } = ctx;
   setRoom(viewingCode, readOnly ? null : mine.token);
+  setActor(mine);
   document.body.classList.toggle('read-only', readOnly);
   if (readOnly) showMyRoomCta(mine);
   initProfileHeader(ctx);
-  initSocial(ctx);
+  const social = initSocial(ctx);
 
   // 특정 카테고리를 먼저 보여주고 싶을 때 ./?cat=music 형태로 들어옴.
   const initialTab = new URLSearchParams(location.search).get('cat');
@@ -105,6 +106,20 @@ initRoomNav({ navEl, currentPage: './', settings: true }).then((ctx) => {
     }),
     // 유튜브 링크가 있는 음악을 화면 구석의 작은 플레이어로 틂.
     onListen: (item) => getPlayer().play(item),
+    // 남의 기록 카드에 공감 — 구글 연동이 안 됐으면 로그인 안내 창(social.js).
+    onLike: async (item) => {
+      const why = '공감은 구글 계정을 연동한 사람만 누를 수 있어요.';
+      if (!item.liked && !(await social.isLinked())) { social.askLogin(why); return null; }
+      try {
+        const res = await likeRecord(item.id, !item.liked);
+        social.showToast(res.liked ? `"${item.title}"에 공감했어요 ♥` : '공감을 취소했어요');
+        return res;
+      } catch (err) {
+        if (err.code === 'login') social.askLogin(why);
+        else social.showToast('지금은 공감할 수 없어요');
+        return null;
+      }
+    },
     // 칩을 바꾸면 아래로 내려와 있었어도 맨 위로(그 카테고리를 처음부터 보게).
     onTabChange: () => window.scrollTo({ top: 0 }),
     onAdd: (cat) => modal.openAdd(cat),
