@@ -150,8 +150,9 @@ export function initProfileHeader({ mine, viewingCode, readOnly }) {
   };
   const showBio = () => {
     bioEl.textContent = profile.bio || (readOnly ? '' : BIO_PLACEHOLDER);
-    bioEl.classList.toggle('empty', !profile.bio);
-    bioEl.hidden = readOnly && !profile.bio;
+    bioEl.classList.toggle('bio-empty', !profile.bio); // 'empty'는 목록 안내 칸의 전역 스타일(큰 여백)과 겹쳐서 다른 이름
+    // 소개가 없어도 줄은 남겨 둠(빈 줄) — 있을 때와 없을 때 이름 위치가 달라지지 않게.
+    bioEl.setAttribute('aria-hidden', String(readOnly && !profile.bio));
   };
   const showAvatar = () => { avatarEl.innerHTML = avatarInner(profile.avatar_url); };
   showName(); showBio(); showAvatar();

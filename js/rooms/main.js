@@ -72,7 +72,7 @@ function roomCard(room, mine) {
             <span class="room-name">${name}</span>
             ${tag}
           </span>
-          ${room.bio ? `<span class="room-bio">${escapeHtml(room.bio)}</span>` : ''}
+          <span class="room-bio">${room.bio ? escapeHtml(room.bio) : ''}</span>
         </span>
       </span>
       <span class="room-code">${escapeHtml(room.code)}${room.likes ? `<span class="room-likes" aria-label="좋아요 ${room.likes}개">♥ ${room.likes}</span>` : ''}</span>

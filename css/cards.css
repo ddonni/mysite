@@ -457,14 +457,15 @@ body.cards .empty.empty-add{
 .avatar.xl{ width:64px; height:64px; }
 .profile-main{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:3px; }
 .profile-name{ margin:0; font-size:22px; font-weight:400; line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.profile-bio{ margin:0; font-size:13.5px; color:var(--paper-dim); line-height:1.4; overflow-wrap:anywhere; }
+/* 소개가 비어도 한 줄 자리를 늘 차지함(이름 위치가 소개 유무로 안 흔들리게) */
+.profile-bio{ margin:0; min-height:1.4em; font-size:13.5px; color:var(--paper-dim); line-height:1.4; overflow-wrap:anywhere; }
 .profile-bio[hidden], .profile-name[hidden]{ display:none; }
 /* 내 기록: 누르면 고침 — 마우스를 올리면 밑줄 + 연필 표시로 "고칠 수 있음"을 알려 줌. */
 .profile-head .editable{ cursor:text; border-radius:2px; }
 .profile-head .editable:hover, .profile-head .editable:focus-visible{ outline:none; background:var(--chip); }
 .profile-head .editable::after{ content:" ✎"; font-size:0.75em; color:var(--paper-dim); opacity:0; transition:opacity .15s; }
 .profile-head .editable:hover::after, .profile-head .editable:focus-visible::after{ opacity:1; }
-.profile-bio.empty{ font-style:italic; opacity:.7; }
+.profile-bio.bio-empty{ font-style:italic; opacity:.7; }
 .profile-head .editable.save-failed{ color:#c9564a; }
 .profile-head .inline-edit{
   font:inherit; width:100%; max-width:28em; padding:3px 8px; border:1px solid var(--paper); border-radius:0;
