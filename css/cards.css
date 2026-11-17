@@ -500,4 +500,112 @@ body.cards .empty.empty-add{
 .profile-head.mine .avatar-btn:hover .avatar-edit, .profile-head.mine .avatar-btn:focus-visible .avatar-edit{ opacity:1; }
 .profile-head:not(.mine) .avatar-edit{ display:none; }
 
-@media (prefers-reduced-motion: reduce){ .avatar-edit{ transition:none; } }
+/* --- 오른쪽 아래 좋아요 · 방명록(js/library/social.js) — 카드 위에 떠 있음 --- */
+/* 방명록 창은 버튼 왼쪽 옆에(사용자 요청 — 위가 아니라), 아래쪽을 버튼과 맞춤. */
+.social{ position:fixed; right:max(16px, env(safe-area-inset-right)); bottom:max(16px, env(safe-area-inset-bottom)); z-index:60; display:flex; flex-direction:row; align-items:flex-end; gap:12px; pointer-events:none; }
+.social[hidden]{ display:none; }
+.social > *{ pointer-events:auto; }
+.social-btns{ display:flex; flex-direction:column; gap:10px; }
+.fab{
+  position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+  width:54px; height:54px; border-radius:50%; border:1px solid rgba(23,24,28,0.08); cursor:pointer;
+  background:rgba(255,255,255,0.94); color:var(--paper); box-shadow:0 6px 18px rgba(0,0,0,0.16);
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+.fab:hover{ transform:translateY(-2px); box-shadow:0 10px 22px rgba(0,0,0,0.2); }
+.fab .ico{ width:24px; height:24px; display:block; }
+.fab .ico svg{ width:100%; height:100%; display:block; }
+.fab.like .ico svg path{ fill:none; stroke:#E0485E; stroke-width:2; stroke-linejoin:round; }
+.fab.like.on .ico svg path{ fill:#E0485E; }
+.fab.like .fab-n{ font-size:11px; line-height:1; color:var(--paper-dim); }
+.fab.gb{ background:var(--paper); color:#FFFFFF; }
+.fab.gb .ico svg path{ fill:none; stroke:currentColor; stroke-width:2; stroke-linejoin:round; }
+.fab-badge{
+  position:absolute; top:-2px; right:-2px; min-width:20px; height:20px; padding:0 5px; border-radius:10px;
+  background:#E0485E; color:#FFFFFF; font-size:11px; line-height:20px; text-align:center; box-shadow:0 0 0 2px #FFFFFF;
+}
+.fab-badge[hidden]{ display:none; }
+/* 마우스를 올리면 무엇을 하는 버튼인지 왼쪽에 작게(좋아요는 "○○의 기록에 좋아요 누르기") */
+@media (hover:hover){
+  .fab[data-tip]::before{
+    content:attr(data-tip); position:absolute; right:calc(100% + 10px); top:50%; transform:translateY(-50%);
+    white-space:nowrap; font-size:12px; padding:5px 10px; background:var(--paper); color:#FFFFFF;
+    opacity:0; pointer-events:none; transition:opacity .15s;
+  }
+  .fab[data-tip]:hover::before{ opacity:1; }
+}
+@keyframes fab-pop{ 0%{ transform:scale(1); } 40%{ transform:scale(1.25); } 100%{ transform:scale(1); } }
+.fab.like.pop .ico{ animation:fab-pop .35s ease; }
+.social-toast{
+  position:fixed; right:max(16px, env(safe-area-inset-right)); bottom:calc(max(16px, env(safe-area-inset-bottom)) + 132px);
+  max-width:min(80vw, 320px); padding:9px 14px; font-size:13px; background:var(--paper); color:#FFFFFF;
+  box-shadow:0 6px 18px rgba(0,0,0,0.2); opacity:0; transform:translateY(6px); transition:opacity .2s, transform .2s;
+}
+.social-toast.show{ opacity:1; transform:none; }
+.social-toast[hidden]{ display:none; }
+
+/* 방명록 창 — 반투명이라 뒤 카드가 비쳐 보임(화면 전체를 덮지 않음). */
+.guestbook{
+  display:flex; flex-direction:column; width:min(360px, calc(100vw - 98px)); height:min(560px, calc(100vh - 120px));
+  background:rgba(255,255,255,0.72); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);
+  border:1px solid rgba(23,24,28,0.1); box-shadow:0 18px 40px rgba(0,0,0,0.22);
+}
+.guestbook[hidden]{ display:none; }
+.gb-head{ display:flex; align-items:center; justify-content:space-between; padding:10px 12px 10px 16px; border-bottom:1px solid rgba(23,24,28,0.08); }
+.gb-title{ font-size:15px; }
+.gb-title #gbTotal{ color:var(--paper-dim); margin-left:2px; }
+.gb-close{ width:30px; height:30px; border:none; background:none; font-size:22px; line-height:1; cursor:pointer; color:var(--paper-dim); }
+.gb-close:hover{ color:var(--paper); }
+.gb-list{ flex:1; overflow-y:auto; overscroll-behavior:contain; list-style:none; margin:0; padding:12px; display:flex; flex-direction:column; gap:12px; }
+.gb-empty{ margin:auto; text-align:center; font-size:13px; color:var(--paper-dim); line-height:1.6; padding:0 12px; }
+.gb-entry{ display:flex; gap:8px; align-items:flex-start; }
+.gb-entry.mine{ flex-direction:row-reverse; }
+.gb-avatar{ width:30px; height:30px; }
+.anon-face{ display:flex; width:100%; height:100%; align-items:center; justify-content:center; background:#C9CBD1; color:#FFFFFF; font-size:15px; }
+.gb-body{ max-width:78%; display:flex; flex-direction:column; gap:3px; }
+.gb-entry.mine .gb-body{ align-items:flex-end; }
+.gb-meta{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--paper-dim); }
+.gb-name{ color:var(--paper); text-decoration:none; }
+a.gb-name:hover{ text-decoration:underline; }
+.gb-del{ border:none; background:none; padding:0 2px; font-size:15px; line-height:1; color:var(--paper-dim); cursor:pointer; opacity:.6; }
+.gb-del:hover{ opacity:1; color:#c9564a; }
+.gb-text{
+  margin:0; padding:8px 11px; font-size:13.5px; line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere;
+  background:rgba(255,255,255,0.95); border:1px solid rgba(23,24,28,0.06);
+}
+.gb-entry.mine .gb-text{ background:var(--paper); color:#FFFFFF; border-color:var(--paper); }
+.gb-form{ padding:10px 12px 12px; border-top:1px solid rgba(23,24,28,0.08); display:flex; flex-direction:column; gap:8px; }
+.gb-form[hidden]{ display:none; }
+.gb-form textarea{
+  font:inherit; font-size:13.5px; resize:none; padding:8px 10px; border:1px solid rgba(23,24,28,0.16);
+  background:rgba(255,255,255,0.95); color:var(--paper); line-height:1.5;
+}
+.gb-form textarea:focus{ outline:none; border-color:var(--paper); }
+.gb-form-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.gb-anon{ display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--paper-dim); cursor:pointer; user-select:none; }
+.gb-anon input{ position:absolute; opacity:0; width:1px; height:1px; }
+.gb-switch{ position:relative; width:30px; height:18px; border-radius:9px; background:#D3D5DA; transition:background .15s; }
+.gb-switch::after{ content:""; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%; background:#FFFFFF; transition:transform .15s; box-shadow:0 1px 2px rgba(0,0,0,0.2); }
+.gb-anon input:checked + .gb-switch{ background:var(--paper); }
+.gb-anon input:checked + .gb-switch::after{ transform:translateX(12px); }
+.gb-anon input:focus-visible + .gb-switch{ outline:2px solid var(--paper); outline-offset:2px; }
+.gb-send{ font:inherit; font-size:13px; padding:7px 16px; border:none; background:var(--paper); color:#FFFFFF; cursor:pointer; }
+.gb-send:disabled{ opacity:.4; cursor:default; }
+.gb-login{ padding:12px 14px; border-top:1px solid rgba(23,24,28,0.08); display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:12.5px; color:var(--paper-dim); }
+.gb-login[hidden]{ display:none; }
+@media (max-width:640px){
+  .fab{ width:48px; height:48px; }
+  .guestbook{ width:calc(100vw - 88px); height:min(70vh, 520px); }
+  .social-toast{ bottom:calc(max(16px, env(safe-area-inset-bottom)) + 118px); }
+}
+
+/* 구글 로그인 안내 창 */
+.login-dialog{ position:fixed; inset:0; z-index:90; display:flex; align-items:center; justify-content:center; padding:24px; background:rgba(15,16,20,0.45); }
+.login-dialog[hidden]{ display:none; }
+.login-card{ position:relative; width:min(360px, 100%); padding:28px 24px 22px; background:#FFFFFF; box-shadow:0 20px 50px rgba(0,0,0,0.25); }
+.login-card h2{ margin:0 0 8px; font-size:18px; font-weight:400; }
+.login-card p{ margin:0 0 8px; font-size:13.5px; line-height:1.6; }
+.login-card .login-note{ font-size:12.5px; color:var(--paper-dim); margin-bottom:16px; }
+.login-close{ position:absolute; top:6px; right:8px; width:32px; height:32px; border:none; background:none; font-size:24px; line-height:1; cursor:pointer; color:var(--paper-dim); }
+.login-google{ min-height:40px; }
+@media (prefers-reduced-motion: reduce){ .fab, .social-toast, .avatar-edit{ transition:none; } .fab.like.pop .ico{ animation:none; } }

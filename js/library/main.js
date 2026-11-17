@@ -7,6 +7,7 @@ import { createList } from './list.js';
 import { createModal } from './modal.js';
 import { initWelcome } from './welcome.js';
 import { initProfileHeader } from './profileHeader.js';
+import { initSocial } from './social.js';
 import { initRoomNav } from '../shared/roomNav.js';
 import { featureLabel, withEunNeun, withEulReul } from './list/itemFormat.js';
 import { watchForSlow, SLOW_MESSAGE } from '../shared/slow.js';
@@ -85,6 +86,7 @@ initRoomNav({ navEl, currentPage: './', settings: true }).then((ctx) => {
   document.body.classList.toggle('read-only', readOnly);
   if (readOnly) showMyRoomCta(mine);
   initProfileHeader(ctx);
+  initSocial(ctx);
 
   // 특정 카테고리를 먼저 보여주고 싶을 때 ./?cat=music 형태로 들어옴.
   const initialTab = new URLSearchParams(location.search).get('cat');

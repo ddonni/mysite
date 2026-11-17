@@ -73,6 +73,44 @@
   </div>
 </div>
 
+<!-- 오른쪽 아래 떠 있는 좋아요 · 방명록(js/library/social.js) -->
+<div class="social" id="social" hidden>
+  <div class="social-toast" id="socialToast" role="status" aria-live="polite" hidden></div>
+  <section class="guestbook" id="guestbook" aria-label="방명록" hidden>
+    <header class="gb-head">
+      <span class="gb-title">방명록<span id="gbTotal"></span></span>
+      <button type="button" class="gb-close" aria-label="방명록 닫기">×</button>
+    </header>
+    <ul class="gb-list" id="gbList"></ul>
+    <form class="gb-form" id="gbForm" hidden>
+      <textarea id="gbInput" rows="2" maxlength="300" placeholder="방명록을 남겨 주세요 (Enter로 보내기)" aria-label="방명록 글"></textarea>
+      <div class="gb-form-row">
+        <label class="gb-anon"><input type="checkbox" id="gbAnon"><span class="gb-switch" aria-hidden="true"></span>익명으로</label>
+        <button type="submit" class="gb-send" id="gbSend">남기기</button>
+      </div>
+    </form>
+    <div class="gb-login" id="gbLogin" hidden>
+      <span>구글 계정을 연동하면 방명록을 남길 수 있어요.</span>
+      <button type="button" class="text-btn">연동하기</button>
+    </div>
+  </section>
+  <div class="social-btns">
+    <button type="button" class="fab like" id="likeBtn" aria-pressed="false"><span class="ico"></span><span class="fab-n" id="likeCount">0</span></button>
+    <button type="button" class="fab gb" id="guestbookBtn" aria-expanded="false" aria-controls="guestbook" aria-label="방명록 보기" data-tip="방명록"><span class="ico"></span><span class="fab-badge" id="guestbookCount" hidden>0</span></button>
+  </div>
+</div>
+
+<!-- 구글 로그인이 필요할 때(좋아요·방명록) -->
+<div class="login-dialog" id="loginDialog" role="dialog" aria-modal="true" aria-labelledby="loginTitle" hidden>
+  <div class="login-card">
+    <button type="button" class="login-close" aria-label="닫기">×</button>
+    <h2 id="loginTitle">구글 로그인이 필요해요</h2>
+    <p id="loginWhy"></p>
+    <p class="login-note">내 기록에 구글 계정을 연동하면 돼요. 다른 기기에서도 같은 계정으로 내 기록을 불러올 수 있어요.</p>
+    <div class="login-google" id="loginGoogle"></div>
+  </div>
+</div>
+
 <!-- 처음 온 사람 환영 카드(js/library/welcome.js) -->
 <div id="helpDialog" class="help-dialog" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
   <div class="help-card">
