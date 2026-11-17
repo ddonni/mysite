@@ -13,7 +13,7 @@ import { featureLabel, withEunNeun, withEulReul } from './list/itemFormat.js';
 import { watchForSlow, SLOW_MESSAGE } from '../shared/slow.js';
 import { getPlayer } from '../shared/youtube.js';
 import { API_BASE } from '../shared/config.js';
-import { forgetMyRoom } from '../shared/room.js';
+import { forgetMyRoom, roomLink } from '../shared/room.js';
 
 // 남의 방을 구경하는 사람의 "내 방으로" 버튼 문구 — 내 방이 비었으면 "만들기"(방은 이
 // 페이지를 연 순간 이미 만들어져 있고, 이 링크는 거기로 이동만 함), 모르면 "돌아가기".
@@ -125,8 +125,11 @@ initRoomNav({ navEl, currentPage: './', settings: true }).then((ctx) => {
     onAdd: (cat) => modal.openAdd(cat),
   });
 
-  // 티어리스트 — 아직 페이지가 없어서 안내만(만들면 그 페이지로 이동하게 바꿈).
-  document.getElementById('tierBtn').addEventListener('click', () => social.showToast('티어리스트는 준비 중이에요'));
+  // 티어리스트 페이지로 — 지금 보는 기록(남의 기록이면 그 기록)과 칩(카테고리)을 그대로 들고 감.
+  document.getElementById('tierBtn').addEventListener('click', () => {
+    const tab = list.activeTab();
+    window.location.href = roomLink(tab && tab !== 'all' ? `tier?cat=${tab}` : 'tier', viewingCode, mine.code);
+  });
 
   // 보고 있던 칩의 카테고리로 새 기록 창을 엶(전체면 책).
   document.getElementById('addTabBtn').addEventListener('click', () => modal.openAdd(list.activeTab()));

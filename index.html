@@ -24,7 +24,7 @@
 <link rel="stylesheet" href="css/inapp.css">
 <link rel="stylesheet" href="css/visibility.css">
 <!-- 카드 시안(흰 바탕·Orbit·각진 카드) — library.css 위에 덮어씀. library.css는 둘러보기도 같이 써서 그대로 둠 -->
-<link rel="stylesheet" href="css/cards.css?v=6">
+<link rel="stylesheet" href="css/cards.css?v=10">
 </head>
 <body class="cards">
 
@@ -48,7 +48,7 @@
 <nav class="site-nav lib-bar" aria-label="페이지 이동">
   <button type="button" class="nav-menu" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navDrawer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
   <div class="chips" id="tabs" role="group" aria-label="카테고리"></div>
-  <!-- 티어리스트로 가는 버튼 — 페이지는 아직 없음(만들기 전까지 "준비 중" 안내, js/library/main.js) -->
+  <!-- 티어리스트로 가는 버튼(tier.html — 보던 칩의 카테고리로 엶, js/library/main.js) -->
   <button type="button" class="tier-btn" id="tierBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="4" height="4" rx="1" fill="#E0485E"/><rect x="3" y="10" width="4" height="4" rx="1" fill="#F2C14E"/><rect x="3" y="16" width="4" height="4" rx="1" fill="#4AA3DF"/><path d="M10 6h11M10 12h8M10 18h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>티어리스트</button>
   <!-- 남의 방을 구경하는 중에만: 내 방으로 가는 길(js/library/main.js) -->
   <a class="add my-room" id="myRoomCta" hidden></a>

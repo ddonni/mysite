@@ -1,0 +1,84 @@
+/* 티어리스트(tier.html) — 바탕·글꼴·위 줄은 css/cards.css(첫 화면과 같음), 여기선 보드만. */
+
+.lib-bar .tier-back{
+  font-size:18px; line-height:1; text-decoration:none; color:var(--paper); padding:4px 6px; margin:0 -4px;
+}
+.lib-bar .tier-back:hover{ background:var(--chip); }
+.lib-bar .chip .n{ color:var(--paper-dim); font-size:11px; margin-left:2px; }
+.lib-bar .chip[aria-pressed="true"] .n{ color:rgba(255,255,255,0.7); }
+
+.t-tools{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin:0 0 12px; }
+.t-tools:empty{ display:none; }
+.t-hint{ font-size:12.5px; color:var(--paper-dim); }
+.t-reset{
+  font:inherit; font-size:12.5px; padding:6px 12px; cursor:pointer;
+  border:1px solid var(--line, #E6E7EA); background:#FFFFFF; color:var(--paper);
+}
+.t-reset:hover{ background:var(--chip); }
+
+/* 왼쪽 보드 + 오른쪽 미배치 칸(컴퓨터) — 미배치 칸은 화면에 붙어 따라와서, 아래에 있던 작품도 맨 위
+   줄까지 바로 끌 수 있음. 폰에선 보드 아래(폰은 누르고 줄을 누르는 방식이라 스크롤과 상관없음). */
+.t-layout{ display:grid; grid-template-columns:minmax(0, 1fr) 322px; gap:14px; align-items:start; }
+.t-board{ display:flex; flex-direction:column; gap:3px; }
+.t-tray{ position:sticky; top:calc(var(--nav-h, 52px) + 12px); max-height:calc(100vh - var(--nav-h, 52px) - 28px); overflow-y:auto; overscroll-behavior:contain; }
+.t-tray:empty{ display:none; }
+
+/* 줄 — 왼쪽 등급 칸 + 오른쪽 작품들. 작품이 많으면 여러 줄로 감겨 그 줄만 높아짐. */
+.t-row{ display:flex; min-height:58px; background:#F6F7F9; border:2px solid transparent; transition:border-color .12s, background .12s; }
+.t-label{
+  flex:none; width:52px; display:flex; align-items:center; justify-content:center;
+  background:var(--tier, #E2E3E7); color:#17181C; font-size:19px; font-weight:700; letter-spacing:0.02em;
+}
+.t-items{ flex:1; min-width:0; display:flex; flex-wrap:wrap; align-content:flex-start; gap:5px; padding:5px; }
+/* "+N개 더 보기" / "접기" — 줄 끝의 작품 자리에 */
+.t-more{
+  height:48px; padding:0 12px; font:inherit; font-size:12px; cursor:pointer;
+  border:1px dashed #C9CBD1; background:rgba(255,255,255,0.7); color:var(--paper);
+}
+.t-more:hover{ background:#FFFFFF; border-style:solid; }
+.t-empty{ align-self:center; font-size:12.5px; color:var(--paper-dim); padding:0 4px; }
+/* 미배치 칸 — 제목 줄이 위, 작품은 그 아래 */
+.t-row.unplaced{ flex-direction:column; min-height:120px; background:#FFFFFF; border:1px dashed #D3D5DA; }
+.t-row.unplaced .t-label{ width:auto; justify-content:flex-start; padding:8px 10px 2px; font-size:13px; font-weight:400; color:var(--paper-dim); background:transparent; }
+.t-row.unplaced .t-label .n{ margin-left:4px; }
+
+/* 작품 — 작은 표지 + 오른쪽에 제목 두 줄(늘 보임 — 같은 앨범 노래는 표지가 같아서). 가로로 납작해서
+   일곱 줄이 한 화면에 들어감. */
+.t-item{
+  width:148px; height:48px; display:flex; align-items:stretch; gap:7px; padding:3px 7px 3px 3px;
+  background:#FFFFFF; box-shadow:0 1px 2px rgba(0,0,0,0.12);
+}
+.t-cover{ position:relative; flex:none; width:32px; height:42px; background:#EEEEEC; overflow:hidden; }
+.t-cover img{ width:100%; height:100%; object-fit:cover; display:block; }
+.t-noimg{ position:absolute; inset:0; background:#EEEEEC; }
+/* 카테고리 아이콘은 표지 오른쪽 아래에 아주 작게 */
+body.cards .t-cover .cat-icon{ top:auto; bottom:1px; right:1px; width:14px; height:14px; padding:1px; border-radius:3px; box-shadow:none; }
+.t-title{
+  flex:1; min-width:0; align-self:center; font-size:11.5px; line-height:1.3; color:var(--paper); word-break:keep-all; overflow-wrap:anywhere;
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden;
+}
+
+/* 내 기록: 옮길 수 있음 */
+.editable .t-item{ cursor:grab; }
+.editable .t-item:hover{ box-shadow:0 3px 8px rgba(0,0,0,0.18); }
+.t-item.dragging{ opacity:.35; }
+.t-item.selected{ outline:3px solid var(--paper); outline-offset:1px; }
+.editable .t-row.drop-on{ border-color:var(--paper); background:#EEF0F3; }
+.t-item:focus-visible{ outline:2px solid var(--paper); outline-offset:2px; }
+
+.t-toast{
+  position:fixed; left:50%; bottom:max(20px, env(safe-area-inset-bottom)); transform:translateX(-50%); z-index:70;
+  padding:9px 14px; font-size:13px; background:var(--paper); color:#FFFFFF; box-shadow:0 6px 18px rgba(0,0,0,0.2);
+}
+.t-toast[hidden]{ display:none; }
+
+@media (max-width:900px){
+  .t-layout{ grid-template-columns:minmax(0, 1fr); }
+  .t-tray{ position:static; max-height:none; overflow:visible; }
+}
+@media (max-width:640px){
+  .t-label{ width:38px; font-size:15px; }
+  .t-items{ gap:4px; padding:4px; }
+  .t-item{ width:calc(50% - 2px); }
+}
+@media (prefers-reduced-motion: reduce){ .t-row{ transition:none; } }

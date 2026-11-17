@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>티어리스트</title>
+<!-- 카카오톡·인스타 링크 미리보기. 크롤러는 JS를 안 돌려서 방마다 다르게는 못 하고 공통 카드 하나 -->
+<meta name="description" content="읽고, 보고, 들은 책·애니·영화·음악을 기록으로 모아두는 곳">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="내 기록">
+<meta property="og:title" content="티어리스트 — 내 기록">
+<meta property="og:description" content="읽고, 보고, 들은 책·애니·영화·음악을 기록으로 모아두는 곳">
+<meta property="og:image" content="https://ddonni.github.io/mysite/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbit&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/library.css?v=12">
+<link rel="stylesheet" href="css/nav.css?v=8">
+<link rel="stylesheet" href="css/feedback.css?v=2">
+<link rel="stylesheet" href="css/inapp.css">
+<!-- 첫 화면과 같은 테마(흰 바탕·Orbit·각진 모서리) -->
+<link rel="stylesheet" href="css/cards.css?v=8">
+<link rel="stylesheet" href="css/tier.css?v=3">
+</head>
+<body class="cards tier-page">
+
+<!-- 위 줄(첫 화면과 같은 모양): ☰ 서랍(js/shared/roomNav.js) · 기록으로 돌아가기 · 페이지 이름 · 카테고리 칩(거르기만) -->
+<nav class="site-nav lib-bar" aria-label="페이지 이동">
+  <button type="button" class="nav-menu" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navDrawer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <a class="tier-back" id="tierBack" href="./" aria-label="기록으로 돌아가기">←</a>
+  <div class="logo" id="tierTitle">티어리스트</div>
+  <div class="chips" id="tierChips" role="group" aria-label="카테고리"></div>
+</nav>
+
+<main class="wrap">
+  <!-- 내 기록일 때만: 옮기는 법 안내 + 별점으로 다시 맞추기(js/tier/main.js) -->
+  <div class="t-tools" id="tierTools"></div>
+  <!-- 왼쪽 보드(SS · S · A · B · C · D · F) + 오른쪽 미배치 칸 — 컴퓨터에선 미배치 칸이 옆에 붙어
+       따라와서, 아래 작품을 끌어 맨 위 줄까지 바로 놓을 수 있음(폰에선 보드 아래). 기록 하나에 보드
+       하나(js/tier/board.js). -->
+  <div class="t-layout">
+    <div class="t-board" id="board"><div class="empty">불러오는 중…</div></div>
+    <aside class="t-tray" id="tray" aria-label="미배치"></aside>
+  </div>
+</main>
+
+<div class="t-toast" id="tierToast" role="status" aria-live="polite" hidden></div>
+
+<script type="module" src="js/shared/inAppBrowser.js"></script>
+<script type="module" src="js/tier/main.js"></script>
+<script type="module" src="js/shared/feedback.js"></script>
+</body>
+</html>
