@@ -5,8 +5,17 @@
 import { API_BASE, DEVELOPER_ROOM_CODE } from '../shared/config.js';
 import { initRoomNav } from '../shared/roomNav.js';
 import { roomLink } from '../shared/room.js';
-import { escapeHtml } from '../shared/dom.js';
+import { escapeHtml, escapeAttr } from '../shared/dom.js';
 import { avatarHtml } from '../shared/avatar.js';
+import { photoSrc } from '../shared/photoSrc.js';
+
+// 카드 안 인생작 줄 — 작은 표지(최대 12개, 카테고리 순). 사진이 없으면 회색 칸에 제목 첫 글자.
+function featuredHtml(list) {
+  if (!list || !list.length) return '';
+  return `<span class="room-featured" aria-label="인생작 ${list.length}개">${list.map((f) => `<span class="rf" data-cat="${f.cat}" title="${escapeAttr(f.title)}">${f.photo_url
+    ? `<img src="${escapeAttr(photoSrc(f.photo_url))}" alt="" loading="lazy" crossorigin="anonymous">`
+    : `<span class="rf-text">${escapeHtml(f.title.slice(0, 1))}</span>`}</span>`).join('')}</span>`;
+}
 import { renderVisibilityToggle } from '../shared/visibilityToggle.js';
 import { watchForSlow, SLOW_MESSAGE } from '../shared/slow.js';
 
@@ -67,6 +76,7 @@ function roomCard(room, mine) {
         </span>
       </span>
       <span class="room-code">${escapeHtml(room.code)}${room.likes ? `<span class="room-likes" aria-label="좋아요 ${room.likes}개">♥ ${room.likes}</span>` : ''}</span>
+      ${featuredHtml(room.featured)}
       <span class="room-counts">${counts}</span>
       <span class="room-go">${isMine ? '내 기록으로 →' : '구경하기 →'}</span>
     </span>
