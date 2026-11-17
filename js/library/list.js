@@ -31,10 +31,12 @@ export function countUp(el, from, to) {
   tick(); // 첫 숫자(0에서 시작하면 1)는 바로 보임
 }
 
-// 인생작(황금 카드)이 앞에, 그다음은 최신순.
+// 인생작(황금 카드)이 앞에, 그다음은 기록한 날짜의 최신순(같은 날이면 나중에 남긴 것 먼저).
 export function sortForGrid(list) {
   return list.slice().sort((a, b) =>
-    (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || (b.date || '').localeCompare(a.date || ''));
+    (b.featured ? 1 : 0) - (a.featured ? 1 : 0)
+    || (b.date || '').localeCompare(a.date || '')
+    || (b.id || 0) - (a.id || 0));
 }
 
 // onAdd(cat): 내 기록이 비어 있을 때 가운데 "+ 기록" 버튼을 누르면 — 새 기록 창을 엶.

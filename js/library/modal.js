@@ -53,6 +53,7 @@ export function createModal({ onSaved, getItems = () => [] }) {
 
   let currentCat = 'book';
   let editingId = null;
+  let touched = false; // 입력 칸을 연 뒤 사용자가 직접 바꾼 게 있는지(코드가 채운 값은 안 셈 — 창 바깥 닫기에서 씀)
   // 입력 칸을 검색 화면에서 열었는지 — 그러면 취소·저장 뒤 검색 화면으로 돌아감.
   let fromSearch = false;
   // 고른 영화·애니의 감독(음악은 유튜브 주소)을 따로 물어보는 요청 번호 — 그새 다른 걸
@@ -147,6 +148,7 @@ export function createModal({ onSaved, getItems = () => [] }) {
 
   // 입력 칸만 비움(카테고리는 그대로).
   function clearFields() {
+    touched = false;
     titleError.style.display = 'none';
     fTitle.value = '';
     fCreator.value = '';
@@ -215,10 +217,22 @@ export function createModal({ onSaved, getItems = () => [] }) {
     searchView.focus();
   }
 
-  // 창은 "취소"(또는 저장 성공)로만 닫힘 — 예전엔 창 바깥을 누르면 닫혀서,
-  // 입력하다 실수로 바깥을 건드리면 쓰던 내용이 통째로 날아갔음. 검색 화면에서 연
-  // 입력 칸의 취소는 검색 화면으로 돌아감.
+  // 검색 화면에서 연 입력 칸의 취소는 검색 화면으로 돌아감.
   cancelBtn.addEventListener('click', () => (fromSearch ? backToSearch() : setOpen(false)));
+
+  // 창 바깥(어두운 배경)을 누르면 닫힘(2026-11-17 사용자 요청). 예전엔 입력하다 실수로 바깥을
+  // 건드리면 쓰던 내용이 통째로 날아가서 취소로만 닫히게 했었음 — 그래서 입력 칸에서 뭔가 쓰거나
+  // 고친 뒤라면 한 번 물어봄. 창 안에서 글자를 드래그해 바깥에서 손을 뗀 경우는 닫지 않음.
+  formEl.addEventListener('input', () => { touched = true; });
+  formEl.addEventListener('change', () => { touched = true; });
+  document.getElementById('starPicker').addEventListener('click', () => { touched = true; });
+  let downOnBackdrop = false;
+  overlay.addEventListener('pointerdown', (e) => { downOnBackdrop = e.target === overlay; });
+  overlay.addEventListener('click', (e) => {
+    if (e.target !== overlay || !downOnBackdrop) return;
+    if (!formEl.hidden && touched && !confirm('작성 중인 내용이 사라져요. 닫을까요?')) return;
+    setOpen(false);
+  });
   document.getElementById('searchCloseBtn').addEventListener('click', () => setOpen(false));
 
   // ---- 저장 ----
@@ -316,6 +330,7 @@ export function createModal({ onSaved, getItems = () => [] }) {
       search.reset();
       photoPicker.setExisting(item.photo_url || null);
       starPicker.setValue(item.rating || 0);
+      touched = false;
       showView(true);
       setOpen(true);
     },
