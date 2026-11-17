@@ -29,3 +29,15 @@ describe('catIconHtml', () => {
     expect(catIconHtml('etc')).toBe('');
   });
 });
+
+// 보는 중·읽는 중 표시(itemFormat.js의 coverHtml).
+import { coverHtml } from '../../js/library/list/itemFormat.js';
+
+describe('보는 중 표시', () => {
+  it('책은 읽는 중, 애니·영화는 보는 중, 음악은 없음', () => {
+    expect(coverHtml({ cat: 'book', title: 'a', in_progress: true })).toContain('<span class="badge progress">읽는 중</span>');
+    expect(coverHtml({ cat: 'anime', title: 'a', in_progress: true })).toContain('>보는 중</span>');
+    expect(coverHtml({ cat: 'music', title: 'a', in_progress: true })).not.toContain('badge progress');
+    expect(coverHtml({ cat: 'movie', title: 'a' })).not.toContain('badge progress');
+  });
+});

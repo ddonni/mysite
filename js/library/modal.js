@@ -44,6 +44,10 @@ export function createModal({ onSaved, getItems = () => [] }) {
   const listenError = document.getElementById('listenError');
 
   const starPicker = createStarPicker(document.getElementById('starPicker'));
+  // 보는 중·읽는 중 스위치(음악은 숨김) — 칸이 없는 화면(테스트 등)에선 그냥 안 씀.
+  const progressField = document.getElementById('progressField');
+  const fProgress = document.getElementById('fProgress');
+  const progressLabel = document.getElementById('progressLabel');
   // 세부 기록(선택) — 칸이 없는 화면(테스트 등)에선 그냥 안 씀.
   const detailRoot = document.getElementById('detailField');
   const detail = detailRoot
@@ -96,6 +100,10 @@ export function createModal({ onSaved, getItems = () => [] }) {
     fTitle.placeholder = TITLE_PLACEHOLDER[currentCat] || TITLE_PLACEHOLDER.book;
     listenField.hidden = currentCat !== 'music';
     if (detail) detail.setCat(currentCat);
+    if (progressField) {
+      progressField.hidden = currentCat === 'music';
+      progressLabel.textContent = currentCat === 'book' ? '아직 읽는 중이에요' : '아직 보는 중이에요';
+    }
   }
 
   // ---- 유튜브 링크 칸 ----
@@ -175,6 +183,7 @@ export function createModal({ onSaved, getItems = () => [] }) {
     photoPicker.reset();
     starPicker.setValue(0);
     if (detail) detail.reset();
+    if (fProgress) fProgress.checked = false;
     creatorLookup++;
   }
 
@@ -299,6 +308,7 @@ export function createModal({ onSaved, getItems = () => [] }) {
         photo_url,
         listen_url,
         details: detail ? detail.getValue() : null,
+        in_progress: !!fProgress && currentCat !== 'music' && fProgress.checked,
       }, editingId);
 
       onSaved(); // main.js가 목록을 다시 불러와 화면에 반영함
@@ -351,6 +361,7 @@ export function createModal({ onSaved, getItems = () => [] }) {
       photoPicker.setExisting(item.photo_url || null);
       starPicker.setValue(item.rating || 0);
       if (detail) detail.setValue(item.details || null);
+      if (fProgress) fProgress.checked = !!item.in_progress;
       touched = false;
       showView(true);
       setOpen(true);

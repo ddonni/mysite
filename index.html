@@ -165,6 +165,11 @@
       </div>
       <div id="titleError" class="field-error title-error" style="display:none;">제목을 적어 주세요.</div>
 
+      <!-- 보는 중·읽는 중(음악은 없음) — 카드 표지에 표시됨(js/library/modal.js) -->
+      <div class="field progress-field" id="progressField">
+        <label class="progress-toggle"><input type="checkbox" id="fProgress"><span class="switch" aria-hidden="true"></span><span id="progressLabel">아직 보는 중이에요</span></label>
+      </div>
+
       <div class="field">
         <label>별점 (선택)</label>
         <div class="stars" id="starPicker"></div>

@@ -91,8 +91,18 @@ export function catIconHtml(cat) {
   return icon ? `<span class="cat-icon" data-cat="${cat}" role="img" aria-label="${catLabel(cat)}" title="${catLabel(cat)}">${icon}</span>` : '';
 }
 
+// 보는 중·읽는 중 표시 문구(음악은 없음).
+export function progressLabel(cat) {
+  return cat === 'book' ? '읽는 중' : '보는 중';
+}
+
 export function coverHtml(it) {
-  const badge = (it.featured ? `<span class="badges"><span class="badge">${featureLabel(it.cat)}</span></span>` : '') + catIconHtml(it.cat);
+  // 왼쪽 위 표시 — 인생작(황금), 보는 중·읽는 중(초록). 오른쪽 위는 카테고리 아이콘.
+  const tags = [
+    it.featured ? `<span class="badge">${featureLabel(it.cat)}</span>` : '',
+    it.in_progress && it.cat !== 'music' ? `<span class="badge progress">${progressLabel(it.cat)}</span>` : '',
+  ].join('');
+  const badge = (tags ? `<span class="badges">${tags}</span>` : '') + catIconHtml(it.cat);
   if (it.photo_url) {
     const src = escapeAttr(photoSrc(it.photo_url));
     // crossorigin: 예전 3D 방이 같은 사진을 CORS로 받아 WebGL 텍스처로 썼고, CORS 없이

@@ -161,6 +161,9 @@ body.cards .cat-icon[data-cat="music"]{ background:#EAF5FD; }
 body.cards .cat-icon[data-cat="anime"]{ background:#FDEBF2; }
 @media (max-width:640px){ body.cards .cat-icon{ top:5px; right:5px; width:22px; height:22px; padding:2px; border-radius:5px; } }
 
+/* 표지 위 표시 — 보는 중·읽는 중(초록) */
+body.cards .badge.progress{ background:#3E9B6A; color:#FFFFFF; }
+
 /* 표지 위 표시 — 인생작(황금) */
 body.cards .badges{ top:9px; left:9px; right:auto; align-items:flex-start; z-index:2; }
 body.cards .badge{
@@ -663,3 +666,14 @@ body.cards .aspect-stars .star .fg{ height:17px; }
 .back-details .aspect b{ font-weight:400; color:var(--gold-deep, #9A7419); margin-left:2px; }
 .back-details .genres{ display:flex; flex-wrap:wrap; gap:3px; }
 .back-details .genre{ padding:1px 6px; background:var(--chip); color:var(--paper); font-size:10.5px; }
+
+/* 기록 창의 "아직 보는 중이에요" 스위치 */
+.progress-field[hidden]{ display:none; }
+.progress-toggle{ display:inline-flex; align-items:center; gap:8px; font-size:13.5px; cursor:pointer; user-select:none; }
+body.cards .field label.progress-toggle{ display:inline-flex; margin:0; color:var(--paper); font-size:13.5px; }
+.progress-toggle input{ position:absolute; opacity:0; width:1px; height:1px; }
+.progress-toggle .switch{ position:relative; width:34px; height:20px; border-radius:10px; background:#D3D5DA; transition:background .15s; flex:none; }
+.progress-toggle .switch::after{ content:""; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#FFFFFF; transition:transform .15s; box-shadow:0 1px 2px rgba(0,0,0,0.2); }
+.progress-toggle input:checked + .switch{ background:#3E9B6A; }
+.progress-toggle input:checked + .switch::after{ transform:translateX(14px); }
+.progress-toggle input:focus-visible + .switch{ outline:2px solid var(--paper); outline-offset:2px; }
