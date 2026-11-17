@@ -125,6 +125,9 @@ initRoomNav({ navEl, currentPage: './', settings: true }).then((ctx) => {
     onAdd: (cat) => modal.openAdd(cat),
   });
 
+  // 티어리스트 — 아직 페이지가 없어서 안내만(만들면 그 페이지로 이동하게 바꿈).
+  document.getElementById('tierBtn').addEventListener('click', () => social.showToast('티어리스트는 준비 중이에요'));
+
   // 보고 있던 칩의 카테고리로 새 기록 창을 엶(전체면 책).
   document.getElementById('addTabBtn').addEventListener('click', () => modal.openAdd(list.activeTab()));
 

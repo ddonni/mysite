@@ -78,6 +78,17 @@ body.cards .site-nav.lib-bar > .chips{
   padding:6px 14px; border-radius:0; border:none; background:var(--paper); color:#FFFFFF;
 }
 body.cards.read-only #addTabBtn{ display:none; }
+/* 칩 옆 티어리스트 버튼 */
+.lib-bar .tier-btn{
+  display:inline-flex; align-items:center; gap:5px; font:inherit; font-size:13px; white-space:nowrap; cursor:pointer;
+  padding:5px 10px; border:1px solid var(--line, #E6E7EA); background:#FFFFFF; color:var(--paper);
+}
+.lib-bar .tier-btn svg{ width:15px; height:15px; flex:none; }
+.lib-bar .tier-btn:hover{ background:var(--chip); }
+/* 칩 바로 옆에 붙이고, 남는 폭은 이 버튼 뒤로(+ 기록은 오른쪽 끝 그대로) */
+body.cards .site-nav.lib-bar > .chips:has(+ .tier-btn){ flex:0 1 auto; }
+.lib-bar .tier-btn{ margin-right:auto; }
+@media (max-width:640px){ .lib-bar .tier-btn{ padding:5px 7px; font-size:0; gap:0; } .lib-bar .tier-btn svg{ width:17px; height:17px; } }
 .lib-bar .add.my-room{ text-decoration:none; }
 .lib-bar .add.my-room[hidden]{ display:none; }
 @media (max-width:640px){
