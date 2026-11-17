@@ -168,13 +168,10 @@ export function setActiveCat(navEl, cat) {
   navEl.querySelectorAll('a[data-cat]').forEach((a) => a.classList.toggle('active', a.dataset.cat === key));
 }
 
-// 서랍의 "기록 설정"(내 기록일 때만) — 이름·공개 여부를 받아 와서 그림. 이름을 저장하면 위 줄의
-// 표시도 바로 바꿈(지운 이름이면 "내 기록").
-function showSettings(el, mine, setLabel) {
+// 서랍의 계정(구글 연결, 내 기록일 때만). 이름·사진·소개·공개는 첫 화면 위 프로필 줄에서 고침.
+function showSettings(el, mine) {
   el.hidden = false;
-  fetch(`${API_BASE}/api/rooms/${encodeURIComponent(mine.code)}`)
-    .then((res) => (res.ok ? res.json() : null), () => null)
-    .then((info) => renderRoomSettings(el, mine, info, { onRenamed: (name) => setLabel(name || MY_LABEL) }));
+  renderRoomSettings(el, mine);
 }
 
 // currentPage: 지금 페이지 자신의 주소(예: 'rooms') — "코드로 기록 보기"나 "내 기록으로"를
@@ -200,9 +197,9 @@ export function initRoomNav({ navEl, currentPage, settings = false }) {
     });
 
     const viewingDev = !!DEVELOPER_ROOM_CODE && viewingCode === DEVELOPER_ROOM_CODE.toUpperCase();
-    const setLabel = fillRoomLabels({ viewingCode, readOnly, viewingDev });
+    fillRoomLabels({ viewingCode, readOnly, viewingDev });
     renderRoomBox(drawer.querySelector('.drawer-room'), { mine, viewingCode, readOnly, currentPage });
-    if (settings && !readOnly) showSettings(drawer.querySelector('.drawer-settings'), mine, setLabel);
+    if (settings && !readOnly) showSettings(drawer.querySelector('.drawer-settings'), mine);
 
     // 처음 온 사람도 실제로 채워진 방을 구경하고 참고할 수 있게 — 개발자 본인과, 이미 그 방을
     // 보는 중일 땐 안 띄움.

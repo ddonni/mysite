@@ -60,6 +60,7 @@ body.cards .site-nav.lib-bar:hover, body.cards .site-nav.lib-bar:focus-within{ b
 body.cards .site-nav.lib-bar > *{ flex:none; }
 body.cards .site-nav .nav-menu{ border-radius:0; margin:0 -4px 0 -6px; }
 .lib-bar .logo{ font-size:17px; letter-spacing:0.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:14em; }
+
 /* 칩은 남는 폭을 다 쓰고, 좁으면 옆으로 밀어서 봄(줄이 두 줄로 접히지 않게). */
 body.cards .site-nav.lib-bar > .chips{
   flex:1 1 auto; min-width:0; display:flex; gap:4px; flex-wrap:nowrap;
@@ -133,6 +134,7 @@ body.cards .title-card{
 }
 body.cards .title-card::before, body.cards .title-card .tc-cat,
 body.cards .title-card .tc-title, body.cards .title-card .tc-creator{ display:none; }
+
 
 /* 표지 위 표시 — 인생작(황금) */
 body.cards .badges{ top:9px; left:9px; right:auto; align-items:flex-start; z-index:2; }
@@ -399,3 +401,89 @@ body.cards .empty.empty-add{
   display:inline-block; margin-left:6px; min-width:1ch; font-size:11px; opacity:0.7;
   font-variant-numeric:tabular-nums;
 }
+
+/* --- 윗줄: 프로필(js/library/profileHeader.js) — 사진 · 이름/한 줄 소개 · 공개 스위치 ---
+   스크롤하면 같이 올라가고, 아래 메뉴 줄(.lib-bar)만 위에 붙어 있음. */
+.profile-head{
+  display:flex; align-items:center; gap:16px;
+  padding:max(18px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 6px max(16px, env(safe-area-inset-left));
+}
+.avatar-btn{ flex:none; padding:0; border:none; background:none; cursor:pointer; border-radius:50%; }
+.avatar-btn:focus-visible{ outline:2px solid var(--paper); outline-offset:3px; }
+.avatar.xl{ width:64px; height:64px; }
+.profile-main{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:3px; }
+.profile-name{ margin:0; font-size:22px; font-weight:400; line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.profile-bio{ margin:0; font-size:13.5px; color:var(--paper-dim); line-height:1.4; overflow-wrap:anywhere; }
+.profile-bio[hidden], .profile-name[hidden]{ display:none; }
+/* 내 기록: 누르면 고침 — 마우스를 올리면 밑줄 + 연필 표시로 "고칠 수 있음"을 알려 줌. */
+.profile-head .editable{ cursor:text; border-radius:2px; }
+.profile-head .editable:hover, .profile-head .editable:focus-visible{ outline:none; background:var(--chip); }
+.profile-head .editable::after{ content:" ✎"; font-size:0.75em; color:var(--paper-dim); opacity:0; transition:opacity .15s; }
+.profile-head .editable:hover::after, .profile-head .editable:focus-visible::after{ opacity:1; }
+.profile-bio.empty{ font-style:italic; opacity:.7; }
+.profile-head .editable.save-failed{ color:#c9564a; }
+.profile-head .inline-edit{
+  font:inherit; width:100%; max-width:28em; padding:3px 8px; border:1px solid var(--paper); border-radius:0;
+  background:#FFFFFF; color:var(--paper);
+}
+.profile-name + .inline-edit{ font-size:20px; }
+.profile-bio + .inline-edit{ font-size:13.5px; }
+/* 공개 스위치 — 밝은 바탕용 색(둘러보기 페이지의 .my-vis와 같음) */
+.profile-vis{ flex:none; align-items:flex-end; max-width:16em; text-align:right; }
+.profile-vis[hidden]{ display:none; }
+.profile-vis .vis-toggle{ color:var(--paper); font-weight:400; }
+.profile-vis .vis-track{ background:#E2E3E7; border-color:#D3D5DA; }
+.profile-vis .vis-knob{ background:#FFFFFF; box-shadow:0 1px 2px rgba(0,0,0,0.2); }
+.profile-vis .vis-toggle[aria-checked="true"] .vis-track{ background:var(--paper); border-color:var(--paper); }
+.profile-vis .vis-hint{ color:var(--paper-dim); }
+@media (max-width:640px){
+  .profile-head{ gap:12px; padding-top:max(14px, env(safe-area-inset-top)); flex-wrap:wrap; }
+  .avatar.xl{ width:52px; height:52px; }
+  .profile-name{ font-size:18px; }
+  .profile-bio{ font-size:12.5px; }
+  /* 폰에선 공개 스위치를 프로필 아래 줄로, 설명 글은 숨김(스위치 글자만으로 충분) */
+  .profile-vis{ flex-basis:100%; align-items:flex-start; text-align:left; max-width:none; }
+  .profile-vis .vis-hint{ display:none; }
+}
+
+/* 프로필 사진 크게 보기 */
+.avatar-dialog{
+  position:fixed; inset:0; z-index:80; display:flex; align-items:center; justify-content:center;
+  padding:24px; background:rgba(15,16,20,0.55);
+}
+.avatar-dialog[hidden]{ display:none; }
+.avatar-dialog-card{
+  position:relative; display:flex; flex-direction:column; align-items:center; gap:16px;
+  padding:36px 28px 22px; background:#FFFFFF; box-shadow:0 20px 50px rgba(0,0,0,0.25);
+}
+.avatar.huge{ width:min(72vw, 320px); height:min(72vw, 320px); }
+.avatar-close{
+  position:absolute; top:6px; right:8px; width:32px; height:32px; border:none; background:none;
+  font-size:24px; line-height:1; cursor:pointer; color:var(--paper-dim);
+}
+.avatar-close:hover{ color:var(--paper); }
+.avatar-actions{ display:flex; align-items:center; justify-content:center; gap:10px; min-height:44px; flex-wrap:wrap; }
+.avatar-actions:empty{ display:none; }
+.icon-btn{
+  display:flex; align-items:center; justify-content:center; width:44px; height:44px; padding:10px;
+  border:1px solid var(--nav-line, #E6E7EA); background:#FFFFFF; color:var(--paper); cursor:pointer;
+}
+.icon-btn svg{ width:100%; height:100%; }
+.icon-btn:hover{ background:var(--chip); }
+.text-btn{ font:inherit; font-size:13px; padding:7px 14px; border:1px solid var(--nav-line, #E6E7EA); background:#FFFFFF; color:var(--paper); cursor:pointer; }
+.text-btn.danger{ background:#c9564a; border-color:#c9564a; color:#FFFFFF; }
+.avatar-actions .confirm-text{ width:100%; text-align:center; font-size:13.5px; }
+.avatar-status{ margin:0; font-size:12.5px; color:var(--paper-dim); min-height:1em; }
+.avatar-status:empty{ display:none; }
+
+/* 프로필 사진 위 연필(내 기록일 때 마우스를 올리면) */
+.avatar-btn{ position:relative; }
+.avatar-edit{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center; border-radius:50%;
+  background:rgba(23,24,28,0.45); color:#FFFFFF; opacity:0; transition:opacity .15s; pointer-events:none;
+}
+.avatar-edit svg{ width:40%; height:40%; }
+.profile-head.mine .avatar-btn:hover .avatar-edit, .profile-head.mine .avatar-btn:focus-visible .avatar-edit{ opacity:1; }
+.profile-head:not(.mine) .avatar-edit{ display:none; }
+
+@media (prefers-reduced-motion: reduce){ .avatar-edit{ transition:none; } }

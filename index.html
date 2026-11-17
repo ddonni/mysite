@@ -19,21 +19,34 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbit&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/library.css?v=27">
 <link rel="stylesheet" href="css/player.css">
-<link rel="stylesheet" href="css/nav.css?v=6">
+<link rel="stylesheet" href="css/nav.css?v=8">
 <link rel="stylesheet" href="css/feedback.css?v=2">
 <link rel="stylesheet" href="css/inapp.css">
 <link rel="stylesheet" href="css/visibility.css">
 <!-- 카드 시안(흰 바탕·Orbit·각진 카드) — library.css 위에 덮어씀. library.css는 둘러보기도 같이 써서 그대로 둠 -->
-<link rel="stylesheet" href="css/cards.css">
+<link rel="stylesheet" href="css/cards.css?v=6">
 </head>
 <body class="cards">
 
 <!-- 위 줄 하나: ☰(방 코드·방 설정·둘러보기·의견 보내기 서랍 — js/shared/roomNav.js) · 누구의 방인지 ·
      카테고리 칩(js/library/list.js) · + 기록. 다른 페이지의 떠 있는 메뉴(전체·책·애니…)는
      이 칩과 겹쳐서 여기선 안 둠. -->
+<!-- 윗줄: 프로필(사진 · 이름 · 한 줄 소개 · 내 기록이면 공개 스위치) — 누르면 그 자리에서 고침
+     (js/library/profileHeader.js). 스크롤하면 같이 올라가고, 아래 메뉴 줄만 위에 붙어 있음. -->
+<header class="profile-head" id="profileHead">
+  <button type="button" class="avatar-btn" id="avatarBtn">
+    <span class="avatar xl" id="profileAvatar"></span>
+    <!-- 내 기록일 때만(마우스를 올리면) — 눌러서 사진을 바꿀 수 있다는 표시 -->
+    <span class="avatar-edit" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span>
+  </button>
+  <div class="profile-main">
+    <h1 class="profile-name" id="profileName">내 기록</h1>
+    <p class="profile-bio" id="profileBio"></p>
+  </div>
+  <div class="profile-vis vis-box" id="profileVis" hidden></div>
+</header>
 <nav class="site-nav lib-bar" aria-label="페이지 이동">
   <button type="button" class="nav-menu" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navDrawer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-  <div class="logo" data-room-label>내 기록</div>
   <div class="chips" id="tabs" role="group" aria-label="카테고리"></div>
   <!-- 남의 방을 구경하는 중에만: 내 방으로 가는 길(js/library/main.js) -->
   <a class="add my-room" id="myRoomCta" hidden></a>
@@ -48,6 +61,17 @@
 
 <!-- 카드를 나눠줄 때만 잠깐 보이는 덱(화면 아래 가운데) -->
 <div class="deck" aria-hidden="true"></div>
+
+<!-- 프로필 사진 크게 보기 — 내 기록이면 연필(바꾸기)·휴지통(기본 사진으로)(js/library/profileHeader.js) -->
+<div class="avatar-dialog" id="avatarDialog" role="dialog" aria-modal="true" aria-label="프로필 사진" hidden>
+  <div class="avatar-dialog-card">
+    <button type="button" class="avatar-close" aria-label="닫기">×</button>
+    <span class="avatar huge" id="avatarBig"></span>
+    <div class="avatar-actions" id="avatarActions"></div>
+    <p class="avatar-status" id="avatarStatus" aria-live="polite"></p>
+    <input type="file" id="avatarFile" accept="image/*" hidden>
+  </div>
+</div>
 
 <!-- 처음 온 사람 환영 카드(js/library/welcome.js) -->
 <div id="helpDialog" class="help-dialog" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>

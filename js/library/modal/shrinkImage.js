@@ -12,7 +12,8 @@ const SMALL_ENOUGH_BYTES = 300 * 1024;
 // GIF(움직이는 사진)·SVG는 캔버스로 다시 그리면 애니메이션/벡터가 깨짐.
 const SKIP_TYPES = ['image/gif', 'image/svg+xml'];
 
-export async function shrinkImage(file) {
+// maxSide: 긴 변의 최대 길이 — 프로필 사진처럼 작게만 보이는 건 더 줄임.
+export async function shrinkImage(file, maxSide = MAX_SIDE) {
   if (!file || SKIP_TYPES.includes(file.type)) return file;
   if (typeof createImageBitmap !== 'function' || typeof document === 'undefined') return file;
 
@@ -25,7 +26,7 @@ export async function shrinkImage(file) {
   }
 
   try {
-    const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
     if (scale === 1 && file.size <= SMALL_ENOUGH_BYTES) return file;
 
     const canvas = document.createElement('canvas');

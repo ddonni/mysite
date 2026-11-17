@@ -6,6 +6,7 @@ import { API_BASE, DEVELOPER_ROOM_CODE } from '../shared/config.js';
 import { initRoomNav } from '../shared/roomNav.js';
 import { roomLink } from '../shared/room.js';
 import { escapeHtml } from '../shared/dom.js';
+import { avatarHtml } from '../shared/avatar.js';
 import { renderVisibilityToggle } from '../shared/visibilityToggle.js';
 import { watchForSlow, SLOW_MESSAGE } from '../shared/slow.js';
 
@@ -47,12 +48,19 @@ function roomCard(room, mine) {
   const counts = CATS.filter((c) => room.counts[c.key])
     .map((c) => `<span class="room-count" data-cat="${c.key}"><i class="dot"></i>${c.label} ${room.counts[c.key]}</span>`)
     .join('');
+  const name = room.name ? escapeHtml(room.name) : '이름 없는 기록';
   a.innerHTML = `
     <span class="room-band" aria-hidden="true"></span>
     <span class="room-body">
-      <span class="room-head">
-        <span class="room-name">${room.name ? escapeHtml(room.name) : '이름 없는 기록'}</span>
-        ${tag}
+      <span class="room-profile">
+        ${avatarHtml(room.avatar_url, { label: `${room.name || '이름 없는 기록'}의 프로필 사진` })}
+        <span class="room-who">
+          <span class="room-head">
+            <span class="room-name">${name}</span>
+            ${tag}
+          </span>
+          ${room.bio ? `<span class="room-bio">${escapeHtml(room.bio)}</span>` : ''}
+        </span>
       </span>
       <span class="room-code">${escapeHtml(room.code)}</span>
       <span class="room-counts">${counts}</span>
