@@ -37,13 +37,15 @@
 ## 두 저장소가 맞물린 곳 (한쪽을 바꾸면 다른 쪽도)
 
 - 에러 문자열(`featured_limit`, `not_music`, `page not found`, `not room owner` 등, 업로드 415/413).
-- **3D 방(로비)은 2026-11-12에 지움**(사용자 결정 — 첫 화면을 기록 카드로). 그래서 프론트가 안 쓰는
-  백엔드 기능이 남아 있음: 턴테이블 곡 `records.playing`(`PUT .../records/{id}/playing`)과 방 테마
-  `schemas.ROOM_THEMES`(테마 색은 `js/rooms/main.js`의 `THEME_COLORS`로 둘러보기 카드 띠에만 씀).
-  옛 코드는 git 기록의 `js/lobby/`.
-- **캔버스(그림판)도 2026-11-12에 지움**(사용자 결정). 백엔드의 그림 API(`/pages/{n}`, WebSocket
-  `/ws/rooms/{code}/pages/{n}`)와 `pages` 표는 남아 있지만 프론트는 안 씀. 옛 코드는 git 기록의
-  `js/sketchbook/`. `sketchbook.html`은 첫 화면으로 넘기는 주소만 남김.
+- **3D 방(`lobby.html`, `js/lobby/`)**: 2026-11-12에 첫 화면에서 내렸다가 2026-11-18에 `3d-room` 브랜치의
+  둥근 3면 방을 되살려 따로 붙임(사용자 결정 — 첫 화면은 카드 그대로, 메뉴 줄의 "3D 방" 버튼으로 감,
+  `data-page`라 남의 기록을 보던 중이면 그 방의 3D 방). 가구의 "입장하기"는 카드 화면 `./?cat=…`로,
+  "링크 복사"·방 방문은 `lobby?room=…`(`roomShareUrl(code, base, 'lobby')`, `roomContext.js`의
+  `lobbyUrl`). 쓰는 백엔드: 턴테이블 곡 `records.playing`(`PUT .../records/{id}/playing`), 방 테마
+  `schemas.ROOM_THEMES`(둘러보기 카드 띠 색 `js/rooms/main.js`의 `THEME_COLORS`도).
+- **캔버스(`sketchbook.html`, `js/sketchbook/`)**: 2026-11-18 되살림, **3D 방의 이젤에서만** 들어감(사용자
+  결정 — 카드 화면엔 캔버스로 가는 길이 없음). 백엔드 그림 API `/pages/{n}`, WebSocket
+  `/ws/rooms/{code}/pages/{n}`, `pages` 표. 3D 방 이젤의 그림 미리보기도 같은 API(`js/shared/strokes.js`).
 - 방 둘러보기: 백엔드 `rooms.is_public` + `GET /api/rooms`(공개·기록 있는 방만) +
   `PUT .../visibility` ↔ `rooms.html`/`js/rooms/main.js`, `js/shared/visibilityToggle.js`.
 - 자동 완성(제목 칸·만든 사람 칸, 서로 독립): 백엔드 `GET .../suggestions?field=title|creator`
@@ -97,8 +99,8 @@
   당기면 창이 밀리고 뒤가 보였음).
 - 사진: 사진을 띄우는 곳(목록 `itemFormat.js`, 추가 창 `photoPicker.js`, 검색 목록)은 전부
   `photoSrc()`를 거치고 **`crossorigin="anonymous"`로** 받음 — S3·TMDB는 Origin 없는 요청엔 CORS
-  헤더 없이 1년 캐시로 답해서, 한 곳이라도 그냥 받으면 그 캐시 때문에 3D 방(지금은 없음)의 WebGL
-  텍스처가 막혔음. 나중에 WebGL·canvas로 사진을 다룰 일이 생길 때를 위해 그대로 둠. 표지 중계: 백엔드 `GET /api/cover` +
+  헤더 없이 1년 캐시로 답해서, 한 곳이라도 그냥 받으면 그 캐시 때문에 3D 방의 WebGL
+  텍스처가 막혔음(3D 방은 2026-11-18에 되살려서 지금도 필요함). 표지 중계: 백엔드 `GET /api/cover` +
   `book_search.COVER_HOSTS` ↔ `photoSrc.js`의 `RELAY_HOSTS`(같아야 함, 카카오 표지만).
 - 구글 방 복구: `POST /api/auth/google` 응답의 `current_empty`(지금 브라우저의 방이
   비었는지, 다른 방을 복구할 때만 true/false) ↔ `js/shared/googleAuth.js`(빈 방이면
@@ -122,7 +124,7 @@
   비었으면 "나도 내 방 만들기").
 - **첫 화면 위 두 줄**(2026-11-17): 윗줄 = 프로필(`js/library/profileHeader.js` — 사진·이름·그 아래
   한 줄 소개·내 기록이면 오른쪽 공개 스위치, 스크롤하면 같이 올라감), 아랫줄 = 메뉴(☰ · 카테고리 칩 ·
-  티어리스트 버튼 · + 기록, `position:sticky`로 위에 붙음). 내 기록이면 이름·소개는 **누르면 그 자리에서
+  티어리스트 · 3D 방 · 보기 전환 · + 기록, `position:sticky`로 위에 붙음). 내 기록이면 이름·소개는 **누르면 그 자리에서
   입력 칸**(Enter·바깥 클릭 저장, Esc 취소), 사진은 누르면 가운데 큰 창 → 연필(파일 고르기, 512px로 줄여
   `POST .../uploads` → `PUT .../avatar`)·휴지통(기본 실루엣으로). 저장 요청은 `js/shared/profileApi.js`,
   사진·실루엣 그리기는 `js/shared/avatar.js`(둘러보기 카드도 씀). ☰ 서랍의 "기록 설정"엔 **구글 계정 연동만**
@@ -150,6 +152,10 @@
   책: 결말 + 카테고리별 장르 12개 중 5개, 음악 없음 — 백엔드 `schemas.DETAIL_ASPECTS·DETAIL_GENRES`와
   같아야 함). 카드 뒷면엔 요소별 별점·장르 태그(저자 줄은 뺌). **수정할 땐 카테고리 탭이 잠김**(지금 것만
   켜짐). 창 바깥(어두운 곳)을 누르면 닫히는데, 입력 칸을 직접 고쳤으면 한 번 물음(`touched`).
+- **보기 전환**(2026-11-18, 피드백 "카드로는 모든 작품을 한눈에 볼 수 없다"): 카드 · 촘촘히(표지만 빽빽이,
+  인생작 금테·보는 중 초록 점·제목은 마우스 올리면) · 목록(한 줄에 표지·제목·카테고리·별점·날짜).
+  `js/library/list/compactViews.js`, 고른 보기는 localStorage `mysite:view`(`list.js`의 `setView`). 촘촘히·목록에서
+  작품을 누르면 `#cardDialog`에 카드 하나를 뒷면부터 띄워서 수정·삭제·인생작·공감·듣기를 카드 보기와 똑같이 씀.
 - 카드 표지 오른쪽 위 카테고리 아이콘(`itemFormat.js`의 `catIconHtml`) — 음표·책·A·슬레이트, 카테고리마다
   연한 바탕색(드라마 OST처럼 표지만으론 무슨 기록인지 모를 때가 있어서).
 - 개발자의 방: `config.js`의 `DEVELOPER_ROOM_CODE = 'TTHB8N'`(사용자 본인 방,
@@ -189,7 +195,7 @@
 
 ## 정해둔 것 / 남은 일
 
-- **3D 방은 브랜치로만**: `3d-room`(사용자가 보관), `room-redesign`(= 3d-room + 2026-11-11 작업: 네모난 방,
+- **3D 방 브랜치**: `main`의 `lobby.html`은 `3d-room`(사용자가 보관)에서 되살린 것. `room-redesign`(= 3d-room + 2026-11-11 작업: 네모난 방,
   책·애니·영화를 한데 꽂는 큰 책장, 옷장 가구·옷장 탭, 한글 글꼴). 백엔드 `room-redesign`엔 옷장 카테고리
   (`attrs`·`wardrobe_public`, 마이그레이션 `a7c3e5f9b2d1`)와 인생작 9개 공동 한도가 있음 — `main`에 안
   합침. 옷장을 카드 홈으로 옮길 땐 그 리비전의 `down_revision`을 지금 head(`a2d4f6b8c0e3`)로 바꿔야 함.
