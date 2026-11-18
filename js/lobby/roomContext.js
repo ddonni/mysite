@@ -2,16 +2,26 @@
 // 기준으로 페이지/방 API 주소를 만드는 헬퍼들. main.js의 여러 곳
 // (헤더 UI, 3D 씬 데이터 로드, 페이지 이동)이 전부 이 하나의 ctx를
 // 공유해서 써야 서로 다른 방을 가리키는 일이 없음.
-import { getMyRoom, getViewingRoomCode } from '../shared/room.js';
+import { getMyRoom } from '../shared/room.js';
 import { API_BASE } from '../shared/config.js';
 
-// 지금 화면에 띄울 방: 주소에 ?room=코드가 있으면 그 방(남의 방 — 이 경우
-// 로비의 모든 게 읽기 전용), 없으면 내 방. 모듈을 불러오는 시점에 한 번만
-// 계산해서, main.js의 여러 곳이 이 같은 프로미스를 공유해 씀.
-export const roomContext = getMyRoom().then((mine) => {
-  const viewingCode = getViewingRoomCode(mine.code);
-  return { mine, viewingCode, readOnly: viewingCode !== mine.code };
-});
+// 기억 보관소는 **늘 내 방이 가운데**(2026-11-18 사용자 결정 — 바깥 이웃 서가에 다른 방들이 같이 나와서 "남의
+// 보관소"라는 개념을 없앰). 주소의 ?room=코드는 "그 이웃 서가를 맨 앞에 놓고 비춰 달라"는 뜻(focusCode)으로만
+// 쓰고, 주소에서는 바로 지움 — 위 메뉴(roomNav)·서랍이 남의 방을 보는 중으로 착각하지 않게.
+const params = new URLSearchParams(location.search);
+const urlRoom = (params.get('room') || '').trim().toUpperCase() || null;
+if (params.has('room')) {
+  params.delete('room');
+  const q = params.toString();
+  history.replaceState(history.state, '', location.pathname + (q ? `?${q}` : '') + location.hash);
+}
+
+export const roomContext = getMyRoom().then((mine) => ({
+  mine,
+  viewingCode: mine.code,
+  readOnly: false,
+  focusCode: urlRoom && urlRoom !== mine.code ? urlRoom : null,
+}));
 
 // 지금 보는 방의 API 주소. 코드는 주소창(?room=)에서 온 값이라 아무 문자열일
 // 수 있어서, 경로에 그대로 끼우면 `/`나 `?` 때문에 엉뚱한 경로를 조회하게 될
@@ -47,6 +57,36 @@ export const myRoomEmpty = roomContext.then((ctx) => {
     .then((res) => (res.ok ? res.json() : null), () => null)
     .then((records) => (Array.isArray(records) ? records.length === 0 : null));
 });
+
+// 이웃 서가에 놓을 공개 방들(GET /api/rooms — 최근 활동순, 방마다 인생작 최대 12개). 실패하면 빈 목록.
+// ?room=으로 가리킨 방이 목록에 없으면(비공개거나 인생작이 없음) 그 방 기록에서 인생작(없으면 최근 것) 12개로
+// 하나 만들어 맨 앞에 붙임 — 받은 링크는 공개 여부와 상관없이 늘 그 사람 서가가 보이게.
+export const publicRooms = roomContext.then(async (ctx) => {
+  const list = await fetch(`${API_BASE}/api/rooms`).then((res) => (res.ok ? res.json() : []), () => []);
+  const rooms = Array.isArray(list) ? list : [];
+  const code = ctx.focusCode;
+  if (!code || rooms.some((r) => r.code === code && r.featured && r.featured.length)) return rooms;
+  const base = `${API_BASE}/api/rooms/${encodeURIComponent(code)}`;
+  const [info, records] = await Promise.all([
+    fetch(base).then((res) => (res.ok ? res.json() : null), () => null),
+    fetch(`${base}/records`).then((res) => (res.ok ? res.json() : null), () => null),
+  ]);
+  if (!info || !Array.isArray(records) || !records.length) return rooms;
+  const featured = records.filter((r) => r.featured);
+  const works = (featured.length ? featured : records).slice(0, 12)
+    .map(({ id, cat, title, photo_url }) => ({ id, cat, title, photo_url }));
+  return [{ code, name: info.name, avatar_url: info.avatar_url, featured: works }, ...rooms.filter((r) => r.code !== code)];
+});
+
+// 이웃 방 기록 전체(표지를 눌러 감상·별점을 보여 줄 때) — 방마다 한 번만 받음.
+const neighborRecordCache = new Map();
+export function neighborRecords(code) {
+  if (!neighborRecordCache.has(code)) {
+    neighborRecordCache.set(code, fetch(`${API_BASE}/api/rooms/${encodeURIComponent(code)}/records`)
+      .then((res) => (res.ok ? res.json() : []), () => []));
+  }
+  return neighborRecordCache.get(code);
+}
 
 // 위 값에 맞는 버튼 문구. 모를 땐(null) "돌아가기" — 방은 이미 이 브라우저에 있음.
 export const MY_ROOM_EMPTY_LABEL = '나도 내 방 만들기';

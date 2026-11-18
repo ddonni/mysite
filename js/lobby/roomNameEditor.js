@@ -10,8 +10,9 @@ export function renderRoomName(ctx, name) {
   const eyebrow = document.querySelector('#header .eyebrow');
   // 남의 방 중에서도 "개발자의 방"(config.js)이면 그렇다고 알려줌.
   const isDev = ctx.readOnly && !!DEVELOPER_ROOM_CODE && ctx.viewingCode === DEVELOPER_ROOM_CODE.toUpperCase();
-  if (eyebrow) eyebrow.textContent = isDev ? "Developer's Room" : ctx.readOnly ? "Friend's Room" : 'Archive Room';
-  const fallback = isDev ? '개발자의 방' : ctx.readOnly ? '친구의 방' : '내 방';
+  // 3D 방 = 기억 보관소(2026-11-18).
+  if (eyebrow) eyebrow.textContent = isDev ? "Developer's Archive" : ctx.readOnly ? "Friend's Archive" : 'Memory Archive';
+  const fallback = isDev ? '개발자의 기억 보관소' : ctx.readOnly ? '친구의 기억 보관소' : '내 기억 보관소';
   const showName = (n) => {
     if (h1) h1.textContent = n || fallback;
     document.title = n || fallback;

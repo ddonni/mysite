@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>3D 방</title>
 <!-- 카카오톡·인스타 링크 미리보기. 크롤러는 JS를 안 돌려서 방마다 다르게는 못 하고 공통 카드 하나 -->
-<meta name="description" content="읽고, 보고, 들은 책·애니·영화·음악을 3D 방에 모아두는 곳">
+<meta name="description" content="읽고, 보고, 들은 것들이 끝없는 서가에 꽂히는 기억 보관소">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="내 방">
-<meta property="og:title" content="3D 방 — 내 기록">
-<meta property="og:description" content="읽고, 보고, 들은 책·애니·영화·음악을 3D 방에 모아두는 곳">
+<meta property="og:title" content="기억 보관소 — 내 기록">
+<meta property="og:description" content="읽고, 보고, 들은 것들이 끝없는 서가에 꽂히는 기억 보관소">
 <meta property="og:image" content="https://ddonni.github.io/mysite/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/lobby.css?v=8">
+<link rel="stylesheet" href="css/lobby.css?v=9">
 <link rel="stylesheet" href="css/nav.css?v=8">
 <link rel="stylesheet" href="css/feedback.css?v=2">
 <link rel="stylesheet" href="css/inapp.css">
@@ -38,53 +38,71 @@
 
 <div id="stage">
   <canvas id="canvas3d"></canvas>
-  <div id="loading">방을 꾸미는 중…</div>
+  <div id="loading">기억을 불러오는 중…</div>
 </div>
 
 <div id="ui">
   <div id="header">
-    <div class="eyebrow">Archive Room</div>
-    <h1>내 방</h1>
+    <div class="eyebrow">Memory Archive</div>
+    <h1>기억 보관소</h1>
     <div class="room-name" id="roomName"></div>
-    <p>읽고, 보고, 들은 것들을 모아두는 방이에요.</p>
-    <!-- 폰에서만 보임: 테마·공개 스위치·구글 버튼을 접어 두고 이걸로 펼침(roomChrome.js) -->
+    <p>읽고, 보고, 들은 것들이 끝없는 서가에 한 권씩 꽂혀요.</p>
+    <div class="orb-count" id="orbCount" hidden></div>
+    <!-- 폰에서만 보임: 공개 스위치·구글 버튼을 접어 두고 이걸로 펼침(roomChrome.js) -->
     <button type="button" class="header-more" id="headerMore" aria-expanded="false" hidden>방 설정</button>
-    <!-- 남의 방을 구경하는 사람에게만 보임: 상단 메뉴의 "내 방으로"는 폰에서 메뉴를 옆으로 밀어야 보여서(roomChrome.js) -->
+    <!-- 남의 방을 구경하는 사람에게만 보임(roomChrome.js) -->
     <a class="my-room-cta" id="myRoomCta" hidden></a>
     <div class="header-controls">
-      <div class="theme-picker" id="themePicker"></div>
       <div class="vis-box" id="visibilityBox"></div>
     </div>
     <div class="google-btn"></div>
   </div>
-
 
   <div class="lobby-foot">
     <a id="devRoomLink" class="dev-room-link" hidden>개발자의 방 구경하기 →</a>
     <div id="googleUnlink" class="google-unlink-slot"></div>
   </div>
 
-  <!-- 내 방에 기록이 하나도 없는 동안만 — 아래 버튼에서 시작하면 된다는 말풍선(onboarding.js) -->
-  <div id="ctaHint" class="cta-hint" hidden>여기서 첫 기록을 남겨 보세요</div>
-  <div id="cta">
-    <button class="room-btn" data-room="sketchbook" aria-pressed="false"><span class="dot"></span>캔버스</button>
-    <button class="room-btn" data-room="book" aria-pressed="false"><span class="dot"></span>책</button>
-    <button class="room-btn" data-room="anime" aria-pressed="false"><span class="dot"></span>애니</button>
-    <button class="room-btn" data-room="movie" aria-pressed="false"><span class="dot"></span>영화·시리즈</button>
-    <button class="room-btn" data-room="music" aria-pressed="false"><span class="dot"></span>음악</button>
+  <!-- 내 기록이 하나도 없는 동안만(onboarding.js) -->
+  <a id="ctaHint" class="cta-hint" hidden href="./?cat=book&amp;new=1">첫 기록을 남기면 서가에 첫 권이 꽂혀요</a>
+  <!-- 아래 버튼: 처음 시점 + 카테고리만 밝히기(나머지는 어둡게) + 캔버스(이젤로) — js/lobby/main.js -->
+  <div id="cta" role="group" aria-label="보기">
+    <!-- 전체 보기(위에서 내려다보기) ↔ 가까이 보기(최근 기록 탑) — js/lobby/main.js -->
+    <button class="room-btn view-btn" id="viewHome"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5z"/><path d="m3 13 9 5 9-5"/></svg><span>전체 보기</span></button>
+    <button class="room-btn" data-filter="" aria-pressed="true"><span class="dot all"></span>전체</button>
+    <button class="room-btn" data-filter="book" data-room="book" aria-pressed="false"><span class="dot"></span>책</button>
+    <button class="room-btn" data-filter="anime" data-room="anime" aria-pressed="false"><span class="dot"></span>애니</button>
+    <button class="room-btn" data-filter="movie" data-room="movie" aria-pressed="false"><span class="dot"></span>영화·시리즈</button>
+    <button class="room-btn" data-filter="music" data-room="music" aria-pressed="false"><span class="dot"></span>음악</button>
+    <button class="room-btn canvas-go" data-room="sketchbook" aria-pressed="false"><span class="dot"></span>캔버스</button>
   </div>
 
-  <div id="card" data-room="book">
-    <div class="room-tag" id="cardTag"></div>
-    <h2 id="cardTitle">책</h2>
-    <p id="cardBody"></p>
-    <!-- 음악 카드에서만, 턴테이블 곡에 유튜브 링크가 있을 때(js/lobby/main.js) -->
-    <button type="button" id="cardListen" class="card-listen" hidden></button>
+  <!-- 이젤을 누르면: 캔버스로 들어갈지 -->
+  <div id="card" data-room="sketchbook">
+    <div class="room-tag" id="cardTag">Canvas</div>
+    <h2 id="cardTitle">캔버스</h2>
+    <p id="cardBody">마음 가는 대로 그려보세요. 캔버스는 이 보관소의 이젤에서만 열려요.</p>
     <div class="card-actions">
       <button id="cardBack">돌아가기</button>
       <button id="cardEnter">입장하기</button>
     </div>
   </div>
+
+  <!-- 서가의 기록을 누르면: 그 기록(책·포스터는 눈앞으로 날아옴 — archive/heldCover.js) -->
+  <aside id="memory" class="memory" hidden aria-live="polite">
+    <button type="button" class="memory-close" id="memClose" aria-label="닫기">×</button>
+    <div class="memory-tag" id="memTag"></div>
+    <h2 id="memTitle"></h2>
+    <div class="memory-sub" id="memSub"></div>
+    <div class="memory-meta" id="memMeta"></div>
+    <p class="memory-memo" id="memMemo"></p>
+    <div class="memory-actions">
+      <button type="button" id="memListen" class="memory-listen" hidden>▶ 듣기</button>
+      <a id="memOpen" class="memory-cardlink">카드로 보기</a>
+    </div>
+  </aside>
+  <!-- 마우스를 올린 기록의 제목 -->
+  <div id="orbTip" class="orb-tip" hidden></div>
 </div>
 
 <div id="fallbackLinks">

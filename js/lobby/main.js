@@ -1,141 +1,77 @@
-// 로비 페이지(index.html)의 시작점.
-//   1. WebGL을 쓸 수 있는 브라우저인지 확인 (아니면 텍스트 링크로 대체)
-//   2. scene.js로 3D 방을 만들고, controls.js로 인터랙션을 연결
-//   3. 매 프레임 화면을 그리는 루프를 돌림
-//   4. 카드의 "입장하기"를 누르면 실제로 다른 페이지로 이동시킴
+// 3D 방 = 기억 보관소(lobby.html)의 시작점. 2026-11-18 사용자 요청으로 둥근 방(가구)을 통째로 바꿈 —
+// 영화 속 기억 보관소처럼 끝없는 서가에 기록이 하나씩 꽂힘(책은 책, 영화·애니는 포스터, 음악은 앨범 —
+// archive/covers.js. 같은 날 구슬 → 책·포스터로 바꿈).
+//   - 진열 = 카테고리 구분 없이 기록한 날짜 순(archive/layout.js).
+//   - 지도처럼 둘러보기(archive/controls.js — 기본은 위에서 내려다보기), 기록을 누르면 눈앞으로 날아와
+//     크게(archive/heldCover.js) + 옆에 그 기록(패널).
+//   - 입구 옆 이젤 → 캔버스(캔버스는 3D 방에서만 들어감).
+//   - 가운데는 늘 내 서가, 바깥엔 공개된 다른 방들의 이웃 서가(archive/neighbors.js) — 남의 보관소 화면은 없음.
+//     lobby?room=코드로 오면 그 이웃 서가를 맨 앞에 두고 비춤.
+// 옛 둥근 방(가구)은 git 브랜치 3d-room에 있음.
 //
-// 헤더/카드 주변 UI(roomChrome.js), 씬에 실제 데이터를 채우는 일
-// (loadRoomIntoScene.js), "지금 보는 방이 어디인지" 계산(roomContext.js)은
-// 각자 모듈로 빠져 있음 — 이 파일은 그것들을 불러와 순서대로 연결하는
-// "시작점" 역할만 함.
-import { buildScene, DEFAULT_THEME } from './scene.js';
-import { createRoomInteraction } from './controls.js';
-import { roomContext, roomInfo, roomRecords, pageUrl, lobbyUrl } from './roomContext.js';
-import { pickMusic } from './showcase.js';
-import { getPlayer } from '../shared/youtube.js';
+// 머리말·서랍(roomChrome.js), "지금 보는 방"(roomContext.js), 처음 온 사람 안내(helpDialog.js·onboarding.js)는
+// 각자 모듈 — 이 파일은 순서대로 연결만 함.
+import { buildArchiveScene } from './archive/scene.js';
+import { SHELF } from './archive/layout.js';
+import { createOrbitControls } from './archive/controls.js';
+import { createHeldCover } from './archive/heldCover.js';
+import { pickNeighbors } from './archive/neighbors.js';
+import { roomContext, roomInfo, roomRecords, roomApi, pageUrl, publicRooms, neighborRecords } from './roomContext.js';
 import { initRoomChrome } from './roomChrome.js';
-import { loadRoomIntoScene } from './loadRoomIntoScene.js';
 import { webglAvailable } from './webgl.js';
 import { initHelpDialog } from './helpDialog.js';
 import { initEmptyRoom } from './onboarding.js';
 import { forgetMyRoom } from '../shared/room.js';
 import { initRoomNav } from '../shared/roomNav.js';
 import { watchForSlow, SLOW_MESSAGE } from '../shared/slow.js';
+import { getPlayer } from '../shared/youtube.js';
+import { catLabel, featureLabel, progressLabel } from '../library/list/itemFormat.js';
 
-// 가구의 "입장하기" → 카드 화면(첫 화면)의 그 카테고리. 캔버스(그림판)는 3D 방의 이젤에서만 들어감
-// (2026-11-18 사용자 결정 — 카드 화면엔 캔버스로 가는 길이 없음).
-const PAGES = {
-  sketchbook: 'sketchbook',
-  book: './?cat=book',
-  anime: './?cat=anime',
-  movie: './?cat=movie',
-  music: './?cat=music',
-};
-// tag: 카드 맨 위 작은 영문 라벨(가구 위 벽 글씨와 같은 말).
-const ROOM_INFO = {
-  sketchbook: { tag: 'Canvas', title: '캔버스', body: '마음 가는 대로 그려보세요. 캔버스는 3D 방에서만 열려요.' },
-  book: { tag: 'Book', title: '책', body: '읽은 책이 한 권씩 꽂혀요.' },
-  anime: { tag: 'Animation', title: '애니', body: '본 애니가 아크릴 스탠드로 진열돼요.' },
-  movie: { tag: 'Movie', title: '영화·시리즈', body: '본 영화·시리즈가 포스터로 한 장씩 붙어요.' },
-  music: { tag: 'Music', title: '음악', body: '들은 노래가 LP로 꽂혀요.' },
-};
-
-// 도움말(? 버튼)은 바로 연결하지만, 처음 온 사람에게 자동으로 띄우는 건 방이
-// 다 그려진 뒤(bootWithTheme 끝) — 3D를 못 쓰는 브라우저면 링크 화면이 뜬 직후.
 const help = initHelpDialog();
-// 내 방의 비어 있는 카테고리(기록을 받아오면 채워짐) — 그 가구의 "첫 ○ 기록하기"는
-// 기록 보관소에서 새 기록 창을 바로 열게 함(goToRoom).
-// 아이폰(Safari·크롬 모두 WebKit)은 touch-action만으로는 두 손가락 페이지 확대를 다 못 막아서
-// 확대 제스처 이벤트도 막음(lobby.css의 .lobby-page 설명 참고). 3D 방의 두 손가락 확대는
-// pointer 이벤트로 받아서(controls.js) 이것과 상관없음.
+// 아이폰은 touch-action만으로는 두 손가락 페이지 확대를 다 못 막아서 확대 제스처 이벤트도 막음
+// (보관소의 두 손가락 걷기는 pointer 이벤트로 받음).
 ['gesturestart', 'gesturechange', 'gestureend'].forEach((type) => {
   document.addEventListener(type, (e) => e.preventDefault(), { passive: false });
 });
 
-const emptyCats = initEmptyRoom(ROOM_INFO);
-// 왼쪽 위 상단 메뉴(캔버스/기록 보관소와 같은 것) — 방 코드·방문 폼은 그 메뉴의 ☰ 서랍에 있음.
+initEmptyRoom();
 initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: 'lobby' }).catch(() => {});
 roomContext.then(initRoomChrome);
 
-// three.js(전역 THREE)가 로드되지 않았거나 이 브라우저가 WebGL을 못
-// 그리면, 3D는 아예 시도하지 않고 index.html에 미리 넣어둔 "그냥 링크"
-// 화면으로 대신함 (css의 .no-3d 규칙이 이 전환을 처리함).
 if (typeof THREE === 'undefined' || !webglAvailable()) {
   document.body.classList.add('no-3d');
   help.showIfFirstVisit();
 } else {
   boot().catch((e) => {
-    // 이 경로로 오는 건 브라우저가 3D를 못 그려서가 아니라(그건 위
-    // 분기에서 이미 걸러짐) 방 정보를 못 받아오는 등 다른 이유로 로비
-    // 짓기 자체가 실패한 것 — index.html의 기본 문구("이 브라우저에서는
-    // 3D를 표시할 수 없어요")를 그대로 두면 원인을 완전히 잘못 짚게 되니
-    // 여기서 고쳐씀.
     const msg = document.getElementById('fallbackMessage');
     if (msg) msg.textContent = '지금 서버에 연결할 수 없어요. 아래 링크로 바로 이동해 주세요.';
     document.body.classList.add('no-3d');
-    console.error('lobby init failed', e);
+    console.error('archive init failed', e);
   });
 }
 
-// 방의 테마(색 팔레트)를 서버에서 받아온 뒤에야 씬을 만들 수 있어서,
-// 이 함수 전체가 그 조회를 기다리는 프로미스임 — 실패하면 위 .catch가
-// no-3d 폴백으로 넘김. 방 코드가 서버에 없으면(404) 씬을 짓지 않고
-// 알려줌 — 남의 방이면 내 로비로 돌려보내고, 내 방이면(로컬/운영 서버를
-// 오가며 테스트했거나 방이 실제로 사라진 경우) 낡은 방 정보를 지우고
-// 새로고침해서 새 방을 만들게 함.
+// 방 정보·기록을 받은 뒤에야 서가 길이(기록 수)를 정할 수 있어서 다 기다림. 방이 없으면(404) 안내.
 function boot() {
-  // 연결이 느리면 이 대기가 길어질 수 있음 — 3초가 지나도 안 끝나면
-  // "멈춘 게 아니라 기다리는 중"이라고 로딩 문구를 바꿔줌(shared/slow.js).
   const loadingEl = document.getElementById('loading');
   const stopWatch = watchForSlow(() => { loadingEl.textContent = SLOW_MESSAGE; });
-  return Promise.all([roomContext, roomInfo])
-    .then(([ctx, info]) => {
-      if (info && info.missing) {
-        if (info.own) {
-          alert('내 방을 찾지 못했어요. 새 방을 하나 만들게요.');
-          forgetMyRoom();
-          window.location.reload();
-          return;
-        }
-        alert(`방 ${ctx.viewingCode}을(를) 찾을 수 없어요. 내 방으로 돌아갈게요.`);
-        window.location.replace(lobbyUrl(ctx.mine.code, ctx.mine.code));
+  return Promise.all([roomContext, roomInfo, roomRecords, publicRooms])
+    .then(([ctx, info, records, rooms]) => {
+      if (info && info.missing) { // 가운데는 늘 내 방이라 "내 방이 없어진" 경우뿐
+        alert('내 방을 찾지 못했어요. 새 방을 하나 만들게요.');
+        forgetMyRoom();
+        window.location.reload();
         return;
       }
-      return bootWithTheme((info && info.theme) || DEFAULT_THEME, ctx);
+      if (!Array.isArray(records)) throw new Error('records unavailable');
+      start(ctx, records, pickNeighbors(rooms, ctx.mine.code, ctx.focusCode));
     })
     .finally(stopWatch);
 }
 
-// 턴테이블 곡 듣기 — 턴테이블에서 도는 곡(pickMusic)에 유튜브 링크가 있으면 턴테이블의
-// ▶ 버튼과 음악 카드의 "▶ 듣기"를 띄움. 저절로 틀지는 않음(누를 때만). 트는 중엔 둘 다
-// ■/끄기로 바뀌고, 한 번 더 누르면 끔. 카드 버튼이 음악일 때만 보이는 건 CSS(#card[data-room]).
-// toggle을 돌려줌 — 턴테이블 버튼을 누르면 controls.js가 부름.
-function wireTurntableListen(setTurntablePlay) {
-  let toggle = () => {};
-  const btn = document.getElementById('cardListen');
-  roomRecords.then((records) => {
-    const { playing: song } = pickMusic(records || []);
-    if (!song || !song.listen_url) return;
-    const player = getPlayer({ where: 'top' });
-    const name = `${song.title}${song.creator ? ` — ${song.creator}` : ''}`;
-    const isOn = () => player.current() === song;
-    const show = () => {
-      const on = isOn();
-      if (setTurntablePlay) setTurntablePlay({ visible: true, playing: on });
-      if (btn) btn.textContent = on ? `■ 끄기 · ${name}` : `▶ 듣기 · ${name}`;
-    };
-    toggle = () => (isOn() ? player.close() : player.play(song));
-    player.onChange(show);
-    if (btn) {
-      btn.hidden = false;
-      btn.addEventListener('click', () => toggle());
-    }
-    show();
-  }).catch(() => {});
-  return () => toggle();
-}
+const fmtDate = (d) => (d ? d.replace(/-/g, '.') : '');
+const starsText = (r) => (r ? `★ ${r.toFixed(1)}` : '');
 
-function bootWithTheme(theme, ctx) {
+function start(ctx, records, neighborRooms) {
   const canvasEl = document.getElementById('canvas3d');
   const stage = document.getElementById('stage');
   const ui = document.getElementById('ui');
@@ -143,115 +79,265 @@ function bootWithTheme(theme, ctx) {
 
   const renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  // 영화 같은 색 보정 — 밝은 곳(램프 주변)이 하얗게 날아가지 않고 부드럽게
-  // 눌리고, 방 전체가 한 가지 색으로 쏠리지 않음. scene/lighting.js의
-  // 조명 세기는 이 톤매핑/노출값에 맞춰 잡은 것.
-  // 2026-10-25 노출·조명 세기를 바꿔 가며 같은 화면을 비교해서 한 단계 어둡게(노출 1.4 →
-  // 0.85, 조명도 함께 낮춤) — 크림색 벽이 덜 번쩍여서 사진이 더 진해 보이고 방이 아늑해짐.
-  // (노출만·조명 하나만 바꿨을 땐 사진이 거의 그대로였음 — 방 전체를 같이 낮춰야 효과가 남.)
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.85;
+  renderer.toneMappingExposure = 1.05;
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.05, 140);
 
-  const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 60);
+  const archive = buildArchiveScene(records, neighborRooms);
+  const { covers, neighbors } = archive;
+  const nCovers = neighbors.covers;
+  // 이젤에 이 방 캔버스 1페이지 그림(실패해도 빈 종이로 둠).
+  fetch(`${roomApi(ctx)}/pages/1`)
+    .then((res) => (res.ok ? res.json() : null))
+    .then((page) => { if (page) archive.easel.userData.setPreview(page.strokes || []); })
+    .catch(() => {});
+  const held = createHeldCover(archive.scene, camera);
 
-  const { scene, interactiveGroups, cameraPresets, updateMotes, updateTurntable, updateBall, kickBall, ...sceneSetters } = buildScene(theme);
-  loadRoomIntoScene(ctx, sceneSetters);
-  const toggleTurntable = wireTurntableListen(sceneSetters.setTurntablePlay);
-
-  // 카드에서 "입장하기"를 누르면 실제로 페이지를 옮기는 함수. 화면을
-  // 살짝 어둡게 페이드아웃한 뒤 이동시켜서, 뚝 끊기지 않고 자연스럽게
-  // 다음 페이지로 넘어가는 느낌을 줌.
-  function goToRoom(room) {
-    stage.style.transition = 'opacity .35s ease';
-    ui.style.transition = 'opacity .35s ease';
-    stage.style.opacity = '0';
-    ui.style.opacity = '0';
-    const page = PAGES[room] + (emptyCats.has(room) ? '&new=1' : '');
-    setTimeout(() => { window.location.href = pageUrl(page, ctx); }, 320);
+  const count = document.getElementById('orbCount');
+  if (count && records.length) {
+    count.textContent = `기록 ${records.length}개`;
+    count.hidden = false;
   }
 
-  const interaction = createRoomInteraction({
-    canvas: canvasEl,
-    camera,
-    interactiveGroups,
-    roomInfo: ROOM_INFO,
-    onConfirm: goToRoom,
-    cameraPresets,
-    kickBall,
-    onTurntablePlay: toggleTurntable,
-    dom: {
-      card: document.getElementById('card'),
-      cardTag: document.getElementById('cardTag'),
-      cardTitle: document.getElementById('cardTitle'),
-      cardBody: document.getElementById('cardBody'),
-      cardBack: document.getElementById('cardBack'),
-      cardEnter: document.getElementById('cardEnter'),
-      ctaBtns: Array.prototype.slice.call(document.querySelectorAll('.room-btn')),
-    },
+  // 서가의 한 칸 = { set: 표지 묶음(내 것 covers / 이웃 것 nCovers), k: 그 안 번호, room: 이웃이면 그 방 }.
+  function itemOf(hit) {
+    let k = covers.indexOfHit(hit);
+    if (k != null) return { kind: 'item', item: { set: covers, k, room: null } };
+    k = nCovers.indexOfHit(hit);
+    if (k != null) return { kind: 'item', item: { set: nCovers, k, room: neighbors.ownerOf(k) } };
+    const room = neighbors.plateRoom(hit);
+    return room ? { kind: 'plate', room } : null;
+  }
+  const ownerName = (room) => room.name || '친구';
+
+  // ---- 마우스를 올린 기록의 제목 ----
+  const tip = document.getElementById('orbTip');
+  function hover(item, x, y) {
+    const rec = item ? item.set.recordAt(item.k) : null;
+    const show = rec && item.set.isShown(item.k) && !held.isOpen();
+    covers.setHover(show && item.set === covers ? item.k : null);
+    nCovers.setHover(show && item.set === nCovers ? item.k : null);
+    if (!show) { tip.hidden = true; return; }
+    tip.textContent = item.room ? `${rec.title} · ${ownerName(item.room)}` : rec.title + (rec.creator ? ` — ${rec.creator}` : '');
+    tip.style.left = `${x + 14}px`;
+    tip.style.top = `${y + 12}px`;
+    tip.hidden = false;
+  }
+
+  // ---- 기록 꺼내 보기(내 것도 이웃 것도 같은 방식) ----
+  const panel = document.getElementById('memory');
+  const el = (id) => document.getElementById(id);
+  const listenBtn = el('memListen');
+  let current = null;
+  let openedAt = 0;
+  let player = null;
+  let listenRec = null;
+  const paintListen = () => { if (listenRec) listenBtn.textContent = player.current() === listenRec ? '■ 끄기' : '▶ 듣기'; };
+  listenBtn.addEventListener('click', () => {
+    if (!listenRec) return;
+    if (player.current() === listenRec) player.close(); else player.play(listenRec);
+  });
+  function fillPanel(rec, room) {
+    const tag = room
+      ? [catLabel(rec.cat), `${ownerName(room)}의 ${featureLabel(rec.cat)}`]
+      : [catLabel(rec.cat), rec.featured ? featureLabel(rec.cat) : ''];
+    if (rec.in_progress && rec.cat !== 'music') tag.push(progressLabel(rec.cat));
+    el('memTag').textContent = tag.filter(Boolean).join(' · ');
+    el('memTitle').textContent = rec.title;
+    el('memSub').textContent = rec.creator || '';
+    el('memMeta').textContent = [starsText(rec.rating), fmtDate(rec.date)].filter(Boolean).join('   ');
+    el('memMemo').textContent = rec.memo || '';
+    el('memMemo').hidden = !rec.memo;
+    el('memOpen').href = room ? `./?room=${encodeURIComponent(room.code)}&cat=${rec.cat}` : pageUrl(`./?cat=${rec.cat}`, ctx);
+    el('memOpen').textContent = room ? `${ownerName(room)}의 카드 보기` : '카드로 보기';
+    listenBtn.hidden = !(rec.cat === 'music' && rec.listen_url);
+    listenRec = listenBtn.hidden ? null : rec;
+    if (listenRec) {
+      if (!player) { player = getPlayer({ where: 'top' }); player.onChange(paintListen); }
+      paintListen();
+    }
+    panel.dataset.cat = rec.cat;
+    panel.classList.toggle('featured', !room && !!rec.featured);
+  }
+  function openMemory(item) {
+    const rec = item.set.recordAt(item.k);
+    if (!rec || !item.set.isShown(item.k)) return;
+    if (current) { closeMemory(() => openMemory(item)); return; }
+    current = item;
+    openedAt = performance.now();
+    hover(null);
+    controls.setEnabled(false);
+    const wide = innerWidth > innerHeight && innerWidth >= 700;
+    held.open(rec, item.set.positionOf(item.k), item.set.angleOf(item.k), item.set.colorOf(item.k), wide);
+    item.set.hide(item.k);
+    fillPanel(rec, item.room);
+    // 이웃 서가엔 제목·표지만 있어서, 그 방 기록을 받아 감상·별점·만든 사람을 채움(방마다 한 번).
+    if (item.room) {
+      neighborRecords(item.room.code).then((list) => {
+        const full = Array.isArray(list) && list.find((x) => x.id === rec.id);
+        if (full && current === item) fillPanel(full, item.room);
+      });
+    }
+    panel.hidden = false;
+    document.body.classList.add('memory-open');
+    requestAnimationFrame(() => panel.classList.add('show'));
+    el('memClose').focus({ preventScroll: true });
+  }
+  function closeMemory(then) {
+    if (!current) { if (then) then(); return; }
+    const item = current;
+    current = null;
+    panel.classList.remove('show');
+    document.body.classList.remove('memory-open');
+    setTimeout(() => { if (!current) panel.hidden = true; }, 250);
+    held.close(() => {
+      item.set.show(item.k);
+      controls.setEnabled(true);
+      if (then) then();
+    });
+  }
+  el('memClose').addEventListener('click', () => closeMemory());
+  // 꺼내 보는 동안 화면(3D) 아무 데나 누르면 다시 꽂음.
+  // (기록을 연 바로 그 클릭은 빼고)
+  canvasEl.addEventListener('click', () => {
+    if (current && held.isOpen() && performance.now() - openedAt > 350) closeMemory();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (current) closeMemory();
+    else hideEaselCard();
   });
 
-  // 화면이 기준(16:10)보다 세로로 길면 가로로 보이는 폭이 좁아져 양옆 벽이
-  // 잘림 — 먼저 시야각을 넓히고(왜곡이 심해지지 않게 75°까지), 그래도
-  // 모자라면 카메라를 그만큼 뒤로 물림(fit). 멀어진 만큼 안개/먼 평면도 밀어냄.
-  const BASE_FOV = 42, MAX_FOV = 75, REF_ASPECT = 1.6;
-  // 세로 화면(폰)에선 가로 폭을 다 담으려면 카메라가 너무 멀어져서 방이 화면의 1/4 크기로
-  // 작아지고 포스터가 손톱만 해짐 — 모자란 폭의 일부만 메워서(양옆 벽은 조금 잘림, 손가락으로
-  // 돌려 보면 됨) 방을 크게 보여줌. 1이면 예전처럼 가로 전체, 0이면 기준 화면 그대로.
-  const PORTRAIT_FILL = 0.55;
-  const PORTRAIT_LIFT = 0.12; // 세로 화면에서 방을 화면 높이의 몇 배만큼 위로 올릴지(아래 resize)
-  const baseFog = { near: scene.fog.near, far: scene.fog.far };
-  const tanHalf = (deg) => Math.tan((deg * Math.PI) / 360);
+  // ---- 이젤(캔버스) ----
+  const card = document.getElementById('card');
+  const canvasBtn = document.querySelector('#cta .canvas-go');
+  function showEaselCard() {
+    card.classList.add('show');
+    canvasBtn.setAttribute('aria-pressed', 'true');
+  }
+  function hideEaselCard() {
+    card.classList.remove('show');
+    canvasBtn.setAttribute('aria-pressed', 'false');
+  }
+  document.getElementById('cardBack').addEventListener('click', hideEaselCard);
+  document.getElementById('cardEnter').addEventListener('click', () => {
+    stage.style.transition = ui.style.transition = 'opacity .35s ease';
+    stage.style.opacity = ui.style.opacity = '0';
+    setTimeout(() => { window.location.href = pageUrl('sketchbook', ctx); }, 320);
+  });
+  canvasBtn.addEventListener('click', () => {
+    if (card.classList.contains('show')) { hideEaselCard(); return; }
+    closeMemory();
+    controls.focus(archive.easel.position, { r: 4.2, phi: 1.12, theta: archive.easel.rotation.y });
+    showEaselCard();
+  });
+
+
+  // ---- 카테고리만 밝히기 ----
+  const filterBtns = [...document.querySelectorAll('#cta [data-filter]')];
+  filterBtns.forEach((b) => b.addEventListener('click', () => {
+    closeMemory();
+    const cat = b.dataset.filter || null;
+    covers.setFilter(cat);
+    nCovers.setFilter(cat);
+    archive.refreshTowerGlow();
+    filterBtns.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    if (count) {
+      const n = cat ? records.filter((r) => r.cat === cat).length : records.length;
+      count.textContent = cat ? `${catLabel(cat)} ${n}개` : `기록 ${records.length}개`;
+    }
+  }));
+
+  // ---- 시점 두 가지 ----
+  //  - 가까이(처음 화면): 가장 최근 기록이 꽂힌 탑을 비스듬히 위에서 — 첫 화면에서 표지가 바로 보이게(2026-11-18 평가:
+  //    전체를 내려다보면 표지가 점처럼 작아서 내 기록이라는 게 안 와닿았음).
+  //  - 전체: 기록이 꽂힌 탑들을 위에서 내려다봄(사용자 결정 "기본은 위에서" — 버튼으로).
+  const portrait = innerWidth < innerHeight;
+  const perTower = archive.slots.length / archive.towers.length;
+  const litTowers = Math.max(1, Math.ceil(records.length / perTower));
+  const focusZ = archive.towers.slice(0, Math.min(archive.towers.length, litTowers + 1))
+    .reduce((sum, t, _, arr) => sum + t.z / arr.length, 0);
+  const overview = { target: new THREE.Vector3(0, 1.2, focusZ + 1), r: portrait ? 19 : 14, theta: 0, phi: 0.92 };
+  const latest = archive.towers[covers.count ? covers.towerOf(covers.count - 1) : 0];
+  const faceOut = 1.6; // 탑 가운데에서 앞면 바깥쪽으로 조금 — 서가 면을 바라봄
+  // 그 탑에서 차 있는 줄들의 가운데 높이(아랫줄부터 차니까 덜 찬 탑이면 낮게 봄).
+  const inLatest = covers.count ? covers.count - covers.towerOf(covers.count - 1) * perTower : 0;
+  const rowsUsed = Math.max(1, Math.ceil(inLatest / SHELF.perRow));
+  const lookY = Math.min(1.8, SHELF.baseY + (rowsUsed * SHELF.rowGap) / 2 + 0.15);
+  const closeMine = {
+    target: new THREE.Vector3(latest.x + Math.sin(latest.facing) * faceOut, lookY, latest.z + Math.cos(latest.facing) * faceOut),
+    r: portrait ? 7.5 : 5.6,
+    // 정면에서 통로 입구 쪽으로 50°쯤 돌아선 자리 — 정면이면 카메라가 맞은편 탑 안에 들어가 버렸음.
+    theta: latest.facing + (latest.side < 0 ? -0.9 : 0.9),
+    phi: 1.02,
+  };
+  // 기록이 하나도 없으면 가까이 볼 게 없어서(빈 선반만 까맣게 보였음) 전체 보기로 시작하고, "가까이 보기"는 가장
+  // 가까운 이웃 서가로.
+  const startOverview = covers.count === 0;
+  const close = !startOverview ? closeMine : (neighbors.count && neighbors.viewOf(neighborRooms[0])) || overview;
+  // lobby?room=코드로 왔으면(받은 링크·개발자의 방) 그 이웃 서가부터 비춤.
+  const focusRoom = ctx.focusCode && neighborRooms.find((x) => x.code === ctx.focusCode);
+  const home = (focusRoom && neighbors.viewOf(focusRoom)) || (startOverview ? overview : close);
+
+  const controls = createOrbitControls({
+    canvas: canvasEl,
+    camera,
+    pickables: archive.pickables,
+    itemOf,
+    easel: archive.easel,
+    endZ: archive.endZ,
+    onPick: (item) => { hideEaselCard(); openMemory(item); },
+    onPlate: (room) => {
+      closeMemory();
+      hideEaselCard();
+      const v = neighbors.viewOf(room);
+      if (v) controls.goView(v);
+      atOverview = false;
+      paintViewBtn();
+    },
+    onEasel: () => { closeMemory(); showEaselCard(); },
+    onHover: hover,
+    home,
+  });
+  // 아래 버튼: 지금 가까이면 "전체 보기", 전체면 "가까이 보기"(최근 기록 탑). 직접 움직여도 버튼은 다음에 갈 곳을 말함.
+  const viewBtn = document.getElementById('viewHome');
+  let atOverview = startOverview && !focusRoom;
+  const paintViewBtn = () => { viewBtn.querySelector('span').textContent = atOverview ? '가까이 보기' : '전체 보기'; };
+  paintViewBtn();
+  viewBtn.addEventListener('click', () => {
+    closeMemory();
+    hideEaselCard();
+    atOverview = !atOverview;
+    controls.goView(atOverview ? overview : close);
+    paintViewBtn();
+  });
+
   function resize() {
-    // window.innerWidth/innerHeight는 아이폰에서 화면을 확대(두 번 탭 등)하면 "지금 보이는
-    // 부분"의 크기로 줄어듦 — 그 순간 방을 작은 크기로 다시 그리고, 확대가 풀려도 안 돌아와서
-    // 방이 작아진 채 남았음(사용자 피드백). 화면 전체에 붙어 있는 #stage의 크기는 확대와
-    // 상관없어서 그걸 씀.
-    const w = stage.clientWidth || window.innerWidth, h = stage.clientHeight || window.innerHeight;
-    const aspect = w / h;
+    const w = stage.clientWidth || innerWidth, h = stage.clientHeight || innerHeight;
     renderer.setSize(w, h);
-    camera.aspect = aspect;
-    // 기준 화면과 같은 가로 폭을 담으려면 필요한 세로 시야각의 절반의 tan.
-    const widen = Math.max(1, REF_ASPECT / aspect);
-    const needTan = tanHalf(BASE_FOV) * (aspect < 1 ? 1 + (widen - 1) * PORTRAIT_FILL : widen);
-    camera.fov = Math.min(MAX_FOV, (Math.atan(needTan) * 360) / Math.PI);
-    const fit = needTan / tanHalf(camera.fov);
-    // 세로 화면에선 방이 화면 아래쪽에 치우쳐 위(머리말 아래)가 비어 보여서, 그리는 영역을
-    // 화면 높이의 일부만큼 아래로 밀어 방을 위로 올림. 레이캐스트(가구 누르기)도 같은 투영을
-    // 쓰니 누르는 위치는 그대로 맞음.
-    if (aspect < 1) camera.setViewOffset(w, h, 0, h * PORTRAIT_LIFT, w, h);
-    else camera.clearViewOffset();
-    camera.far = 60 * fit;
-    scene.fog.near = baseFog.near * fit;
-    scene.fog.far = baseFog.far * fit;
+    camera.aspect = w / h;
+    // 세로 화면은 가로로 보이는 폭이 좁아서 시야를 넓힘.
+    camera.fov = w < h ? 68 : 55;
     camera.updateProjectionMatrix();
-    interaction.setFit(fit);
   }
   window.addEventListener('resize', resize);
   resize();
 
-  let lastFrame = performance.now();
+  let last = performance.now();
   function tick(now) {
-    const dt = Math.min(0.05, (now - lastFrame) / 1000);
-    lastFrame = now;
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
     requestAnimationFrame(tick);
-
-    interaction.update(dt);
-    updateMotes(dt);
-    updateTurntable(dt);
-    updateBall(dt);
-    renderer.render(scene, camera);
+    controls.update(dt);
+    archive.setViewDistance(controls.distance());
+    archive.update(dt);
+    held.update(dt);
+    renderer.render(archive.scene, camera);
   }
-  // 셰이더 컴파일은 처음 그릴 때 한꺼번에 일어나 수백 ms씩 멈출 수 있음 —
-  // 로딩 화면이 떠 있는 지금 미리 해둠.
-  renderer.compile(scene, camera);
+  renderer.compile(archive.scene, camera);
   requestAnimationFrame(tick);
-  // 첫 프레임(가장 무거운 프레임)이 다 그려진 다음 프레임에 로딩 화면을
-  // 걷어야, 페이드가 첫 프레임에 걸려 멈칫하지 않음.
   requestAnimationFrame(() => requestAnimationFrame(() => {
     loading.classList.add('hide');
-    // 로딩 화면이 걷히고(0.5초 페이드) 방이 보인 다음에 도움말을 띄움.
     setTimeout(() => help.showIfFirstVisit(), 700);
   }));
 }

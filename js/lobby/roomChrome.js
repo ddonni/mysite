@@ -1,7 +1,5 @@
-import { DEFAULT_THEME } from './scene.js';
 import { roomInfo, pageUrl, lobbyUrl, myRoomEmpty, myRoomLabel } from './roomContext.js';
 import { renderRoomName } from './roomNameEditor.js';
-import { renderThemePicker } from './themePicker.js';
 import { initGoogleAuth } from '../shared/googleAuth.js';
 import { copyToClipboard } from '../shared/dom.js';
 import { roomShareUrl } from '../shared/room.js';
@@ -9,7 +7,7 @@ import { DEVELOPER_ROOM_CODE } from '../shared/config.js';
 import { renderVisibilityToggle } from '../shared/visibilityToggle.js';
 
 // 방 코드 표시 + 다른 방 방문 폼(+ 남의 방을 보는 중이면 "내 방으로"),
-// 구글 계정 연동, 방 이름/테마 스위처/둘러보기 공개 스위치까지 — 로비 헤더/카드 "주변" UI를
+// 구글 계정 연동, 방 이름/둘러보기 공개 스위치까지(테마는 기억 보관소로 바꾸며 2026-11-18에 뺌) — 로비 헤더/카드 "주변" UI를
 // 전부 채움. .room-info(방 코드)는 이제 폴백 링크 화면에만 있음 — 3D
 // 화면에선 상단 메뉴의 ☰ 서랍(shared/roomNav.js)이 같은 역할을 함. main.js가
 // roomContext가 resolve된 뒤 한 번 불러줌.
@@ -118,10 +116,6 @@ export function initRoomChrome(ctx) {
     .then((info) => (info && !info.missing ? info : null), () => null)
     .then((info) => {
       renderRoomName(ctx, info && info.name);
-      // 3D 로비에만 있는 테마 스위처(폴백 링크 화면엔 #themePicker 자체가 없음).
-      // 남의 방의 테마는 바꿀 수 없으니 내 방일 때만 그림.
-      const picker = document.getElementById('themePicker');
-      if (picker && !readOnly) renderThemePicker(picker, mine, (info && info.theme) || DEFAULT_THEME);
       // "둘러보기에 공개" 스위치도 내 방일 때만.
       const visBox = document.getElementById('visibilityBox');
       if (visBox && !readOnly && info) renderVisibilityToggle(visBox, mine, info.is_public);

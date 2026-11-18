@@ -19,9 +19,7 @@ vi.mock('../../js/lobby/roomContext.js', async (importOriginal) => ({
   // 방문자 본인의 방은 기록이 있는 걸로 — "돌아가기" 문구가 나와야 함.
   myRoomEmpty: Promise.resolve(false),
 }));
-vi.mock('../../js/lobby/scene.js', () => ({ DEFAULT_THEME: 'wood' }));
 vi.mock('../../js/lobby/roomNameEditor.js', () => ({ renderRoomName: () => {} }));
-vi.mock('../../js/lobby/themePicker.js', () => ({ renderThemePicker: () => {} }));
 vi.mock('../../js/shared/googleAuth.js', () => ({ initGoogleAuth: () => {} }));
 
 const { initRoomChrome } = await import('../../js/lobby/roomChrome.js');

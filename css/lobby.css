@@ -1,6 +1,6 @@
 :root{
-  --void:#120f0c;
-  --void-2:#1d1812;
+  --void:#0f0b22;
+  --void-2:rgba(28,22,58,0.86);
   --void-border:rgba(243,236,224,0.14);
   --paper:#f3ece0;
   --paper-dim:#b7ac98;
@@ -28,9 +28,6 @@ body{
 #canvas3d{position:absolute;inset:0;display:block;touch-action:none;cursor:grab;}
 #canvas3d.dragging{cursor:grabbing;}
 #canvas3d.hover{cursor:pointer;}
-/* 인형 위(끌어서 옮길 수 있음)와 옮기는 중 — 카메라 회전(grab)과 구분되게. */
-#canvas3d.movable{cursor:move;}
-#canvas3d.carrying{cursor:grabbing;}
 
 #loading{
   position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
@@ -75,9 +72,9 @@ body{
   --cta-h:40px;
   position:absolute;right:max(22px, env(safe-area-inset-right));
   bottom:calc(max(20px, env(safe-area-inset-bottom)) + var(--cta-h) + 12px);
-  padding:8px 13px;border-radius:12px;
+  padding:8px 13px;border-radius:12px;text-decoration:none;
   font-size:12.5px;font-weight:600;color:var(--void);background:var(--gold);
-  box-shadow:0 8px 20px rgba(0,0,0,0.4);pointer-events:none;
+  box-shadow:0 8px 20px rgba(0,0,0,0.4);pointer-events:auto;
   animation:cta-hint-bob 1.6s ease-in-out infinite;
 }
 .cta-hint::after{
@@ -98,7 +95,12 @@ body{
 .room-btn[data-room="anime"] .dot{background:var(--rose);}
 .room-btn[data-room="movie"] .dot{background:var(--crimson);}
 .room-btn[data-room="music"] .dot{background:var(--teal);}
-.room-btn:hover{border-color:var(--void-border);background:#241d15;transform:translateY(-1px);}
+.room-btn .dot.all{background:conic-gradient(var(--gold),var(--rose),var(--crimson),var(--teal),var(--gold));}
+.room-btn[data-filter=""][aria-pressed="true"]{color:#fff;}
+.room-btn:hover{border-color:var(--void-border);background:rgba(52,42,104,0.92);transform:translateY(-1px);}
+#cta .room-btn{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
+.view-btn svg{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round;}
+.view-btn[aria-pressed="true"]{color:#c9bcff;}
 .room-btn[aria-pressed="true"]{border-color:currentColor;}
 .room-btn[data-room="sketchbook"][aria-pressed="true"]{color:var(--ember);}
 .room-btn[data-room="book"][aria-pressed="true"]{color:var(--gold);}
@@ -147,6 +149,77 @@ body{
 #card[data-room="movie"] #cardEnter{background:var(--crimson);}
 #card[data-room="music"] #cardEnter{background:var(--teal);}
 #cardEnter:hover{filter:brightness(1.08);}
+
+/* ---- 기억 보관소(2026-11-18) ---- */
+.orb-count{
+  align-self:flex-start;margin-top:4px;padding:3px 10px;border-radius:999px;
+  font-size:11.5px;font-weight:700;letter-spacing:0.02em;color:#ffe9b8;
+  background:rgba(255,200,120,0.12);border:1px solid rgba(255,214,150,0.28);
+}
+.orb-count[hidden]{display:none;}
+/* 마우스를 올린 구슬의 제목 */
+.orb-tip{
+  position:fixed;z-index:30;pointer-events:none;max-width:260px;
+  padding:5px 10px;border-radius:8px;font-size:12px;font-weight:600;line-height:1.4;
+  color:#fff;background:rgba(18,13,44,0.88);border:1px solid rgba(190,170,255,0.3);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.orb-tip[hidden]{display:none;}
+/* 꺼낸 구슬의 기록 — 넓은 화면은 오른쪽, 세로 화면은 아래 */
+.memory{
+  position:absolute;right:max(28px, env(safe-area-inset-right));top:50%;
+  width:min(340px, 42vw);transform:translate(16px,-50%);opacity:0;
+  padding:20px 22px 18px;border-radius:18px;pointer-events:auto;
+  background:linear-gradient(160deg, rgba(40,31,86,0.94), rgba(20,15,46,0.94));
+  border:1px solid rgba(190,170,255,0.28);
+  box-shadow:0 24px 60px rgba(0,0,0,0.55), 0 0 40px rgba(140,120,255,0.18);
+  transition:opacity .3s ease, transform .3s ease;
+}
+.memory.show{opacity:1;transform:translate(0,-50%);}
+/* 꺼내 보는 동안엔 아래 버튼·말풍선을 치움(폰에선 패널 뒤로 비쳤음) */
+.memory-open #cta, .memory-open .cta-hint, .memory-open .lobby-foot{opacity:0;pointer-events:none;}
+#cta{transition:opacity .25s ease;}
+.memory[hidden]{display:none;}
+.memory.featured{border-color:rgba(255,214,140,0.6);box-shadow:0 24px 60px rgba(0,0,0,0.55), 0 0 46px rgba(255,200,120,0.28);}
+.memory-close{
+  position:absolute;top:8px;right:10px;width:34px;height:34px;border:none;background:none;
+  color:var(--paper-dim);font-size:24px;line-height:1;cursor:pointer;
+}
+.memory-close:hover{color:#fff;}
+.memory-close:focus{outline:none;}
+.memory-close:focus-visible{outline:2px solid #c9bcff;border-radius:8px;}
+.memory-tag{font-size:11px;font-weight:700;letter-spacing:0.06em;color:#c9bcff;padding-right:28px;}
+.memory[data-cat="book"] .memory-tag{color:var(--gold);}
+.memory[data-cat="anime"] .memory-tag{color:var(--rose);}
+.memory[data-cat="movie"] .memory-tag{color:#f08a7c;}
+.memory[data-cat="music"] .memory-tag{color:var(--teal);}
+.memory h2{margin:6px 0 2px;font-size:20px;line-height:1.3;font-weight:700;word-break:keep-all;}
+.memory-sub{font-size:13px;color:var(--paper-dim);}
+.memory-sub:empty{display:none;}
+.memory-meta{margin-top:8px;font-size:12.5px;color:#ffd98a;white-space:pre;}
+.memory-meta:empty{display:none;}
+.memory-memo{
+  margin:12px 0 0;font-size:13.5px;line-height:1.65;color:var(--paper);
+  max-height:30vh;overflow:auto;white-space:pre-wrap;word-break:keep-all;
+}
+.memory-memo[hidden]{display:none;}
+.memory-actions{display:flex;gap:8px;margin-top:16px;}
+.memory-actions > *{
+  flex:1;display:inline-flex;align-items:center;justify-content:center;
+  font:inherit;font-size:12.5px;font-weight:700;padding:9px 12px;border-radius:999px;cursor:pointer;text-decoration:none;
+}
+.memory-listen{background:transparent;color:var(--teal);border:1px solid rgba(74,159,201,0.6);}
+.memory-listen[hidden]{display:none;}
+.memory-cardlink{background:#efe7ff;color:#1b1440;border:none;}
+.memory-cardlink:hover{filter:brightness(1.06);}
+@media (max-width:700px), (orientation:portrait){
+  .memory{
+    left:max(14px, env(safe-area-inset-left));right:max(14px, env(safe-area-inset-right));top:auto;
+    bottom:calc(max(16px, env(safe-area-inset-bottom)) + 4px);width:auto;transform:translate(0,16px);
+  }
+  .memory.show{transform:translate(0,0);}
+  .memory-memo{max-height:22vh;}
+}
 
 #fallbackLinks{
   display:none;
@@ -368,8 +441,11 @@ body .site-nav{max-width:calc(100% - 28px - 52px);}
   }
   .header-more[hidden]{display:none;}
   /* 카테고리 버튼은 아래쪽 가로 한 줄 — 세로로 쌓으면 오른쪽을 길게 가리고, 가구 카드와도 겹쳤음. */
-  #cta{left:max(10px, env(safe-area-inset-left));right:max(10px, env(safe-area-inset-right));justify-content:center;gap:5px;}
-  .room-btn{padding:8px 10px 8px 9px;font-size:12px;gap:5px;}
+  /* 보관소 버튼은 6개라 한 줄에 다 안 들어감 — 글자를 꺾지 않고 옆으로 밀어서 봄. */
+  #cta{left:0;right:0;justify-content:flex-start;gap:5px;overflow-x:auto;scrollbar-width:none;
+    padding:0 max(10px, env(safe-area-inset-right)) 2px max(10px, env(safe-area-inset-left));}
+  #cta::-webkit-scrollbar{display:none;}
+  .room-btn{padding:8px 10px 8px 9px;font-size:12px;gap:5px;flex:none;white-space:nowrap;}
   .cta-hint{--cta-h:36px;right:auto;left:50%;transform:translateX(-50%);animation:none;}
   .cta-hint::after{right:auto;left:50%;margin-left:-7px;}
   /* "개발자의 방 구경하기"·"연동 해제"는 버튼 줄과 빈 방 말풍선(.cta-hint) 위로. */
