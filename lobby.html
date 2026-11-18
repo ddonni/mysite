@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko" class="lobby-page">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D 방</title>
+<!-- 카카오톡·인스타 링크 미리보기. 크롤러는 JS를 안 돌려서 방마다 다르게는 못 하고 공통 카드 하나 -->
+<meta name="description" content="읽고, 보고, 들은 책·애니·영화·음악을 3D 방에 모아두는 곳">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="내 방">
+<meta property="og:title" content="3D 방 — 내 기록">
+<meta property="og:description" content="읽고, 보고, 들은 책·애니·영화·음악을 3D 방에 모아두는 곳">
+<meta property="og:image" content="https://ddonni.github.io/mysite/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/lobby.css?v=8">
+<link rel="stylesheet" href="css/nav.css?v=8">
+<link rel="stylesheet" href="css/feedback.css?v=2">
+<link rel="stylesheet" href="css/inapp.css">
+<link rel="stylesheet" href="css/visibility.css">
+<link rel="stylesheet" href="css/player.css">
+</head>
+<body>
+
+<nav class="site-nav" aria-label="페이지 이동">
+  <!-- 위 줄: 어디서든 바로 가는 곳. 방 코드·둘러보기·의견 보내기 등은 ☰ 서랍(js/shared/roomNav.js) -->
+  <button type="button" class="nav-menu" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navDrawer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <!-- 3D 방(2026-11-18 되살림 — 첫 화면은 카드). 카테고리는 카드 화면의 그 칩으로 감 -->
+  <a href="./" data-page="./">카드로 보기</a>
+  <a href="./?cat=book" data-page="./?cat=book">책</a>
+  <a href="./?cat=anime" data-page="./?cat=anime">애니</a>
+  <a href="./?cat=movie" data-page="./?cat=movie">영화·시리즈</a>
+  <a href="./?cat=music" data-page="./?cat=music">음악</a>
+</nav>
+
+<div id="stage">
+  <canvas id="canvas3d"></canvas>
+  <div id="loading">방을 꾸미는 중…</div>
+</div>
+
+<div id="ui">
+  <div id="header">
+    <div class="eyebrow">Archive Room</div>
+    <h1>내 방</h1>
+    <div class="room-name" id="roomName"></div>
+    <p>읽고, 보고, 들은 것들을 모아두는 방이에요.</p>
+    <!-- 폰에서만 보임: 테마·공개 스위치·구글 버튼을 접어 두고 이걸로 펼침(roomChrome.js) -->
+    <button type="button" class="header-more" id="headerMore" aria-expanded="false" hidden>방 설정</button>
+    <!-- 남의 방을 구경하는 사람에게만 보임: 상단 메뉴의 "내 방으로"는 폰에서 메뉴를 옆으로 밀어야 보여서(roomChrome.js) -->
+    <a class="my-room-cta" id="myRoomCta" hidden></a>
+    <div class="header-controls">
+      <div class="theme-picker" id="themePicker"></div>
+      <div class="vis-box" id="visibilityBox"></div>
+    </div>
+    <div class="google-btn"></div>
+  </div>
+
+
+  <div class="lobby-foot">
+    <a id="devRoomLink" class="dev-room-link" hidden>개발자의 방 구경하기 →</a>
+    <div id="googleUnlink" class="google-unlink-slot"></div>
+  </div>
+
+  <!-- 내 방에 기록이 하나도 없는 동안만 — 아래 버튼에서 시작하면 된다는 말풍선(onboarding.js) -->
+  <div id="ctaHint" class="cta-hint" hidden>여기서 첫 기록을 남겨 보세요</div>
+  <div id="cta">
+    <button class="room-btn" data-room="book" aria-pressed="false"><span class="dot"></span>책</button>
+    <button class="room-btn" data-room="anime" aria-pressed="false"><span class="dot"></span>애니</button>
+    <button class="room-btn" data-room="movie" aria-pressed="false"><span class="dot"></span>영화·시리즈</button>
+    <button class="room-btn" data-room="music" aria-pressed="false"><span class="dot"></span>음악</button>
+  </div>
+
+  <div id="card" data-room="book">
+    <div class="room-tag" id="cardTag"></div>
+    <h2 id="cardTitle">책</h2>
+    <p id="cardBody"></p>
+    <!-- 음악 카드에서만, 턴테이블 곡에 유튜브 링크가 있을 때(js/lobby/main.js) -->
+    <button type="button" id="cardListen" class="card-listen" hidden></button>
+    <div class="card-actions">
+      <button id="cardBack">돌아가기</button>
+      <button id="cardEnter">입장하기</button>
+    </div>
+  </div>
+</div>
+
+<div id="fallbackLinks">
+  <p id="fallbackMessage">이 브라우저에서는 3D 방을 표시할 수 없어요. 바로 이동해 주세요.</p>
+  <a href="./" data-page="./">카드로 보기</a>
+  <a href="./?cat=book" data-page="./?cat=book">책</a>
+  <a href="./?cat=anime" data-page="./?cat=anime">애니</a>
+  <a href="./?cat=movie" data-page="./?cat=movie">영화·시리즈</a>
+  <a href="./?cat=music" data-page="./?cat=music">음악</a>
+  <a href="rooms" data-page="rooms">방 둘러보기</a>
+  <div class="room-info"></div>
+  <div class="google-btn"></div>
+</div>
+
+<!-- 3D 화면(#ui) 바깥에 둬서, 3D를 못 쓰는 폴백 화면에서도 똑같이 뜸 -->
+<button type="button" id="helpBtn" class="help-btn" aria-label="도움말 보기" title="도움말">?</button>
+<div id="helpDialog" class="help-dialog" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
+  <div class="help-card">
+    <div id="helpBody"></div>
+    <button type="button" id="helpClose" class="help-close">시작하기</button>
+    <p class="help-foot" id="helpFoot">자세한 사용법은 오른쪽 위 <b>?</b> 버튼에 있어요.</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.152.2/three.min.js"></script>
+<script src="https://accounts.google.com/gsi/client"></script>
+<script type="module" src="js/shared/inAppBrowser.js"></script>
+<script type="module" src="js/lobby/main.js"></script>
+<script type="module" src="js/shared/feedback.js"></script>
+</body>
+</html>

@@ -97,6 +97,12 @@ export function roomLink(page, viewingCode, myCode) {
 
 // 남의 방을 부르는 말 — 방 이름이 있으면 "○○의 방"(이름이 이미 "…방"으로 끝나면 그대로),
 // 없으면 "친구의 방". 첫 화면의 환영 카드(library/welcome.js)와 방 표시(roomNav.js)가 같이 씀.
+// 이 방으로 바로 들어오는 전체 주소(page + ?room=코드) — "링크 복사"가 씀. 내 방이어도 ?room=을 붙여야
+// 받은 사람 브라우저에서 그 사람의 방이 아니라 이 방이 열림. page는 첫 화면('./') 또는 3D 방('lobby').
+export function roomShareUrl(code, base = location.href, page = './') {
+  return new URL(page + '?room=' + encodeURIComponent(code), base).href;
+}
+
 export function roomTitle(name) {
   if (!name) return '친구의 기록';
   // 이름이 이미 "…방"/"…기록"으로 끝나면(예전에 지은 "도현의 방" 등) 그대로.

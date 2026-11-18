@@ -85,9 +85,16 @@ body.cards.read-only #addTabBtn{ display:none; }
 }
 .lib-bar .tier-btn svg{ width:15px; height:15px; flex:none; }
 .lib-bar .tier-btn:hover{ background:var(--chip); }
-/* 칩 바로 옆에 붙이고, 남는 폭은 이 버튼 뒤로(+ 기록은 오른쪽 끝 그대로) */
+/* 칩 바로 옆에 티어리스트·3D 방을 붙이고, 남는 폭은 3D 방 버튼 뒤로(+ 기록은 오른쪽 끝 그대로) */
 body.cards .site-nav.lib-bar > .chips:has(+ .tier-btn){ flex:0 1 auto; }
-.lib-bar .tier-btn{ margin-right:auto; }
+.lib-bar .room3d-btn{
+  display:inline-flex; align-items:center; gap:5px; font:inherit; font-size:13px; white-space:nowrap;
+  padding:5px 10px; border:1px solid var(--line, #E6E7EA); background:#FFFFFF; color:var(--paper);
+  text-decoration:none; margin-right:auto; border-radius:0;
+}
+.lib-bar .room3d-btn svg{ width:15px; height:15px; flex:none; }
+.lib-bar .room3d-btn:hover{ background:var(--chip); }
+@media (max-width:640px){ .lib-bar .room3d-btn{ padding:5px 7px; font-size:0; gap:0; } .lib-bar .room3d-btn svg{ width:17px; height:17px; } }
 @media (max-width:640px){ .lib-bar .tier-btn{ padding:5px 7px; font-size:0; gap:0; } .lib-bar .tier-btn svg{ width:17px; height:17px; } }
 .lib-bar .add.my-room{ text-decoration:none; }
 .lib-bar .add.my-room[hidden]{ display:none; }
@@ -678,3 +685,4 @@ body.cards .field label.progress-toggle{ display:inline-flex; margin:0; color:va
 .progress-toggle input:checked + .switch{ background:#3E9B6A; }
 .progress-toggle input:checked + .switch::after{ transform:translateX(14px); }
 .progress-toggle input:focus-visible + .switch{ outline:2px solid var(--paper); outline-offset:2px; }
+
