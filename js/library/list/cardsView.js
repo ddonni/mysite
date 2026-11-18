@@ -100,6 +100,7 @@ function cardHtml(it, { onListen, readOnly }) {
         <div class="q${it.memo ? '' : ' empty-memo'}">${it.memo ? `“${escapeHtml(it.memo)}”` : '아직 감상을 적지 않았어요.'}</div>
         ${stars}
         ${detailHtml(it)}
+        ${it.creator ? `<div class="back-creator">${escapeHtml(it.creator)}</div>` : ''}
         <div class="back-actions">${backButtons(it, { onListen, readOnly })}</div>
       </div>
     </div>`;
