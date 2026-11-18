@@ -37,13 +37,30 @@
 ## 두 저장소가 맞물린 곳 (한쪽을 바꾸면 다른 쪽도)
 
 - 에러 문자열(`featured_limit`, `not_music`, `page not found`, `not room owner` 등, 업로드 415/413).
-- **3D 방(`lobby.html`, `js/lobby/`)**: 2026-11-12에 첫 화면에서 내렸다가 2026-11-18에 `3d-room` 브랜치의
-  둥근 3면 방을 되살려 따로 붙임(사용자 결정 — 첫 화면은 카드 그대로, 메뉴 줄의 "3D 방" 버튼으로 감,
-  `data-page`라 남의 기록을 보던 중이면 그 방의 3D 방). 가구의 "입장하기"는 카드 화면 `./?cat=…`로,
-  "링크 복사"·방 방문은 `lobby?room=…`(`roomShareUrl(code, base, 'lobby')`, `roomContext.js`의
-  `lobbyUrl`). 쓰는 백엔드: 턴테이블 곡 `records.playing`(`PUT .../records/{id}/playing`), 방 테마
-  `schemas.ROOM_THEMES`(둘러보기 카드 띠 색 `js/rooms/main.js`의 `THEME_COLORS`도).
-- **캔버스(`sketchbook.html`, `js/sketchbook/`)**: 2026-11-18 되살림, **3D 방의 이젤에서만** 들어감(사용자
+- **3D 방 = 기억 보관소(`lobby.html`, `js/lobby/`)**: 2026-11-18에 `3d-room` 브랜치의 둥근 방을 되살렸다가
+  같은 날 사용자 요청("인사이드 아웃의 기억 보관소처럼")으로 **통째로 바꿈** — 옛 가구 방은 `3d-room` 브랜치에만.
+  카드 홈 메뉴 줄의 "3D 방" 버튼으로 감(`data-page`라 남의 기록을 보던 중이면 그 방). 구조(`js/lobby/archive/`):
+  끝없는 통로 양옆 둥근 서가 탑에 **기록이 한 칸씩** — 책은 두께 있는 책, 영화·애니는 포스터, 음악은 앨범 재킷
+  (`covers.js` — 앞면은 실제 표지, 표지는 아틀라스 캔버스(한 장 160칸)에 모아 상자 하나를 InstancedMesh로; 같은 날
+  처음엔 빛나는 구슬이었다가 사용자 요청으로 "예전처럼 책·포스터로" 바꿈). 진열 = **카테고리 구분 없이 날짜순**
+  (`layout.js` — 오래된 것부터 입구 탑 아랫줄, 빈 선반은 앞으로 채울 자리). 인생작은 조금 크게 + 금테. 탑 안쪽·바닥
+  빛은 표지 대표색(`orbColor.js`). 둘러보기(`controls.js`, 사용자 요청 "이동을 자연스럽게, 기본은 위에서"): 지도처럼
+  한 점을 중심으로 도는 카메라 — 끌기 돌리기, 오른쪽·Shift·두 손가락 끌기 옮기기, 휠·핀치 커서 쪽으로 다가가기,
+  관성, 바닥 누르면 그곳이 가운데로. 처음 화면은 최근 기록이 꽂힌 탑을 비스듬히 가까이(평가 후 — 전체를 내려다보면
+  표지가 점처럼 작았음), 아래 "전체 보기"↔"가까이 보기" 버튼. 빈 탑은 하나만(최소 두 쌍). 색은 짙은 남보라 + 금테·
+  금빛 조명(카드 홈 톤에 맞춤). 기록을 누르면
+  그 책·포스터가 눈앞으로 날아와 크게(`heldCover.js`) + 기록 패널(카드로 보기·음악 ▶ 듣기). 아래 버튼은 카테고리만
+  밝히기 + 캔버스(이젤로).
+  **이웃 서가**(`neighbors.js`, 2026-11-18 사용자 요청 "빈 공간을 다른 사람 기록으로"): 통로 바로 바깥 줄에 공개 방
+  하나당 2줄짜리 낮은 서가 + 이름표, 인생작 최대 12개(`GET /api/rooms`의 `featured`, 최근 활동순 최대 16개 방). 표지를
+  누르면 내 기록처럼 꺼내 봄(감상 등은 그 방 `/records`를 한 번 받아 채움 — `roomContext.js`의 `neighborRecords`),
+  이름표를 누르면 그 서가 앞으로. **가운데는 늘 내 서가 — 남의 보관소 화면은 없음**(사용자 결정). `lobby?room=코드`는
+  "그 이웃 서가를 맨 앞에 두고 비춰라"(`focusCode`, 주소에서는 바로 지움 — 위 메뉴가 남의 방으로 착각하지 않게),
+  그 방이 비공개거나 인생작이 없으면 그 방 기록으로 서가를 하나 만들어 붙임(받은 링크는 늘 보이게). 스위치 설명
+  문구는 그대로 둠(사용자 결정). "링크 복사"는 `lobby?room=내코드`(`roomShareUrl(code, base, 'lobby')`).
+  프론트가 안 쓰게 된 백엔드: 턴테이블 곡 `records.playing`, 방 테마 `schemas.ROOM_THEMES`(테마 고르기는 뺌 —
+  둘러보기 카드 띠 색 `js/rooms/main.js`의 `THEME_COLORS`만 씀).
+- **캔버스(`sketchbook.html`, `js/sketchbook/`)**: 2026-11-18 되살림, **보관소 입구 옆 이젤에서만** 들어감(사용자
   결정 — 카드 화면엔 캔버스로 가는 길이 없음). 백엔드 그림 API `/pages/{n}`, WebSocket
   `/ws/rooms/{code}/pages/{n}`, `pages` 표. 3D 방 이젤의 그림 미리보기도 같은 API(`js/shared/strokes.js`).
 - 방 둘러보기: 백엔드 `rooms.is_public` + `GET /api/rooms`(공개·기록 있는 방만) +
@@ -150,7 +167,7 @@
   중이에요" 스위치(음악 없음, 카드 왼쪽 위 초록 표시). 감상 아래 **세부 기록**이 늘 펼쳐져 있음
   (`modal/detailFields.js` — 애니: 참신함·스토리·작화·캐릭터·결말, 영화: 스토리·연기·영상미·음악·결말,
   책: 결말 + 카테고리별 장르 12개 중 5개, 음악 없음 — 백엔드 `schemas.DETAIL_ASPECTS·DETAIL_GENRES`와
-  같아야 함). 카드 뒷면엔 요소별 별점·장르 태그(저자 줄은 뺌). **수정할 땐 카테고리 탭이 잠김**(지금 것만
+  같아야 함). 카드 뒷면엔 요소별 별점·장르 태그, 맨 아래 버튼 위에 만든 사람(작가·감독·가수 — 11-17에 뺐다가 11-18에 아래쪽으로 다시 넣음). **수정할 땐 카테고리 탭이 잠김**(지금 것만
   켜짐). 창 바깥(어두운 곳)을 누르면 닫히는데, 입력 칸을 직접 고쳤으면 한 번 물음(`touched`).
 - **보기 전환**(2026-11-18, 피드백 "카드로는 모든 작품을 한눈에 볼 수 없다"): 카드 · 촘촘히(표지만 빽빽이,
   인생작 금테·보는 중 초록 점·제목은 마우스 올리면) · 목록(한 줄에 표지·제목·카테고리·별점·날짜).
@@ -189,13 +206,13 @@
 6. 학원 PC의 함정: 임시 폴더에 설치한 패키지의 DLL을 Windows 보안 정책이 막음 — SQLAlchemy는
    `DISABLE_SQLALCHEMY_CEXT_RUNTIME=1`(+ 설치된 `.pyd` 삭제)로 순수 파이썬으로 돌리고, Postgres 드라이버가
    필요한 마이그레이션 확인은 Docker 안에서 함(`mysite-backend/CLAUDE.md` "빌드/테스트 명령").
-7. 화면 확인: headless Edge `--screenshot`(WebGL이 없어도 됨). 가로 500px보다 좁게는 안 그려서 폰은 500px로
+7. 화면 확인: headless Edge `--screenshot`(3D 방은 `--use-angle=swiftshader --enable-unsafe-swiftshader`로 WebGL을 켬). 가로 500px보다 좁게는 안 그려서 폰은 500px로
    찍음. 클릭·끌기 같은 동작은 Edge를 `--remote-debugging-port`로 띄워 CDP(`Input.dispatchMouseEvent`·
    `dispatchTouchEvent`)로 재현함.
 
 ## 정해둔 것 / 남은 일
 
-- **3D 방 브랜치**: `main`의 `lobby.html`은 `3d-room`(사용자가 보관)에서 되살린 것. `room-redesign`(= 3d-room + 2026-11-11 작업: 네모난 방,
+- **3D 방 브랜치**: 옛 둥근 가구 방은 `3d-room`(사용자가 보관), `main`의 `lobby.html`은 기억 보관소. `room-redesign`(= 3d-room + 2026-11-11 작업: 네모난 방,
   책·애니·영화를 한데 꽂는 큰 책장, 옷장 가구·옷장 탭, 한글 글꼴). 백엔드 `room-redesign`엔 옷장 카테고리
   (`attrs`·`wardrobe_public`, 마이그레이션 `a7c3e5f9b2d1`)와 인생작 9개 공동 한도가 있음 — `main`에 안
   합침. 옷장을 카드 홈으로 옮길 땐 그 리비전의 `down_revision`을 지금 head(`a2d4f6b8c0e3`)로 바꿔야 함.
