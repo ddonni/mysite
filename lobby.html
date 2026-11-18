@@ -67,6 +67,7 @@
   <!-- 내 방에 기록이 하나도 없는 동안만 — 아래 버튼에서 시작하면 된다는 말풍선(onboarding.js) -->
   <div id="ctaHint" class="cta-hint" hidden>여기서 첫 기록을 남겨 보세요</div>
   <div id="cta">
+    <button class="room-btn" data-room="sketchbook" aria-pressed="false"><span class="dot"></span>캔버스</button>
     <button class="room-btn" data-room="book" aria-pressed="false"><span class="dot"></span>책</button>
     <button class="room-btn" data-room="anime" aria-pressed="false"><span class="dot"></span>애니</button>
     <button class="room-btn" data-room="movie" aria-pressed="false"><span class="dot"></span>영화·시리즈</button>
@@ -89,6 +90,7 @@
 <div id="fallbackLinks">
   <p id="fallbackMessage">이 브라우저에서는 3D 방을 표시할 수 없어요. 바로 이동해 주세요.</p>
   <a href="./" data-page="./">카드로 보기</a>
+  <a href="sketchbook" data-page="sketchbook">캔버스</a>
   <a href="./?cat=book" data-page="./?cat=book">책</a>
   <a href="./?cat=anime" data-page="./?cat=anime">애니</a>
   <a href="./?cat=movie" data-page="./?cat=movie">영화·시리즈</a>

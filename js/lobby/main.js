@@ -22,9 +22,10 @@ import { forgetMyRoom } from '../shared/room.js';
 import { initRoomNav } from '../shared/roomNav.js';
 import { watchForSlow, SLOW_MESSAGE } from '../shared/slow.js';
 
-// 가구의 "입장하기" → 카드 화면(첫 화면)의 그 카테고리. 캔버스는 2026-11-12에 없어서 이젤은 장식만
-// (예전 그림을 그대로 보여 줌, scene.js에서 누를 수 없게 뺌).
+// 가구의 "입장하기" → 카드 화면(첫 화면)의 그 카테고리. 캔버스(그림판)는 3D 방의 이젤에서만 들어감
+// (2026-11-18 사용자 결정 — 카드 화면엔 캔버스로 가는 길이 없음).
 const PAGES = {
+  sketchbook: 'sketchbook',
   book: './?cat=book',
   anime: './?cat=anime',
   movie: './?cat=movie',
@@ -32,6 +33,7 @@ const PAGES = {
 };
 // tag: 카드 맨 위 작은 영문 라벨(가구 위 벽 글씨와 같은 말).
 const ROOM_INFO = {
+  sketchbook: { tag: 'Canvas', title: '캔버스', body: '마음 가는 대로 그려보세요. 캔버스는 3D 방에서만 열려요.' },
   book: { tag: 'Book', title: '책', body: '읽은 책이 한 권씩 꽂혀요.' },
   anime: { tag: 'Animation', title: '애니', body: '본 애니가 아크릴 스탠드로 진열돼요.' },
   movie: { tag: 'Movie', title: '영화·시리즈', body: '본 영화·시리즈가 포스터로 한 장씩 붙어요.' },

@@ -135,8 +135,7 @@ export function buildScene(theme) {
     // ball도 여기 포함시켜서 클릭/호버 판정을 받지만, userData.room이
     // 없어서 방 이동으로는 안 이어지고 controls.js가 따로 kickBall로 연결함.
     // 인형들(userData.isPlush)은 방 이동 대신 끌어서 옮기는 대상(controls.js).
-    // 이젤은 캔버스가 없어져서(2026-11-12) 누를 수 없는 장식 — 예전 그림만 보여 줌.
-    interactiveGroups: [recordConsole, shelf, ...bookFrames, displayCase, posterWall, ...Object.values(labels), ball, teddyBear, bunny],
+    interactiveGroups: [easel, recordConsole, shelf, ...bookFrames, displayCase, posterWall, ...Object.values(labels), ball, teddyBear, bunny],
     // 이 배치의 카메라 위치(첫 화면/가구별 포커스) — controls.js가 씀.
     cameraPresets,
     // 아래 set* 함수들은 loadRoomIntoScene.js가 서버에서 받아온 데이터로

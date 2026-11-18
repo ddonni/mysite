@@ -44,6 +44,7 @@ function lookAround() {
 const FURNITURE = `
   <li><b>가구를 누르면 그 기록으로 들어가요.</b>
     <span class="help-map">
+      <span><i style="background:var(--ember)"></i>이젤 → 캔버스</span>
       <span><i style="background:var(--gold)"></i>책장 → 책</span>
       <span><i style="background:var(--rose)"></i>진열장 → 애니</span>
       <span><i style="background:var(--crimson)"></i>포스터 벽 → 영화·시리즈</span>
