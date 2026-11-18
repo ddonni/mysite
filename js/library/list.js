@@ -8,6 +8,14 @@
 // 콜백으로 정해줌.
 import { CATS } from './records.js';
 import { renderCards, deal } from './list/cardsView.js';
+import { renderCompact, createCardDialog } from './list/compactViews.js';
+
+// 보기 방식 — 'cards'(뒤집는 카드, 기본) · 'dense'(촘촘히) · 'list'(목록). 고른 건 이 브라우저에 기억함.
+export const VIEWS = ['cards', 'dense', 'list'];
+const VIEW_KEY = 'mysite:view';
+function storedView() {
+  try { const v = localStorage.getItem(VIEW_KEY); return VIEWS.includes(v) ? v : 'cards'; } catch (e) { return 'cards'; }
+}
 
 const EMPTY_ALL = '아직 기록이 없어요.';
 const EMPTY_CAT = '아직 이 카테고리엔 기록이 없어요.';
@@ -48,6 +56,8 @@ export function createList({ onEdit, onDelete, onFeature, onListen, onLike, onTa
   let currentItems = [];
   let shownIds = null; // 지금 격자에 있는 카드 id — 다시 그릴 때 새로 생긴 카드만 나눠주려고
   let shownCount = 0; // 지금 칩 오른쪽에 보이는 개수 — 기록이 늘거나 줄었을 때 거기서부터 셈
+  let view = storedView();
+  const cardDialog = createCardDialog({ onEdit, onDelete, onFeature, onListen, onLike, readOnly });
 
   // 칩 바꾸기 — 이 페이지의 칩을 누르거나, 상단 메뉴의 책·애니·영화·음악을 눌렀을 때
   // (main.js가 페이지를 다시 불러오지 않고 이걸 부름).
@@ -84,11 +94,12 @@ export function createList({ onEdit, onDelete, onFeature, onListen, onLike, onTa
   // 다시 그릴 때) 새로 생긴 카드만.
   function renderBody({ dealAll = false } = {}) {
     const list = sortForGrid(activeTab === 'all' ? currentItems : currentItems.filter((i) => i.cat === activeTab));
-    const slots = renderCards(listEl, list, {
-      onEdit, onDelete, onFeature, readOnly,
-      onListen, onLike,
-      emptyText: readOnly ? EMPTY_READONLY : activeTab === 'all' ? EMPTY_ALL : EMPTY_CAT,
-    });
+    const emptyText = readOnly ? EMPTY_READONLY : activeTab === 'all' ? EMPTY_ALL : EMPTY_CAT;
+    listEl.dataset.view = view;
+    // 촘촘히·목록은 덱에서 나눠주는 효과 없이 바로(수백 개를 한눈에 보는 게 목적이라).
+    const slots = view === 'cards'
+      ? renderCards(listEl, list, { onEdit, onDelete, onFeature, readOnly, onListen, onLike, emptyText })
+      : (renderCompact(listEl, list, { view, emptyText, onOpen: cardDialog.open }), []);
     // 내 기록이 비어 있으면 안내 아래 가운데에 "+ 기록" 버튼(위 줄의 같은 버튼을 못 찾는 사람이 많아서).
     const emptyEl = listEl.querySelector('.empty');
     if (emptyEl && !readOnly && onAdd) {
@@ -110,6 +121,14 @@ export function createList({ onEdit, onDelete, onFeature, onListen, onLike, onTa
   }
 
   return {
+    // 보기 방식 바꾸기(위 줄의 전환 버튼) — 다시 그리고 기억함.
+    view: () => view,
+    setView(next) {
+      if (!VIEWS.includes(next) || next === view) return;
+      view = next;
+      try { localStorage.setItem(VIEW_KEY, view); } catch (e) { /* 기억 못 해도 지금은 바뀜 */ }
+      renderBody({ dealAll: true });
+    },
     // 지금 보고 있는 칩('all' 또는 카테고리) — "+ 기록"의 기본 카테고리로 씀.
     activeTab: () => activeTab,
     selectTab,

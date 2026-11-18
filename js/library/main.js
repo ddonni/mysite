@@ -125,6 +125,12 @@ initRoomNav({ navEl, currentPage: './', settings: true }).then((ctx) => {
     onAdd: (cat) => modal.openAdd(cat),
   });
 
+  // 보기 방식 전환(카드 · 촘촘히 · 목록) — 위 줄의 아이콘 버튼.
+  const viewBtns = [...document.querySelectorAll('#viewSwitch [data-view]')];
+  const paintView = () => viewBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === list.view())));
+  viewBtns.forEach((b) => b.addEventListener('click', () => { list.setView(b.dataset.view); paintView(); }));
+  paintView();
+
   // 티어리스트 페이지로 — 지금 보는 기록(남의 기록이면 그 기록)과 칩(카테고리)을 그대로 들고 감.
   document.getElementById('tierBtn').addEventListener('click', () => {
     const tab = list.activeTab();
