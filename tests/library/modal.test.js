@@ -96,7 +96,7 @@ describe('음악 탭 제목 검색', () => {
     typeTitle('주저하는 연인들을 위해');
     await settle();
     expect(searchMusic.mock.calls.map((c) => [c[0], c[2]])).toEqual([
-      ['주저하는 연인들을 위해', 'songs'], ['주저하는 연인들을 위해', undefined],
+      ['주저하는 연인들을 위해', 'songs'], ['주저하는 연인들을 위해', undefined], ['주저하는 연인들을 위해', 'track'],
     ]);
     const item = $('titleList').querySelector('.ac-item.rich');
     expect(item.querySelector('.ac-title').textContent).toBe('주저하는 연인들을 위해');

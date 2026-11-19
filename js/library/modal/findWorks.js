@@ -39,57 +39,104 @@ function titleWithArtist(song, key) {
 }
 
 // 검색어에서 가수 이름 낱말을 뺀 것 — 노래 제목 줄의 제목으로("뉴질랜드 래원" → "뉴질랜드").
-// 다 빠지면 검색어 그대로.
-function withoutArtist(q, creator) {
-  const keys = artistKeys(creator);
-  const rest = q.split(/\s+/).filter((w) => !keys.includes(squash(w))).join(' ').trim();
+// keys: 함께 받은 결과들의 가수 이름 조각 전부 — 앨범 결과는 "Epik High"(영어)인데 검색어는 "에픽하이"라
+// 그 앨범 가수만 보면 안 빠져서 "샴페인 에픽하이"라는 노래가 됐음(2026-11-19). 다 빠지면 검색어 그대로.
+function withoutArtist(q, keys) {
+  const rest = q.split(/\s+/).filter((w) => !keys.has(squash(w))).join(' ').trim();
   return rest || q;
 }
 
-// 음악 — 기록은 노래 단위라(앨범 이름은 잘 모름) 노래 줄로 돌려줌.
-//   - 검색어가 가수 이름이면("검정치마") 그 가수의 노래 목록(by=songs, 수록곡을 모은 것).
-//   - 노래 제목이면 쓴 제목 그대로의 줄을 가수마다 하나씩 — 제목 검색 맨 위(백엔드가 iTunes로 그
-//     노래가 실린 앨범을 찾아 줌)와, 앨범(싱글) 이름이 그 제목인 결과들. 같은 제목의 노래를 여러
-//     가수가 냈을 때가 많아서("넋두리" — 하동균·닐로·…). by=songs는 검색어와 비슷한 가수를
-//     골라 오므로 그 가수의 노래 중 제목이 맞는 것만 남김.
-//   - "제목 가수"("뉴질랜드 래원")면 그 가수의 그 노래를 맨 앞에 — 예전엔 검색어 전체가 제목인
-//     줄만 남아 "뉴질랜드 래원"이라는 노래가 나왔음(2026-11-06). 노래 제목 줄도 가수 낱말은 뺌.
+function songCandidate(m) {
+  return {
+    title: m.song,
+    creator: m.creator || '',
+    cover: m.cover,
+    label: m.song,
+    meta: [m.album, m.year].filter(Boolean).join(' · '),
+    square: true,
+    listen: m.listen || null,
+    albumId: m.album_id || null,
+  };
+}
+
+// 음악 — 기록은 노래 단위라(앨범 이름은 잘 모름) 노래 줄로 돌려줌. 세 가지를 같이 찾음:
+//   by=songs: 검색어와 비슷한 가수 하나의 노래 목록(수록곡을 모은 것)
+//   일반 검색: 앨범·싱글(로그인 없는 유튜브 뮤직은 노래 검색을 안 해 줌) + iTunes로 찾은 앨범 하나
+//   by=track: 그 제목의 노래들(iTunes 노래 검색 → 유튜브 앨범의 곡, 2026-11-19) — 앨범 안 수록곡도
+//     제목으로("샴페인" → 2PM·동방신기·윤미래의 샴페인). 전엔 가수 이름을 써야만 수록곡이 나왔음.
+// 그리고:
+//   - 검색어가 가수 이름이면("검정치마") 그 가수의 노래 목록.
+//   - "제목 가수"("뉴질랜드 래원")면 그 가수의 그 노래를 맨 앞에(2026-11-06).
+//   - "제목 가수"인데 그 가수 노래 중 제목이 안 맞으면("샴페인 에픽하이" — 유튜브엔 "Champagne") 쓴 제목의
+//     줄 하나 + 그 가수의 노래 목록 전체(거기서 고르게, 2026-11-19).
+//   - 노래 제목이면 제목 검색(by=track)의 곡들 → 쓴 제목 그대로의 줄을 가수마다 하나씩(제목 검색 맨 위와
+//     앨범·싱글 이름이 그 제목인 것 — 같은 제목을 여러 가수가 낸 일이 많아서, "넋두리") → 비슷한 가수의
+//     노래 중 제목이 맞는 것.
 function findSongs(q) {
-  const settle = (pr) => pr.then((list) => ({ list }), () => ({ failed: true }));
-  return Promise.all([settle(searchMusic(q, undefined, 'songs')), settle(searchMusic(q))]).then(([a, b]) => {
-    if (a.failed && b.failed) throw new Error('search failed');
-    const songs = (a.list || []).filter((m) => m.song).map((m) => ({
-      title: m.song,
-      creator: m.creator || '',
-      cover: m.cover,
-      label: m.song,
-      meta: [m.album, m.year].filter(Boolean).join(' · '),
-      square: true,
-      listen: m.listen || null,
-      albumId: m.album_id || null,
-    }));
+  const settle = (pr) => Promise.resolve(pr).then((list) => ({ list: list || [] }), () => ({ failed: true }));
+  return Promise.all([
+    settle(searchMusic(q, undefined, 'songs')),
+    settle(searchMusic(q)),
+    settle(searchMusic(q, undefined, 'track')),
+  ]).then(([a, b, c]) => {
+    if (a.failed && b.failed && c.failed) throw new Error('search failed');
+    const songs = (a.list || []).filter((m) => m.song).map(songCandidate);
+    const tracks = (c.list || []).filter((m) => m.song).map(songCandidate);
     const albums = b.list || [];
     const key = squash(q);
     const isArtist = (name) => {
       const x = squash(name);
       return !!x && (x.includes(key) || key.includes(x));
     };
-    const combo = songs.filter((s) => titleWithArtist(s, key));
+    const combo = [...songs, ...tracks].filter((s) => titleWithArtist(s, key));
     if (combo.length) return combo;
     if ((albums[0] && isArtist(albums[0].creator)) || songs.some((s) => isArtist(s.creator))) return songs;
+
+    const keys = new Set([...songs, ...tracks, ...albums].flatMap((m) => artistKeys(m.creator)));
+    const title = (creator) => withoutArtist(q, new Set([...keys, ...artistKeys(creator)]));
+    // "제목 가수" — 노래 목록 가수의 이름 낱말이 검색어에 따로 있음(낱말 하나뿐이면 제목일 수도 있어서 둘 이상일 때만).
+    const listArtist = songs[0] && songs[0].creator;
+    const listKeys = listArtist ? artistKeys(listArtist) : [];
+    const words = q.split(/\s+/).filter(Boolean);
+    if (listArtist && words.length > 1 && words.some((w) => listKeys.includes(squash(w)))) {
+      // 표지: 가수 표기가 똑같은 앨범(대개 검색어 낱말이 걸린 그 앨범) → 이름 조각이 같은 가수의 앨범.
+      const own = albums.find((m) => m.creator === listArtist)
+        || albums.find((m) => artistKeys(m.creator).some((k) => listKeys.includes(k)));
+      const row = {
+        title: title(listArtist),
+        creator: listArtist,
+        cover: own ? own.cover : null,
+        label: title(listArtist),
+        meta: `${listArtist} · 아래 노래 목록에서 골라도 돼요`,
+        square: true,
+        listen: null,
+        albumId: null,
+      };
+      // 그 가수의 노래 목록은 150곡까지라 — 일반 검색이 이 검색어로 찾아 준 그 가수의 앨범("샴페인 에픽하이" →
+      // Epik High Is Here 下, 그 안에 "Champagne")의 곡을 앞으로. 가수 표기가 노래 목록과 똑같은 앨범만(유튜브가
+      // 찾은 것 — iTunes로 찾은 앨범은 영어 이름이라 다름).
+      const hinted = albums.filter((m) => m.creator === listArtist).map((m) => squash(m.album));
+      const rank = (m) => { const i = hinted.indexOf(squash(m.album)); return i < 0 ? hinted.length : i; };
+      const ordered = (a.list || []).filter((m) => m.song)
+        .map((m, i) => [m, i]).sort((x, y) => rank(x[0]) - rank(y[0]) || x[1] - y[1]).map(([m]) => songCandidate(m));
+      return [row, ...tracks.filter((t) => listKeys.some((k) => artistKeys(t.creator).includes(k))), ...ordered];
+    }
+
+    const trackArtists = new Set(tracks.map((t) => squash(t.creator)));
     const typed = albums
       .filter((m, i) => i === 0 || squash(m.album) === key)
+      .filter((m) => !trackArtists.has(squash(m.creator))) // 같은 가수의 진짜 노래 줄이 이미 있으면 그걸로
       .map((m) => ({
-        title: withoutArtist(q, m.creator),
+        title: title(m.creator),
         creator: m.creator || '',
         cover: m.cover,
-        label: withoutArtist(q, m.creator),
+        label: title(m.creator),
         meta: [m.creator, m.album && `앨범 ${m.album}`].filter(Boolean).join(' · '),
         square: true,
         listen: null,
         albumId: m.album_id || null,
       }));
-    return [...typed, ...songs.filter((s) => squash(s.title) === key)];
+    return [...tracks, ...typed, ...songs.filter((s) => squash(s.title) === key)];
   });
 }
 

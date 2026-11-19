@@ -50,7 +50,7 @@ describe('findWorks', () => {
       .mockResolvedValueOnce([song('Ling Ling'), song('나랑 아니면')])
       .mockResolvedValueOnce([{ album: 'TEAM BABY', song: null, creator: '검정치마', kind: '앨범', year: '', cover: 'c' }]);
     const found = await findWorks('music', '검정치마');
-    expect(records.searchMusic.mock.calls).toEqual([['검정치마', undefined, 'songs'], ['검정치마']]);
+    expect(records.searchMusic.mock.calls).toEqual([['검정치마', undefined, 'songs'], ['검정치마'], ['검정치마', undefined, 'track']]);
     // 검색어가 가수 이름이라 "검정치마"라는 노래 줄은 안 만듦
     expect(found.map((c) => c.title)).toEqual(['Ling Ling', '나랑 아니면']);
     expect(found[0]).toMatchObject({ creator: '검정치마', meta: 'TEAM BABY · 2017' });
@@ -101,6 +101,49 @@ describe('findWorks', () => {
       .mockResolvedValueOnce([{ album: '원래', song: null, creator: '래원 (Layone)', kind: '앨범', year: '', cover: 'w', album_id: 'A' }]);
     const [c] = await findWorks('music', '뉴질랜드 래원');
     expect(c).toMatchObject({ title: '뉴질랜드', label: '뉴질랜드', creator: '래원 (Layone)', albumId: 'A' });
+  });
+
+  it('음악 — 노래 제목: 제목 검색(by=track)의 곡을 맨 앞에, 같은 가수의 "쓴 제목 그대로" 줄은 빼고', async () => {
+    records.searchMusic
+      .mockResolvedValueOnce([]) // by=songs
+      .mockResolvedValueOnce([
+        { album: 'Rise As God', song: null, creator: 'TVXQ!', kind: '앨범', year: '', cover: 't' },
+        { album: '샴페인', song: null, creator: '츄더', kind: '싱글', year: '', cover: 'c' },
+      ])
+      .mockResolvedValueOnce([ // by=track
+        { album: 'MUST', song: '샴페인 Champagne', creator: '2PM', kind: '노래', year: '2021', cover: 'p', listen: 'L2' },
+        { album: 'Rise As God', song: '샴페인 Champagne (U-Know Solo)', creator: 'TVXQ!', kind: '노래', year: '', cover: 't', listen: 'L1' },
+      ]);
+    const found = await findWorks('music', '샴페인');
+    expect(found.map((c) => `${c.title}|${c.creator}`)).toEqual([
+      '샴페인 Champagne|2PM', '샴페인 Champagne (U-Know Solo)|TVXQ!', '샴페인|츄더',
+    ]);
+    expect(found[0]).toMatchObject({ listen: 'L2', meta: 'MUST · 2021' });
+  });
+
+  it('음악 — "제목 가수"인데 그 가수 노래 중 제목이 안 맞으면: 쓴 제목 줄 + 그 가수의 노래 목록', async () => {
+    // 유튜브엔 에픽하이의 곡이 "Champagne"(영어)으로, 앨범 결과의 가수는 "Epik High"(영어)로 옴
+    const epik = (s) => ({ album: 'Epik High Is Here 下, Pt. 2', song: s, creator: '에픽하이 (EPIK HIGH)', kind: '노래', year: '', cover: 'e' });
+    records.searchMusic
+      .mockResolvedValueOnce([{ ...epik('PUMP'), album: 'PUMP' }, epik('Rosario'), epik('Champagne')])
+      .mockResolvedValueOnce([
+        { album: 'High Society', song: null, creator: 'Epik High', kind: '앨범', year: '2004', cover: 'h' },
+        { album: 'Epik High Is Here 下, Pt. 2', song: null, creator: '에픽하이 (EPIK HIGH)', kind: '앨범', year: '', cover: 'e' },
+      ])
+      .mockResolvedValueOnce([]);
+    const found = await findWorks('music', '샴페인 에픽하이');
+    // 일반 검색이 찾아 준 그 가수의 앨범(Epik High Is Here 下) 곡이 먼저
+    expect(found.map((c) => c.title)).toEqual(['샴페인', 'Rosario', 'Champagne', 'PUMP']);
+    expect(found[0]).toMatchObject({ creator: '에픽하이 (EPIK HIGH)', cover: 'e' });
+  });
+
+  it('음악 — "제목 가수"의 영어 가수 이름도 빠짐("뉴질랜드 Layone")', async () => {
+    records.searchMusic
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ album: '원래', song: null, creator: '래원 (Layone)', kind: '앨범', year: '', cover: 'w' }])
+      .mockResolvedValueOnce([]);
+    const [c] = await findWorks('music', '뉴질랜드 Layone');
+    expect(c.title).toBe('뉴질랜드');
   });
 
   it('한쪽이 실패해도 나머지로, 둘 다 실패하면 reject', async () => {
