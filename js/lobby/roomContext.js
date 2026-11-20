@@ -4,6 +4,7 @@
 // 공유해서 써야 서로 다른 방을 가리키는 일이 없음.
 import { getMyRoom } from '../shared/room.js';
 import { API_BASE } from '../shared/config.js';
+import { pickNeighbors } from './archive/neighbors.js';
 
 // 기억 보관소는 **늘 내 방이 가운데**(2026-11-18 사용자 결정 — 바깥 이웃 서가에 다른 방들이 같이 나와서 "남의
 // 보관소"라는 개념을 없앰). 주소의 ?room=코드는 "그 이웃 서가를 맨 앞에 놓고 비춰 달라"는 뜻(focusCode)으로만
@@ -58,27 +59,25 @@ export const myRoomEmpty = roomContext.then((ctx) => {
     .then((records) => (Array.isArray(records) ? records.length === 0 : null));
 });
 
-// 이웃 서가에 놓을 공개 방들(GET /api/rooms — 최근 활동순, 방마다 인생작 최대 12개). 실패하면 빈 목록.
-// ?room=으로 가리킨 방이 목록에 없으면(비공개거나 인생작이 없음) 그 방 기록에서 인생작(없으면 최근 것) 12개로
-// 하나 만들어 맨 앞에 붙임 — 받은 링크는 공개 여부와 상관없이 늘 그 사람 서가가 보이게.
+// 이웃 서가에 놓을 방들 — 기록 전부를 진열하려고(2026-11-20, 전엔 인생작 12개만) 방마다 `records`까지 받아 붙임.
+// GET /api/rooms(공개·기록 있는 방, 최근 활동순)에서 내 방을 빼고 최대 MAX_NEIGHBORS개(neighbors.js의 pickNeighbors).
+// ?room=으로 가리킨 방이 목록에 없으면(비공개) 그 방 정보를 받아 맨 앞에 — 받은 링크는 공개 여부와 상관없이
+// 늘 그 사람 서가가 보이게. 기록을 못 받았거나 없는 방은 뺌. 목록이 실패하면 빈 목록.
 export const publicRooms = roomContext.then(async (ctx) => {
   const list = await fetch(`${API_BASE}/api/rooms`).then((res) => (res.ok ? res.json() : []), () => []);
-  const rooms = Array.isArray(list) ? list : [];
+  let rooms = Array.isArray(list) ? list : [];
   const code = ctx.focusCode;
-  if (!code || rooms.some((r) => r.code === code && r.featured && r.featured.length)) return rooms;
-  const base = `${API_BASE}/api/rooms/${encodeURIComponent(code)}`;
-  const [info, records] = await Promise.all([
-    fetch(base).then((res) => (res.ok ? res.json() : null), () => null),
-    fetch(`${base}/records`).then((res) => (res.ok ? res.json() : null), () => null),
-  ]);
-  if (!info || !Array.isArray(records) || !records.length) return rooms;
-  const featured = records.filter((r) => r.featured);
-  const works = (featured.length ? featured : records).slice(0, 12)
-    .map(({ id, cat, title, photo_url }) => ({ id, cat, title, photo_url }));
-  return [{ code, name: info.name, avatar_url: info.avatar_url, featured: works }, ...rooms.filter((r) => r.code !== code)];
+  if (code && !rooms.some((r) => r.code === code)) {
+    const info = await fetch(`${API_BASE}/api/rooms/${encodeURIComponent(code)}`)
+      .then((res) => (res.ok ? res.json() : null), () => null);
+    if (info) rooms = [{ code, name: info.name, avatar_url: info.avatar_url }, ...rooms];
+  }
+  const picked = pickNeighbors(rooms, ctx.mine.code, code);
+  const filled = await Promise.all(picked.map(async (r) => ({ ...r, records: await neighborRecords(r.code) })));
+  return filled.filter((r) => Array.isArray(r.records) && r.records.length);
 });
 
-// 이웃 방 기록 전체(표지를 눌러 감상·별점을 보여 줄 때) — 방마다 한 번만 받음.
+// 이웃 방 기록 전체 — 방마다 한 번만 받음.
 const neighborRecordCache = new Map();
 export function neighborRecords(code) {
   if (!neighborRecordCache.has(code)) {

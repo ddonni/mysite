@@ -4,7 +4,7 @@
 import { SHELF, AISLE, layoutArchive, aisleEnd } from './layout.js';
 import { buildCovers } from './covers.js';
 import { glowTexture } from './glow.js';
-import { buildNeighbors, neighborsEndZ } from './neighbors.js';
+import { buildNeighbors } from './neighbors.js';
 import { shelfKit, buildTower, buildDistantTower, socketTexture } from './shelves.js';
 import { buildEasel } from '../scene/furniture/easel.js';
 
@@ -83,7 +83,7 @@ function buildMotes(endZ) {
   }));
 }
 
-// neighborRooms: 바깥 이웃 서가에 놓을 공개 방들(neighbors.js의 pickNeighbors로 고른 것).
+// neighborRooms: 바깥 이웃 서가에 놓을 공개 방들(기록까지 받은 것 — roomContext.js의 publicRooms).
 export function buildArchiveScene(records, neighborRooms = []) {
   const { towers, slots, filled } = layoutArchive(records);
   const endZ = aisleEnd(towers);
@@ -98,8 +98,6 @@ export function buildArchiveScene(records, neighborRooms = []) {
   key.position.set(3, 10, 6);
   scene.add(key);
 
-  scene.add(buildFloor(endZ), buildPath(endZ));
-
   const kit = shelfKit();
   const towerGroups = towers.map((t) => buildTower(kit, t));
   towerGroups.forEach((g) => scene.add(g));
@@ -107,7 +105,10 @@ export function buildArchiveScene(records, neighborRooms = []) {
   // 바로 바깥 줄은 이웃 서가(공개된 다른 방들), 그 너머와 더 바깥 줄은 안개 속 장식 탑.
   const neighbors = buildNeighbors(neighborRooms, scene.fog);
   scene.add(neighbors.group);
-  const nEnd = neighborsEndZ(neighbors.count);
+  const nEnd = neighbors.endZ;
+  // 이웃 서가가 내 통로보다 길면(기록이 많은 이웃) 바닥·카메라가 갈 수 있는 곳도 거기까지.
+  const worldEndZ = Math.min(endZ, nEnd);
+  scene.add(buildFloor(worldEndZ), buildPath(endZ));
   const sockets = socketTexture();
   const farZ = Math.min(endZ, nEnd) - 14;
   for (let z = 2; z > farZ; z -= AISLE.step * 0.62) {
@@ -186,6 +187,7 @@ export function buildArchiveScene(records, neighborRooms = []) {
     slots,
     filled,
     endZ,
+    worldEndZ,
     covers,
     neighbors,
     easel,

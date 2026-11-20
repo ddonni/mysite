@@ -15,8 +15,7 @@ import { buildArchiveScene } from './archive/scene.js';
 import { SHELF } from './archive/layout.js';
 import { createOrbitControls } from './archive/controls.js';
 import { createHeldCover } from './archive/heldCover.js';
-import { pickNeighbors } from './archive/neighbors.js';
-import { roomContext, roomInfo, roomRecords, roomApi, pageUrl, publicRooms, neighborRecords } from './roomContext.js';
+import { roomContext, roomInfo, roomRecords, roomApi, pageUrl, publicRooms } from './roomContext.js';
 import { initRoomChrome } from './roomChrome.js';
 import { webglAvailable } from './webgl.js';
 import { initHelpDialog } from './helpDialog.js';
@@ -63,7 +62,7 @@ function boot() {
         return;
       }
       if (!Array.isArray(records)) throw new Error('records unavailable');
-      start(ctx, records, pickNeighbors(rooms, ctx.mine.code, ctx.focusCode));
+      start(ctx, records, rooms);
     })
     .finally(stopWatch);
 }
@@ -171,13 +170,6 @@ function start(ctx, records, neighborRooms) {
     held.open(rec, item.set.positionOf(item.k), item.set.angleOf(item.k), item.set.colorOf(item.k), wide);
     item.set.hide(item.k);
     fillPanel(rec, item.room);
-    // 이웃 서가엔 제목·표지만 있어서, 그 방 기록을 받아 감상·별점·만든 사람을 채움(방마다 한 번).
-    if (item.room) {
-      neighborRecords(item.room.code).then((list) => {
-        const full = Array.isArray(list) && list.find((x) => x.id === rec.id);
-        if (full && current === item) fillPanel(full, item.room);
-      });
-    }
     panel.hidden = false;
     document.body.classList.add('memory-open');
     requestAnimationFrame(() => panel.classList.add('show'));
@@ -285,7 +277,7 @@ function start(ctx, records, neighborRooms) {
     pickables: archive.pickables,
     itemOf,
     easel: archive.easel,
-    endZ: archive.endZ,
+    endZ: archive.worldEndZ,
     onPick: (item) => { hideEaselCard(); openMemory(item); },
     onPlate: (room) => {
       closeMemory();
