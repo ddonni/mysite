@@ -1,5 +1,7 @@
-import { escapeHtml } from '../../shared/dom.js';
-import { catLabel, coverHtml, featureLabel, featureButtonLabel, ratingStars, withEuro } from './itemFormat.js';
+import { escapeHtml, escapeAttr } from '../../shared/dom.js';
+import { photoSrc } from '../../shared/photoSrc.js';
+import { catLabel, coverHtml, displayTitle, featureLabel, featureButtonLabel, koreanDate, ratingStars, typeText, withEuro } from './itemFormat.js';
+import { clothesSummary, colorSwatch } from '../modal/clothesFields.js';
 import { detailSummary } from '../modal/detailFields.js';
 
 // 뒷면의 세부 기록 — 요소별 별점("스토리 4.5")과 장르 태그. 없으면 빈 문자열.
@@ -9,6 +11,32 @@ export function detailHtml(it) {
   const scores = d.scores.map(([label, v]) => `<span class="aspect"><span>${escapeHtml(label)}</span><b>★${v % 1 ? v.toFixed(1) : v}</b></span>`).join('');
   const genres = d.genres.map((g) => `<span class="genre">${escapeHtml(g)}</span>`).join('');
   return `<div class="back-details">${scores ? `<div class="aspects">${scores}</div>` : ''}${genres ? `<div class="genres">${genres}</div>` : ''}</div>`;
+}
+
+// 옷 카드 뒷면 — 종류·색·계절·핏·톤·소재·사이즈를 작은 칸으로 흘려 놓고, 구매일, 특징 태그. 카드가 작아서
+// 표로 늘어놓으면 버튼이 밀려나서(칸이 많으면 이 영역 안에서 스크롤). 아무것도 안 썼으면 안내 한 줄.
+export function clothesBackHtml(it) {
+  const { rows, tags } = clothesSummary(it.attrs);
+  const facts = rows.filter(([k]) => k !== '구매일');
+  const bought = rows.find(([k]) => k === '구매일');
+  if (!rows.length && !tags.length) return '<div class="q empty-memo">아직 자세히 적지 않았어요.</div>';
+  const chips = facts.map(([k, v]) => `<span class="fact" title="${k}">${k === '색' ? colorSwatch(v) : ''}${escapeHtml(v)}</span>`).join('');
+  const tagHtml = tags.map((t) => `<span class="genre">#${escapeHtml(t)}</span>`).join('');
+  return `<div class="clothes-back">
+          ${chips ? `<div class="facts">${chips}</div>` : ''}
+          ${bought ? `<div class="bought">${escapeHtml(bought[1])} 구매</div>` : ''}
+          ${tagHtml ? `<div class="back-details"><div class="genres">${tagHtml}</div></div>` : ''}
+        </div>`;
+}
+
+// 일기 카드 뒷면 — 본문 전체(길면 그 안에서 스크롤).
+// 사진이 두 장 이상이면 위에 작은 사진 줄(4장까지 + 남은 수) — 표지만 보고는 여러 장인 줄 몰라서.
+export function diaryBackHtml(it) {
+  const photos = it.photos || [];
+  const strip = photos.length > 1
+    ? `<div class="diary-strip">${photos.slice(0, 4).map((u) => `<img src="${escapeAttr(photoSrc(u))}" alt="" loading="lazy" crossorigin="anonymous">`).join('')}${photos.length > 4 ? `<span>+${photos.length - 4}</span>` : ''}</div>`
+    : '';
+  return `${strip}<div class="diary-body">${escapeHtml(it.memo || '')}</div>`;
 }
 
 // 기록 하나 = 카드 한 장(css/cards.css). 앞면은 표지 + 종류·별점·제목, 누르면 뒤집혀서
@@ -82,6 +110,22 @@ function featureStarHtml(it) {
   return `<button type="button" class="feat-btn" data-act="feature" aria-pressed="${!!it.featured}" aria-label="${label}" title="${label}">${it.featured ? '★' : '☆'}</button>`;
 }
 
+function backBody(it, stars) {
+  if (it.cat === 'clothes') return clothesBackHtml(it);
+  if (it.cat === 'diary') return diaryBackHtml(it);
+  return `
+        <div class="q${it.memo ? '' : ' empty-memo'}">${it.memo ? `“${escapeHtml(it.memo)}”` : '아직 감상을 적지 않았어요.'}</div>
+        ${stars}
+        ${detailHtml(it)}`;
+}
+
+// 뒷면 맨 위 줄 오른쪽 — 작품은 인생작 별(내 기록만), 일기는 날짜(옷·일기는 인생작이 없음).
+function backHeadEnd(it, readOnly) {
+  if (it.cat === 'diary') return `<span class="back-date">${escapeHtml(koreanDate(it.date))}</span>`;
+  if (it.cat === 'clothes' || readOnly) return '';
+  return featureStarHtml(it);
+}
+
 function cardHtml(it, { onListen, readOnly }) {
   const rare = !!it.featured;
   const type = catLabel(it.cat);
@@ -91,16 +135,14 @@ function cardHtml(it, { onListen, readOnly }) {
       <div class="face front">
         ${coverHtml(it)}
         <div class="info">
-          <div class="row"><span class="type">${type}</span><span class="row-end">${stars}${likeHtml(it, readOnly)}</span></div>
-          <div class="card-title">${escapeHtml(it.title)}</div>
+          <div class="row"><span class="type">${escapeHtml(typeText(it))}</span><span class="row-end">${stars}${likeHtml(it, readOnly)}</span></div>
+          <div class="card-title">${escapeHtml(displayTitle(it))}</div>
         </div>
       </div>
       <div class="face back">
-        <div class="back-head"><span class="type">${type}${rare ? ` · ${featureLabel(it.cat)}` : ''}</span>${readOnly ? '' : featureStarHtml(it)}</div>
-        <div class="q${it.memo ? '' : ' empty-memo'}">${it.memo ? `“${escapeHtml(it.memo)}”` : '아직 감상을 적지 않았어요.'}</div>
-        ${stars}
-        ${detailHtml(it)}
-        ${it.creator ? `<div class="back-creator">${escapeHtml(it.creator)}</div>` : ''}
+        <div class="back-head"><span class="type">${type}${rare ? ` · ${featureLabel(it.cat)}` : ''}</span>${backHeadEnd(it, readOnly)}</div>
+        ${backBody(it, stars)}
+        ${it.creator && it.cat !== 'diary' ? `<div class="back-creator">${escapeHtml(it.creator)}</div>` : ''}
         <div class="back-actions">${backButtons(it, { onListen, readOnly })}</div>
       </div>
     </div>`;
@@ -135,7 +177,7 @@ function makeSlot(it, { onEdit, onDelete, onFeature, onListen, onLike, readOnly 
   card.tabIndex = 0;
   card.setAttribute('role', 'button');
   card.setAttribute('aria-pressed', 'false');
-  card.setAttribute('aria-label', `${it.title} 기록 뒤집기`);
+  card.setAttribute('aria-label', `${displayTitle(it)} 기록 뒤집기`);
   card.innerHTML = cardHtml(it, { onListen, readOnly });
   // 인생작의 홀로그램 빛은 표지 위에만(아래 글자 칸엔 안 덮이게).
   if (it.featured) card.querySelector('.cover').insertAdjacentHTML('beforeend', '<div class="foil" aria-hidden="true"></div>');

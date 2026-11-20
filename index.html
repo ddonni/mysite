@@ -24,7 +24,7 @@
 <link rel="stylesheet" href="css/inapp.css">
 <link rel="stylesheet" href="css/visibility.css">
 <!-- 카드 시안(흰 바탕·Orbit·각진 카드) — library.css 위에 덮어씀. library.css는 둘러보기도 같이 써서 그대로 둠 -->
-<link rel="stylesheet" href="css/cards.css?v=15">
+<link rel="stylesheet" href="css/cards.css?v=16">
 </head>
 <body class="cards">
 
@@ -167,7 +167,7 @@
            어려웠음. -->
       <div class="title-group">
         <div class="field title-field">
-          <label for="fTitle">제목</label>
+          <label for="fTitle" id="titleLabel">제목</label>
           <input type="text" id="fTitle" autocomplete="off" placeholder="제목을 입력해 보세요">
         </div>
         <div class="field creator-field">
@@ -184,7 +184,7 @@
         <label class="progress-toggle"><input type="checkbox" id="fProgress"><span class="switch" aria-hidden="true"></span><span id="progressLabel">아직 보는 중이에요</span></label>
       </div>
 
-      <div class="field">
+      <div class="field" id="starField">
         <label>별점 (선택)</label>
         <div class="stars" id="starPicker"></div>
       </div>
@@ -200,18 +200,25 @@
         <div class="field-error" id="listenError" style="display:none;">유튜브 링크만 넣을 수 있어요.</div>
       </div>
 
-      <div class="field">
-        <label>사진 (선택)</label>
+      <div class="field" id="photoField">
+        <label id="photoLabel">사진 (선택)</label>
         <div class="photo-drop" id="photoDrop">
           <span id="photoDropText">드래그하거나 클릭해서 선택</span>
           <input type="file" id="fPhoto" accept="image/*">
         </div>
         <img id="photoPreview">
         <span class="remove-photo" id="removePhoto">사진 지우기</span>
+        <div class="field-error" id="photoError" style="display:none;">옷 사진을 넣어 주세요.</div>
       </div>
 
-      <div class="field">
-        <label>한 줄 감상 (선택)</label>
+      <!-- 옷만 — 종류·색·계절·핏·톤·태그·소재·사이즈·구매일(js/library/modal/clothesFields.js) -->
+      <div class="field clothes-field" id="clothesField" hidden>
+        <label>자세히 (선택)</label>
+        <div class="detail-body clothes-body" id="clothesBody"></div>
+      </div>
+
+      <div class="field" id="memoField">
+        <label for="fMemo" id="memoLabel">한 줄 감상 (선택)</label>
         <textarea id="fMemo" placeholder="어땠는지 한 줄로 남겨보세요"></textarea>
       </div>
 

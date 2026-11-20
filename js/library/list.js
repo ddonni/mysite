@@ -6,7 +6,7 @@
 // 뿌리기만 함. 뒷면의 "수정"/"삭제"/인생작 별을 눌렀을 때 실제로 무슨
 // 일이 일어날지는 createList를 부른 쪽(main.js)이 onEdit/onDelete/onFeature
 // 콜백으로 정해줌.
-import { CATS } from './records.js';
+import { CATS, WORK_CATS, isPrivateCat } from './records.js';
 import { renderCards, deal } from './list/cardsView.js';
 import { renderCompact, createCardDialog } from './list/compactViews.js';
 
@@ -47,12 +47,26 @@ export function sortForGrid(list) {
     || (b.id || 0) - (a.id || 0));
 }
 
+// 칩 — 전체 · 작품만 · 책 · 애니 · 영화·시리즈 · 음악 · 옷 · 일기(2026-11-20). "전체"는 옷·일기까지 날짜순으로
+// 섞어서, "작품만"은 책·애니·영화·음악만. 남의 기록엔 옷·일기가 안 오니(백엔드가 뺌) 작품만·옷·일기 칩도 없음.
+export const WORKS_TAB = 'works';
+export function tabsFor(readOnly) {
+  if (readOnly) return [{ key: 'all', label: '전체' }, ...WORK_CATS];
+  return [{ key: 'all', label: '전체' }, { key: WORKS_TAB, label: '작품만' }, ...CATS];
+}
+export function itemsForTab(items, tab) {
+  if (tab === 'all') return items;
+  if (tab === WORKS_TAB) return items.filter((i) => !isPrivateCat(i.cat));
+  return items.filter((i) => i.cat === tab);
+}
+
 // onAdd(cat): 내 기록이 비어 있을 때 가운데 "+ 기록" 버튼을 누르면 — 새 기록 창을 엶.
 export function createList({ onEdit, onDelete, onFeature, onListen, onLike, onTabChange, onAdd, readOnly, initialTab }) {
   const tabsEl = document.getElementById('tabs');
   const listEl = document.getElementById('list');
 
-  let activeTab = CATS.some((c) => c.key === initialTab) ? initialTab : 'all';
+  const tabs = tabsFor(readOnly);
+  let activeTab = tabs.some((c) => c.key === initialTab) ? initialTab : 'all';
   let currentItems = [];
   let shownIds = null; // 지금 격자에 있는 카드 id — 다시 그릴 때 새로 생긴 카드만 나눠주려고
   let shownCount = 0; // 지금 칩 오른쪽에 보이는 개수 — 기록이 늘거나 줄었을 때 거기서부터 셈
@@ -62,7 +76,7 @@ export function createList({ onEdit, onDelete, onFeature, onListen, onLike, onTa
   // 칩 바꾸기 — 이 페이지의 칩을 누르거나, 상단 메뉴의 책·애니·영화·음악을 눌렀을 때
   // (main.js가 페이지를 다시 불러오지 않고 이걸 부름).
   function selectTab(key) {
-    if (activeTab === key || !(key === 'all' || CATS.some((c) => c.key === key))) return;
+    if (activeTab === key || !tabs.some((c) => c.key === key)) return;
     activeTab = key;
     // 새로고침하거나 주소를 공유해도 같은 칩이 열리게 주소에도 남김.
     const url = new URL(location.href);
@@ -74,13 +88,13 @@ export function createList({ onEdit, onDelete, onFeature, onListen, onLike, onTa
   }
 
   function renderTabs() {
-    const all = [{ key: 'all', label: '전체' }, ...CATS];
     tabsEl.innerHTML = '';
-    all.forEach((t) => {
+    tabs.forEach((t) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'chip';
       btn.dataset.cat = t.key;
+      if (t.private) btn.classList.add('private'); // 나만 보는 칩(css/cards.css — 작은 자물쇠)
       btn.setAttribute('aria-pressed', String(t.key === activeTab));
       btn.textContent = t.label;
       // 지금 칩에만 그 칩의 기록 개수(renderBody가 1부터 세며 채움).
@@ -93,7 +107,7 @@ export function createList({ onEdit, onDelete, onFeature, onListen, onLike, onTa
   // dealAll: 카드 전부를 덱에서 나눠줌(처음 열 때·칩을 바꿀 때). 아니면(추가/수정 뒤
   // 다시 그릴 때) 새로 생긴 카드만.
   function renderBody({ dealAll = false } = {}) {
-    const list = sortForGrid(activeTab === 'all' ? currentItems : currentItems.filter((i) => i.cat === activeTab));
+    const list = sortForGrid(itemsForTab(currentItems, activeTab));
     const emptyText = readOnly ? EMPTY_READONLY : activeTab === 'all' ? EMPTY_ALL : EMPTY_CAT;
     listEl.dataset.view = view;
     // 촘촘히·목록은 덱에서 나눠주는 효과 없이 바로(수백 개를 한눈에 보는 게 목적이라).

@@ -18,4 +18,5 @@ export const CREATOR_FIELD = {
   anime: { label: '감독 / 제작사' },
   movie: { label: '감독' },
   music: { label: '가수' },
+  clothes: { label: '브랜드' }, // 옷은 만든 사람 칸에 브랜드(일기는 칸을 숨김)
 };

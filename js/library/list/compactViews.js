@@ -4,27 +4,34 @@
 // 인생작·공감·듣기를 카드 보기와 똑같이 씀(createCardDialog).
 import { escapeHtml, escapeAttr } from '../../shared/dom.js';
 import { photoSrc } from '../../shared/photoSrc.js';
-import { catLabel, catIconHtml, featureLabel, progressLabel, ratingStars } from './itemFormat.js';
+import { catLabel, catIconHtml, displayTitle, featureLabel, progressLabel, ratingStars } from './itemFormat.js';
 import { renderCards } from './cardsView.js';
 
 function coverImg(it) {
   return it.photo_url
     ? `<img src="${escapeAttr(photoSrc(it.photo_url))}" alt="" loading="lazy" crossorigin="anonymous">`
-    : `<span class="noimg" aria-hidden="true">${escapeHtml((it.title || '').slice(0, 1))}</span>`;
+    : `<span class="noimg" aria-hidden="true">${escapeHtml(displayTitle(it).slice(0, 1))}</span>`;
 }
 
 const inProgress = (it) => it.in_progress && it.cat !== 'music';
 
+// 목록 한 줄의 둘째 줄 — 작품은 만든 사람, 옷은 브랜드 · 종류, 일기는 본문 앞부분.
+function subText(it) {
+  if (it.cat === 'clothes') return [it.creator, it.attrs && it.attrs.kind].filter(Boolean).join(' · ');
+  if (it.cat === 'diary') return (it.memo || '').replace(/\s+/g, ' ').slice(0, 60);
+  return it.creator || '';
+}
+
 // 촘촘히 — 표지만. 인생작은 금테, 보는 중은 초록 점, 오른쪽 위 작은 카테고리 아이콘. 제목은 마우스를 올리면.
 function denseHtml(it) {
-  const label = `${it.title}${it.creator ? ` — ${it.creator}` : ''}`;
+  const label = `${displayTitle(it)}${it.creator ? ` — ${it.creator}` : ''}`;
   return `
     <button type="button" class="dense-item${it.featured ? ' rare' : ''}" data-id="${it.id}" data-cat="${it.cat}"
       title="${escapeAttr(label)}" aria-label="${escapeAttr(`${catLabel(it.cat)} ${label}`)}">
       ${coverImg(it)}
       ${catIconHtml(it.cat)}
       ${inProgress(it) ? `<span class="dense-progress" aria-label="${progressLabel(it.cat)}"></span>` : ''}
-      <span class="dense-title" aria-hidden="true">${escapeHtml(it.title)}</span>
+      <span class="dense-title" aria-hidden="true">${escapeHtml(displayTitle(it))}</span>
     </button>`;
 }
 
@@ -38,8 +45,8 @@ function rowHtml(it) {
     <button type="button" class="row-item" data-id="${it.id}" data-cat="${it.cat}">
       <span class="row-cover">${coverImg(it)}</span>
       <span class="row-main">
-        <span class="row-title">${escapeHtml(it.title)}${tags}</span>
-        <span class="row-sub">${it.creator ? escapeHtml(it.creator) : ''}</span>
+        <span class="row-title">${escapeHtml(displayTitle(it))}${tags}</span>
+        <span class="row-sub">${escapeHtml(subText(it))}</span>
       </span>
       <span class="row-cat"><i class="dot"></i>${catLabel(it.cat)}</span>
       <span class="row-rating">${it.rating ? ratingStars(it.rating) : ''}</span>

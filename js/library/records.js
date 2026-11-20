@@ -5,14 +5,19 @@
 // 되고, 반대로 API가 바뀌어도 화면 쪽 코드는 안 건드려도 됨.
 import { API_BASE } from '../shared/config.js';
 
-// 기록을 분류하는 세 카테고리. key는 서버로 보낼 때 쓰는 값, label은
-// 화면에 보여줄 한글.
+// 기록을 분류하는 카테고리. key는 서버로 보낼 때 쓰는 값, label은 화면에 보여줄 한글.
+// 옷·일기(2026-11-20)는 private — 방 주인만 봄(백엔드가 토큰이 맞을 때만 목록에 넣음, schemas.PRIVATE_CATS).
 export const CATS = [
   { key: 'book', label: '책' },
   { key: 'anime', label: '애니' },
   { key: 'movie', label: '영화·시리즈' },
   { key: 'music', label: '음악' },
+  { key: 'clothes', label: '옷', private: true },
+  { key: 'diary', label: '일기', private: true },
 ];
+// 작품(책·애니·영화·음악)만 — 티어리스트·3D 방·검색은 이것만 다룸.
+export const WORK_CATS = CATS.filter((c) => !c.private);
+export const isPrivateCat = (cat) => CATS.some((c) => c.key === cat && c.private);
 
 // 이 방 코드를 기준으로 요청 경로를 만들고, 쓰기 요청엔 소유자 토큰을
 // 헤더로 실어 보내는 작은 헬퍼들. main.js가 모듈 로드 시점에 한 번
@@ -39,9 +44,11 @@ function authHeaders() {
 }
 
 // 전체 기록 목록을 가져옴.
-// 보는 사람 헤더를 같이 보내서 카드마다 내가 공감했는지(liked)도 받음.
+// 보는 사람 헤더를 같이 보내서 카드마다 내가 공감했는지(liked)도 받음. 내 기록이면 토큰도 실어서
+// 옷·일기까지 받음(남의 기록이면 setRoom에 토큰이 없어서 작품만 옴).
 export function fetchRecords() {
-  return fetch(API_BASE + '/api/rooms/' + roomCode + '/records', { headers: actorHeaders() }).then((res) => {
+  const headers = Object.assign(actorHeaders(), authHeaders());
+  return fetch(API_BASE + '/api/rooms/' + roomCode + '/records', { headers }).then((res) => {
     // res.ok를 안 보고 바로 res.json()을 하면, 방을 못 찾는 404 같은
     // 에러 응답의 바디({"detail":"room not found"})를 정상 목록인 척
     // 그대로 넘겨버림 — list.js가 그걸 배열로 착각하고 .length/.filter를

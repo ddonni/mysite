@@ -7,6 +7,27 @@ export function catLabel(key) {
   return cat ? cat.label : '';
 }
 
+// "2026-11-19" → "11월 19일"(올해가 아니면 앞에 연도).
+export function koreanDate(iso, now = new Date()) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+  if (!m) return '';
+  const md = `${Number(m[2])}월 ${Number(m[3])}일`;
+  return Number(m[1]) === now.getFullYear() ? md : `${m[1]}년 ${md}`;
+}
+
+// 카드·목록에 보이는 이름 — 일기는 제목이 없어도 되니 그땐 "11월 19일의 일기".
+export function displayTitle(it) {
+  if (it.cat === 'diary' && !(it.title || '').trim()) return `${koreanDate(it.date)}의 일기`;
+  return it.title || '';
+}
+
+// 카드 앞면 종류 줄 — 옷은 "옷 · 상의", 일기는 "일기 · 11월 19일", 작품은 카테고리 이름.
+export function typeText(it) {
+  if (it.cat === 'clothes' && it.attrs && it.attrs.kind) return `${catLabel(it.cat)} · ${it.attrs.kind}`;
+  if (it.cat === 'diary' && (it.title || '').trim()) return `${catLabel(it.cat)} · ${koreanDate(it.date)}`;
+  return catLabel(it.cat);
+}
+
 // 카드 아래 한 줄짜리 별점 — 별점을 안 매긴(0) 기록은 아무것도 안 보임.
 export function ratingText(r) {
   return r ? '★ ' + r.toFixed(1) : '';
@@ -78,6 +99,18 @@ const CAT_ICONS = {
     + '<path d="M11.5 14.2l.7 1.4 1.5.2-1.1 1 .3 1.5-1.4-.7-1.4.7.3-1.5-1.1-1 1.5-.2z" fill="#FFD25A"/>'
     + '<path d="M13.5 3v6.5l1.3-1.1 1.3 1.1V3" fill="#FFD25A" stroke="#7A4A36" stroke-width="1"/></svg>',
   anime: '<svg viewBox="0 0 24 24"><text x="12" y="19" text-anchor="middle" font-size="19" font-weight="900" font-family="Arial Black, Arial, sans-serif" fill="#F06292" stroke="#B83B6A" stroke-width=".8">A</text></svg>',
+  // 옷 = 옷걸이에 걸린 민트색 티셔츠, 일기 = 자물쇠 달린 보라 일기장(나만 보는 기록이라).
+  clothes: '<svg viewBox="0 0 24 24" stroke-linejoin="round">'
+    + '<path d="M12 2.6a1.6 1.6 0 1 1 1.6 1.6c-.9 0-1.6.6-1.6 1.4" fill="none" stroke="#5B6470" stroke-width="1.3" stroke-linecap="round"/>'
+    + '<path d="M8.6 6.3 12 5.6l3.4.7 5 2.6-1.8 4-2.4-1V21H7.8v-9.1l-2.4 1-1.8-4z" fill="#7FD1B9" stroke="#2E7D67" stroke-width="1.3"/>'
+    + '<path d="M9.6 6.1c.4 1.3 1.3 2 2.4 2s2-.7 2.4-2" fill="none" stroke="#2E7D67" stroke-width="1.2"/>'
+    + '<path d="M7.8 15.5h8.4" stroke="#FFFFFF" stroke-width="1.2" opacity=".7"/></svg>',
+  diary: '<svg viewBox="0 0 24 24" stroke-linejoin="round">'
+    + '<rect x="4.5" y="2.8" width="14" height="18.4" rx="2" fill="#B39DDB" stroke="#5E4A8C" stroke-width="1.3"/>'
+    + '<path d="M7.5 2.8v18.4" stroke="#5E4A8C" stroke-width="1.1"/>'
+    + '<rect x="9.8" y="6.4" width="6.4" height="3" rx=".7" fill="#F4EEFF"/>'
+    + '<rect x="16.6" y="10.6" width="4" height="4.6" rx="1" fill="#F2C14E" stroke="#5E4A8C" stroke-width="1.1"/>'
+    + '<path d="M17.4 10.6V9.4a1.2 1.2 0 0 1 2.4 0v1.2" fill="none" stroke="#5E4A8C" stroke-width="1.1"/></svg>',
   movie: '<svg viewBox="0 0 24 24" stroke-linejoin="round">'
     + '<rect x="3" y="10" width="18" height="11" rx="2" fill="#3F4A5E" stroke="#232834" stroke-width="1.3"/>'
     + '<path d="M6 14h8M6 17h5" stroke="#FFFFFF" stroke-width="1.3" stroke-linecap="round" opacity=".75"/>'
@@ -103,6 +136,15 @@ export function coverHtml(it) {
     it.in_progress && it.cat !== 'music' ? `<span class="badge progress">${progressLabel(it.cat)}</span>` : '',
   ].join('');
   const badge = (tags ? `<span class="badges">${tags}</span>` : '') + catIconHtml(it.cat);
+  // 사진 없는 일기 — 줄 공책에 본문 앞부분(문단 사이 빈 줄은 접어서 — 표지가 빈 줄로 채워지지 않게).
+  if (it.cat === 'diary' && !it.photo_url) {
+    return `
+    <div class="cover diary-note">
+      <span class="dn-date">${escapeHtml(koreanDate(it.date))}</span>
+      <span class="dn-text">${escapeHtml((it.memo || '').replace(/\n\s*\n+/g, '\n').slice(0, 220))}</span>
+      ${badge}
+    </div>`;
+  }
   if (it.photo_url) {
     const src = escapeAttr(photoSrc(it.photo_url));
     // crossorigin: 예전 3D 방이 같은 사진을 CORS로 받아 WebGL 텍스처로 썼고, CORS 없이
@@ -116,7 +158,7 @@ export function coverHtml(it) {
   return `
     <div class="cover title-card">
       <span class="tc-cat">${catLabel(it.cat)}</span>
-      <span class="tc-title">${escapeHtml(it.title)}</span>
+      <span class="tc-title">${escapeHtml(displayTitle(it))}</span>
       ${it.creator ? `<span class="tc-creator">${escapeHtml(it.creator)}</span>` : ''}
       ${badge}
     </div>`;

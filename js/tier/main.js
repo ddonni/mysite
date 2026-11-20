@@ -12,7 +12,8 @@ import { roomLink, roomTitle } from '../shared/room.js';
 import { API_BASE } from '../shared/config.js';
 import { escapeHtml, escapeAttr } from '../shared/dom.js';
 import { photoSrc } from '../shared/photoSrc.js';
-import { CATS, fetchRecords, setRoom } from '../library/records.js';
+// 작품만 — 옷·일기는 티어리스트에 안 올림(별점이 없는 기록이라).
+import { WORK_CATS as CATS, fetchRecords, isPrivateCat, setRoom } from '../library/records.js';
 import { catIconHtml } from '../library/list/itemFormat.js';
 import { TIERS, UNPLACED, buildRows, moveRecord } from './board.js';
 
@@ -233,7 +234,7 @@ function renderTools() {
 
 function load() {
   return fetchRecords()
-    .then((items) => { all = items; renderChips(); render(); })
+    .then((items) => { all = items.filter((r) => !isPrivateCat(r.cat)); renderChips(); render(); })
     .catch(() => { boardEl.innerHTML = '<div class="empty">기록을 불러오지 못했어요. 새로고침해 보세요.</div>'; });
 }
 

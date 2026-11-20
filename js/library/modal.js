@@ -8,9 +8,15 @@
 // 입력 칸으로 넘어가 별점·감상을 쓰고 저장하면 다시 검색 화면(결과가 남아 있어 이어서 넣음).
 // 결과 줄의 "+ 넣기"도 같음. 검색에 없으면 "+ 직접 쓰기"로 빈 입력 칸.
 // 수정은 입력 칸만.
+// 옷·일기(2026-11-20, 주인만 보는 기록)는 검색이 없음:
+//   - 옷: 바로 입력 칸 — 이름(제목 칸)·사진이 필수, 브랜드(만든 사람 칸), 그 밖의 칸은 modal/clothesFields.js.
+//     감상·별점 없음.
+//   - 일기: 이 창이 아니라 블로그처럼 쓰는 따로 된 페이지(diary.html — 사용자 요청 "쓸 때만 블로그처럼")로 보냄.
+//     "일기" 탭·새 일기·일기 수정 모두(goDiary).
 //
 // 실제 서버 저장은 records.js의 uploadPhoto/saveRecord/deleteRecord를 불러 씀.
-import { CATS, uploadPhoto, saveRecord, deleteRecord, fetchScreenCreator, fetchMusicListen } from './records.js';
+import { CATS, isPrivateCat, uploadPhoto, saveRecord, deleteRecord, fetchScreenCreator, fetchMusicListen } from './records.js';
+import { createClothesFields } from './modal/clothesFields.js';
 import { normalizeYouTube, getPlayer } from '../shared/youtube.js';
 import { CREATOR_FIELD, TITLE_PLACEHOLDER } from './modal/categoryFields.js';
 import { createStarPicker } from './modal/starPicker.js';
@@ -23,7 +29,18 @@ import { fitToViewport } from './modal/fitViewport.js';
 
 // onSaved(): 기록을 저장·삭제한 뒤(목록을 다시 불러오라고). getItems(): 지금 방의 기록 —
 // 검색 결과에서 이미 기록한 걸 표시하려고.
-export function createModal({ onSaved, getItems = () => [] }) {
+// 일기 쓰기 페이지 주소 — id가 있으면 그 일기 고치기(createModal의 navigate로 이동 — 테스트가 가로챔).
+export function diaryUrl(id) {
+  return id ? `diary?id=${id}` : 'diary';
+}
+
+// 카테고리마다 칸 이름 — 작품은 예전 그대로, 옷·일기는 그 기록에 맞는 말로.
+export function fieldLabels(cat) {
+  if (cat === 'clothes') return { title: '이름', titleError: '옷 이름을 적어 주세요.', placeholder: '예: 옥스퍼드 셔츠', photo: '사진', memo: '' };
+  return { title: '제목', titleError: '제목을 적어 주세요.', placeholder: TITLE_PLACEHOLDER[cat] || TITLE_PLACEHOLDER.book, photo: '사진 (선택)', memo: '한 줄 감상 (선택)' };
+}
+
+export function createModal({ onSaved, getItems = () => [], navigate = (url) => { location.href = url; } }) {
   const overlay = document.getElementById('overlay');
   const catTabsEl = document.getElementById('catTabs');
   const searchEl = document.getElementById('searchView');
@@ -36,6 +53,17 @@ export function createModal({ onSaved, getItems = () => [] }) {
   const cancelBtn = document.getElementById('cancelBtn');
   const titleError = document.getElementById('titleError');
   const modalTitle = document.getElementById('modalTitle');
+  // 옷·일기에서 바뀌거나 숨는 칸들 — 칸이 없는 화면(테스트 등)에선 그냥 안 씀.
+  const el = (id) => document.getElementById(id);
+  const titleLabel = el('titleLabel');
+  const starField = el('starField');
+  const photoLabel = el('photoLabel');
+  const photoError = el('photoError');
+  const memoField = el('memoField');
+  const memoLabel = el('memoLabel');
+  const clothesRoot = el('clothesField');
+  const clothes = clothesRoot ? createClothesFields({ rootEl: el('clothesBody') }) : null;
+
   // 음악만 보이는 유튜브 링크 칸.
   const listenField = document.getElementById('listenField');
   const fListen = document.getElementById('fListen');
@@ -95,14 +123,25 @@ export function createModal({ onSaved, getItems = () => [] }) {
   // 카테고리 탭이 바뀔 때마다 만든 사람 칸 라벨과 제목 칸 안내 글씨를 그 탭에 맞춤.
   function updateCreatorField() {
     const field = CREATOR_FIELD[currentCat] || CREATOR_FIELD.book;
+    const labels = fieldLabels(currentCat);
+    const priv = isPrivateCat(currentCat);
     // 제목만 꼭 써야 하고 나머지는 다 선택 — 만든 사람 칸에도 "(선택)"을 붙임.
     creatorLabel.textContent = `${field.label} (선택)`;
-    fTitle.placeholder = TITLE_PLACEHOLDER[currentCat] || TITLE_PLACEHOLDER.book;
+    fTitle.placeholder = labels.placeholder;
+    if (titleLabel) titleLabel.textContent = labels.title;
+    if (labels.titleError) titleError.textContent = labels.titleError;
     listenField.hidden = currentCat !== 'music';
     if (detail) detail.setCat(currentCat);
     if (progressField) {
-      progressField.hidden = currentCat === 'music';
+      progressField.hidden = currentCat === 'music' || priv;
       progressLabel.textContent = currentCat === 'book' ? '아직 읽는 중이에요' : '아직 보는 중이에요';
+    }
+    if (starField) starField.hidden = priv;
+    if (photoLabel) photoLabel.textContent = labels.photo;
+    if (clothesRoot) clothesRoot.hidden = currentCat !== 'clothes';
+    if (memoField) {
+      memoField.hidden = currentCat === 'clothes';
+      memoLabel.textContent = labels.memo;
     }
   }
 
@@ -148,8 +187,15 @@ export function createModal({ onSaved, getItems = () => [] }) {
     btn.dataset.key = cat.key;
     if (cat.key === currentCat) btn.classList.add('active');
     btn.addEventListener('click', () => {
+      if (cat.key === 'diary') { goDiary(); return; }
+      const wasPrivate = isPrivateCat(currentCat);
       selectCatTab(cat.key);
-      if (formEl.hidden) searchView.refresh();
+      if (isPrivateCat(cat.key)) {
+        // 옷은 검색이 없어서 바로 입력 칸.
+        if (formEl.hidden) openDirect();
+        else search.reset();
+      } else if (formEl.hidden) searchView.refresh();
+      else if (wasPrivate && !editingId) { clearFields(); searchView.reset(); showView(false); searchView.focus(); }
       else search.refresh();
     });
     catTabsEl.appendChild(btn);
@@ -174,6 +220,8 @@ export function createModal({ onSaved, getItems = () => [] }) {
   function clearFields() {
     touched = false;
     titleError.style.display = 'none';
+    if (photoError) photoError.style.display = 'none';
+    if (clothes) clothes.reset();
     fTitle.value = '';
     fCreator.value = '';
     fMemo.value = '';
@@ -236,6 +284,23 @@ export function createModal({ onSaved, getItems = () => [] }) {
     });
   }
 
+  // 일기는 쓰기 페이지로(쓰던 게 있으면 한 번 물음).
+  function goDiary(id) {
+    if (!formEl.hidden && touched && !confirm('작성 중인 내용이 사라져요. 일기 쓰기로 갈까요?')) return;
+    navigate(diaryUrl(id));
+  }
+
+  // 옷 새 기록 — 검색 화면 없이 빈 입력 칸(취소는 창 닫기).
+  function openDirect() {
+    clearFields();
+    editingId = null;
+    fromSearch = false;
+    modalTitle.textContent = '새 기록';
+    cancelBtn.textContent = '취소';
+    showView(true);
+    fTitle.focus();
+  }
+
   function backToSearch() {
     editingId = null;
     clearFields();
@@ -275,13 +340,20 @@ export function createModal({ onSaved, getItems = () => [] }) {
     await new Promise((r) => setTimeout(r, 0));
 
     const title = fTitle.value.trim();
-    if (!title) {
+    const memo = fMemo.value.trim();
+    // 꼭 쓸 칸 — 제목(옷은 이름), 옷은 사진도.
+    const missing = (() => {
+      if (!title) return [titleError, fTitle];
+      if (currentCat === 'clothes' && !photoPicker.getFile() && !photoPicker.getUrl()) return [photoError, null];
+      return null;
+    })();
+    [titleError, photoError].forEach((e) => { if (e) e.style.display = 'none'; });
+    if (missing) {
       saveBtn.disabled = false;
-      titleError.style.display = 'block';
-      fTitle.focus();
+      if (missing[0]) missing[0].style.display = 'block';
+      if (missing[1]) missing[1].focus();
       return;
     }
-    titleError.style.display = 'none';
 
     // 음악의 유튜브 링크 — 비었으면 없음, 쓴 게 유튜브 주소가 아니면 저장하지 않고 알려 줌.
     const listenRaw = currentCat === 'music' ? fListen.value.trim() : '';
@@ -304,11 +376,12 @@ export function createModal({ onSaved, getItems = () => [] }) {
         title,
         creator: fCreator.value.trim(),
         rating: starPicker.getValue(),
-        memo: fMemo.value.trim(),
+        memo: currentCat === 'clothes' ? '' : memo,
         photo_url,
         listen_url,
-        details: detail ? detail.getValue() : null,
-        in_progress: !!fProgress && currentCat !== 'music' && fProgress.checked,
+        details: detail && !isPrivateCat(currentCat) ? detail.getValue() : null,
+        in_progress: !!fProgress && currentCat !== 'music' && !isPrivateCat(currentCat) && fProgress.checked,
+        attrs: currentCat === 'clothes' && clothes ? clothes.getValue() : null,
       }, editingId);
 
       onSaved(); // main.js가 목록을 다시 불러와 화면에 반영함
@@ -331,11 +404,17 @@ export function createModal({ onSaved, getItems = () => [] }) {
   return {
     // cat: 처음 골라둘 카테고리 — 보고 있던 탭(음악 탭이면 음악). 전체 탭이면 책.
     openAdd(cat) {
+      if (cat === 'diary') { navigate(diaryUrl()); return; }
       lockCatTabs(false);
       editingId = null;
       fromSearch = false;
       modalTitle.textContent = '새 기록';
       selectCatTab(cat);
+      if (isPrivateCat(currentCat)) {
+        setOpen(true);
+        openDirect();
+        return;
+      }
       clearFields();
       searchView.reset();
       showView(false);
@@ -346,6 +425,7 @@ export function createModal({ onSaved, getItems = () => [] }) {
     // list.js에서 "수정하기"를 누르면 그 기록(item) 전체를 그대로
     // 넘겨받아서, 모달 폼에 기존 값을 채워 넣음.
     openEdit(item) {
+      if (item.cat === 'diary') { navigate(diaryUrl(item.id)); return; }
       titleError.style.display = 'none';
       editingId = item.id;
       fromSearch = false;
@@ -362,6 +442,8 @@ export function createModal({ onSaved, getItems = () => [] }) {
       starPicker.setValue(item.rating || 0);
       if (detail) detail.setValue(item.details || null);
       if (fProgress) fProgress.checked = !!item.in_progress;
+      if (clothes) clothes.setValue(item.attrs || null);
+      if (photoError) photoError.style.display = 'none';
       touched = false;
       showView(true);
       setOpen(true);

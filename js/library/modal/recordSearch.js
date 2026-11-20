@@ -25,7 +25,7 @@
 //     쪽만 남기고("이미 기록함" 표시는 옮겨 붙임) — 같은 줄이 두 번 보이지 않게.
 //   - 음악: 고르면 제목은 입력한 그대로 둠(대개 노래 제목이라 앨범 이름으로 덮으면
 //     틀어짐).
-import { fetchSuggestions, searchBooks, searchMusic, searchScreen, fetchScreenCreator } from '../records.js';
+import { fetchSuggestions, searchBooks, searchMusic, searchScreen, fetchScreenCreator, isPrivateCat } from '../records.js';
 import { createAutocomplete } from './autocomplete.js';
 import { findWorks } from './findWorks.js';
 import { isSearchCover } from '../../shared/photoSrc.js';
@@ -151,6 +151,7 @@ export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, p
   // 제목 칸 — 기존 기록 후보(3개까지) 뒤에 검색 화면과 같은 결과(findWorks). 같은 제목이
   // 둘 다에 있으면 검색 결과 쪽만 남기고 "이미 기록함" 표시를 옮겨 붙임.
   function titleSuggestions(cat, q, signal) {
+    if (isPrivateCat(cat)) return Promise.resolve([]); // 옷·일기는 자동 완성·검색 없음
     const own = fetchSuggestions(cat, 'title', q, signal);
     if (!searchesWeb(cat, q)) {
       record('title', signal, { failed: false, dropped: '' });
@@ -179,6 +180,7 @@ export function createRecordSearch({ fTitle, fCreator, titleList, creatorList, p
   // 고르면 칸엔 결과의 이름(예: "헤세" → "헤르만 헤세"), 표지도 채움. 책·영화·애니는
   // 제목까지, 음악은 제목을 안 채움(결과가 앨범이라 노래 제목과 다름 — 제목 칸은 사용자가 씀).
   function creatorSuggestions(cat, q, signal) {
+    if (isPrivateCat(cat)) return Promise.resolve([]);
     const own = fetchSuggestions(cat, 'creator', q, signal);
     if (!searchesWeb(cat, q)) {
       record('creator', signal, { failed: false, dropped: '' });

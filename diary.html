@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>일기 쓰기</title>
+<!-- 일기를 쓰고 고치는 페이지(2026-11-20 사용자 요청 "쓸 때만 블로그처럼"). 보는 건 첫 화면 카드에 다른 기록과
+     섞여서. 내 기록에만 쓰는 페이지라 링크 미리보기 태그는 안 둠. -->
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbit&family=Gowun+Batang&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/inapp.css">
+<link rel="stylesheet" href="css/diary.css?v=1">
+</head>
+<body class="diary-page">
+
+<header class="d-bar">
+  <a class="d-back" id="dBack" href="./" aria-label="기록으로 돌아가기">←<span>기록으로</span></a>
+  <span class="d-status" id="dStatus" aria-live="polite"></span>
+  <button type="button" class="d-save" id="dSave" disabled>저장</button>
+</header>
+
+<main class="d-paper" id="dPaper" aria-busy="true">
+  <input type="date" class="d-date" id="dDate" aria-label="날짜">
+  <input type="text" class="d-title" id="dTitle" maxlength="100" placeholder="제목 (선택)" autocomplete="off" aria-label="제목">
+
+  <!-- 사진(선택, 여러 장) — 고르기·페이지에 끌어다 놓기·붙여넣기, 첫 장이 카드 표지(js/diary/photos.js) -->
+  <section class="d-photos" aria-label="사진">
+    <div class="d-photo-grid" id="dPhotoGrid" hidden></div>
+    <div class="d-photo-row">
+      <label class="d-photo-add">+ 사진<input type="file" id="dPhotoInput" accept="image/*" multiple></label>
+      <span class="d-photo-hint">여러 장 · 끌어다 놓기 · 붙여넣기 · 첫 장이 표지</span>
+    </div>
+    <p class="d-photo-note" id="dPhotoNote" role="status" hidden></p>
+  </section>
+
+  <textarea class="d-body" id="dBody" placeholder="오늘 있었던 일, 하고 싶은 말을 적어 보세요" aria-label="일기"></textarea>
+  <div class="d-foot"><span id="dCount">0자</span><span class="d-hint">Ctrl+S로 저장 · 나만 볼 수 있어요</span></div>
+  <p class="d-error" id="dError" role="alert" hidden></p>
+</main>
+
+<!-- 사진 파일을 끌어오는 동안만 — 페이지 어디에 놓아도 들어감 -->
+<div class="d-drop" id="dDrop" hidden><span>여기에 놓으면 사진이 들어가요</span></div>
+
+<script type="module" src="js/shared/inAppBrowser.js"></script>
+<script type="module" src="js/diary/main.js"></script>
+</body>
+</html>

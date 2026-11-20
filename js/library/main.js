@@ -2,7 +2,7 @@
 // welcome.js(처음 온 사람 안내)를 만들어서 서로 연결하고, 첫 목록을 불러옴.
 // (예전엔 첫 화면이 3D 방이었고 이 화면은 library.html "기록 보관소"였음 — library.html은
 // 이제 쿼리를 들고 여기로 넘어오기만 함.)
-import { fetchRecords, deleteRecord, setFeatured, setRoom, setActor, likeRecord } from './records.js';
+import { fetchRecords, deleteRecord, setFeatured, setRoom, setActor, likeRecord, WORK_CATS } from './records.js';
 import { createList } from './list.js';
 import { createModal } from './modal.js';
 import { initWelcome } from './welcome.js';
@@ -134,7 +134,8 @@ initRoomNav({ navEl, currentPage: './', settings: true }).then((ctx) => {
   // 티어리스트 페이지로 — 지금 보는 기록(남의 기록이면 그 기록)과 칩(카테고리)을 그대로 들고 감.
   document.getElementById('tierBtn').addEventListener('click', () => {
     const tab = list.activeTab();
-    window.location.href = roomLink(tab && tab !== 'all' ? `tier?cat=${tab}` : 'tier', viewingCode, mine.code);
+    const isWork = WORK_CATS.some((c) => c.key === tab); // 전체·작품만·옷·일기면 티어리스트 전체로
+    window.location.href = roomLink(isWork ? `tier?cat=${tab}` : 'tier', viewingCode, mine.code);
   });
 
   // 보고 있던 칩의 카테고리로 새 기록 창을 엶(전체면 책).

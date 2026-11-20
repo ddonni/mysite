@@ -24,7 +24,9 @@ vi.mock('../../js/library/records.js', () => ({
   CATS: [
     { key: 'book', label: '책' }, { key: 'anime', label: '애니' },
     { key: 'movie', label: '영화' }, { key: 'music', label: '음악' },
+    { key: 'clothes', label: '옷', private: true }, { key: 'diary', label: '일기', private: true },
   ],
+  isPrivateCat: (c) => c === 'clothes' || c === 'diary',
   uploadPhoto: vi.fn(),
   saveRecord: (...a) => saveRecord(...a),
   deleteRecord: (...a) => deleteRecord(...a),
@@ -47,12 +49,18 @@ function mountDom() {
         <button id="manualBtn"></button><div id="sNotice" hidden></div><ul id="sResults"></ul><p id="sFoot"></p>
         <button id="searchCloseBtn"></button></div>
       <div id="formView" hidden><div class="modal-actions"></div></div>
-      <input id="fTitle"><input id="fCreator"><label id="creatorLabel"></label>
+      <label id="titleLabel"></label><input id="fTitle">
+      <div id="creatorField"><input id="fCreator"><label id="creatorLabel"></label></div>
       <div id="titleList" style="display:none"></div><div id="creatorList" style="display:none"></div>
-      <div id="titleError"></div><div id="starPicker"></div>
-      <div id="photoDrop"><span id="photoDropText"></span><input type="file" id="fPhoto"></div>
-      <img id="photoPreview"><span id="removePhoto"></span>
-      <textarea id="fMemo"></textarea>
+      <div id="titleError"></div>
+      <div id="diaryDateField" hidden><input type="date" id="fDate"></div>
+      <div id="starField"><div id="starPicker"></div></div>
+      <div id="photoField"><label id="photoLabel"></label>
+        <div id="photoDrop"><span id="photoDropText"></span><input type="file" id="fPhoto"></div>
+        <img id="photoPreview"><span id="removePhoto"></span><div id="photoError" style="display:none"></div></div>
+      <div id="clothesField" hidden><div id="clothesBody"></div></div>
+      <div id="memoField"><label id="memoLabel"></label><textarea id="fMemo"></textarea><div id="memoError" style="display:none"></div></div>
+      <div id="detailAnchor"></div>
       <div id="listenField" hidden><input id="fListen"><button id="listenTry"></button>
         <div id="listenHint"></div><div id="listenError" style="display:none"></div></div>
       <button id="cancelBtn"></button><button id="saveBtn"></button>
@@ -69,6 +77,7 @@ function typeTitle(v) {
 
 let modal;
 let onSaved;
+const navigate = vi.fn();
 beforeEach(() => {
   saveRecord.mockReset().mockResolvedValue();
   deleteRecord.mockReset().mockResolvedValue();
@@ -80,7 +89,8 @@ beforeEach(() => {
   play.mockReset();
   mountDom();
   onSaved = vi.fn();
-  modal = createModal({ onSaved });
+  navigate.mockReset();
+  modal = createModal({ onSaved, navigate });
   modal.openAdd('music');
   // 아래 입력 칸 테스트들은 직접 쓰기로 연 입력 칸에서(검색 화면은 맨 아래 묶음).
   $('manualBtn').click();
@@ -612,5 +622,59 @@ describe('검색 화면(새 기록)', () => {
     expect($('searchView').hidden).toBe(true);
     $('cancelBtn').click();
     expect($('overlay').classList.contains('open')).toBe(false);
+  });
+});
+
+describe('옷(검색 없이 바로 입력 칸)·일기(쓰기 페이지로)', () => {
+  it('옷: 검색 화면 없이 입력 칸, 이름·사진이 없으면 저장하지 않음', async () => {
+    modal.openAdd('clothes');
+    expect($('formView').hidden).toBe(false);
+    expect($('searchView').hidden).toBe(true);
+    expect($('clothesField').hidden).toBe(false);
+    expect($('starField').hidden).toBe(true);
+    expect($('memoField').hidden).toBe(true);
+    expect($('titleLabel').textContent).toBe('이름');
+    $('fTitle').value = '셔츠';
+    $('saveBtn').click();
+    await settle();
+    expect(saveRecord).not.toHaveBeenCalled();
+    expect($('photoError').style.display).toBe('block');
+  });
+
+  it('옷: 고른 칸들이 attrs로 저장됨(같은 칩을 다시 누르면 해제, 계절은 여러 개)', async () => {
+    modal.openEdit({ id: 7, cat: 'clothes', title: '셔츠', creator: '유니클로', photo_url: 'https://x/s.jpg', date: '2026-11-20',
+      attrs: { kind: '상의', seasons: ['봄'], tags: ['기본'] } });
+    const chip = (key, v) => $('clothesBody').querySelector(`[data-key="${key}"] [data-value="${v}"]`);
+    chip('seasons', '가을').click();
+    chip('color', '네이비').click();
+    chip('fit', '오버').click();
+    chip('fit', '오버').click(); // 해제
+    const tag = $('clothesBody').querySelector('.cl-tag-input');
+    tag.value = '스트라이프';
+    tag.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    $('saveBtn').click();
+    await settle();
+    const [body, id] = saveRecord.mock.calls[0];
+    expect(id).toBe(7);
+    expect(body).toMatchObject({ cat: 'clothes', title: '셔츠', creator: '유니클로', rating: 0, memo: '' });
+    expect(body.attrs).toMatchObject({ kind: '상의', color: '네이비', fit: null, seasons: ['봄', '가을'], tags: ['기본', '스트라이프'] });
+  });
+
+  it('일기는 이 창이 아니라 일기 쓰기 페이지로 — 새 일기·탭·수정 모두', () => {
+    modal.openAdd('diary');
+    expect(navigate).toHaveBeenLastCalledWith('diary');
+    modal.openAdd('book');
+    $('catTabs').querySelector('[data-key="diary"]').click();
+    expect(navigate).toHaveBeenLastCalledWith('diary');
+    modal.openEdit({ id: 12, cat: 'diary', title: '', memo: '눈', date: '2026-11-19' });
+    expect(navigate).toHaveBeenLastCalledWith('diary?id=12');
+  });
+
+  it('옷에서 작품 탭으로 바꾸면 검색 화면, 별점·감상 칸이 다시 보임', () => {
+    modal.openAdd('clothes');
+    $('catTabs').querySelector('[data-key="book"]').click();
+    expect($('searchView').hidden).toBe(false);
+    expect($('starField').hidden).toBe(false);
+    expect($('memoField').hidden).toBe(false);
   });
 });
