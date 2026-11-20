@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>방 사진 → 3D 실험</title>
+<style>
+  *{ box-sizing:border-box; }
+  html, body{ margin:0; height:100%; background:#F4F2EE; font-family:system-ui, sans-serif; color:#222; }
+  .wrap{ display:grid; grid-template-columns:1fr 1fr; height:100%; }
+  .photo{ display:flex; flex-direction:column; align-items:center; justify-content:center; background:#1E1E22; padding:16px; gap:8px; }
+  .photo img{ width:100%; max-height:calc(100% - 30px); object-fit:contain; image-rendering:auto; }
+  .photo span, .view span{ font-size:13px; color:#AAA; }
+  .view{ position:relative; }
+  .view canvas{ display:block; width:100%; height:100%; }
+  .view span{ position:absolute; left:12px; top:10px; color:#666; }
+  .legend{ position:absolute; left:12px; bottom:10px; font-size:12px; color:#555; background:rgba(255,255,255,.8); padding:6px 9px; max-width:90%; }
+  @media (max-width:800px){ .wrap{ grid-template-columns:1fr; grid-template-rows:40% 60%; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="photo"><img id="photo" alt=""><span>원본 사진</span></div>
+  <div class="view" id="view"><span>AI가 읽어서 다시 지은 방 (끌어서 돌리기 · 휠로 확대)</span><div class="legend" id="legend"></div></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.152.2/three.min.js"></script>
+<script src="room-data.js"></script>
+<script src="render.js"></script>
+</body>
+</html>
