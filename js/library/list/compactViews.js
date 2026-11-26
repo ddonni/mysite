@@ -5,7 +5,7 @@
 import { escapeHtml, escapeAttr } from '../../shared/dom.js';
 import { photoSrc } from '../../shared/photoSrc.js';
 import { catLabel, catIconHtml, featureLabel, progressLabel, ratingStars } from './itemFormat.js';
-import { renderCards } from './cardsView.js';
+import { paintOverflow, renderCards } from './cardsView.js';
 
 function coverImg(it) {
   return it.photo_url
@@ -93,6 +93,7 @@ export function createCardDialog({ onEdit, onDelete, onFeature, onListen, onLike
     if (card) card.setAttribute('aria-pressed', 'true'); // 바로 뒷면(감상·버튼)
     dialog.hidden = false;
     document.body.classList.add('modal-open');
+    paintOverflow(card); // 보이고 나서야 높이를 잴 수 있음
     dialog.querySelector('.card-dialog-close').focus();
   }
 

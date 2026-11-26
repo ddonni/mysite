@@ -82,7 +82,10 @@ function featureStarHtml(it) {
   return `<button type="button" class="feat-btn" data-act="feature" aria-pressed="${!!it.featured}" aria-label="${label}" title="${label}">${it.featured ? '★' : '☆'}</button>`;
 }
 
-function cardHtml(it, { onListen, readOnly }) {
+// "크게 보기"(뒷면 내용이 카드에 다 안 들어갈 때만 보임 — paintOverflow) — 촘촘히·목록 보기의 큰 카드 창으로.
+const EXPAND_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg>';
+
+function cardHtml(it, { onListen, readOnly, expandable }) {
   const rare = !!it.featured;
   const type = catLabel(it.cat);
   const stars = it.rating ? ratingStars(it.rating) : '';
@@ -96,14 +99,29 @@ function cardHtml(it, { onListen, readOnly }) {
         </div>
       </div>
       <div class="face back">
-        <div class="back-head"><span class="type">${type}${rare ? ` · ${featureLabel(it.cat)}` : ''}</span>${readOnly ? '' : featureStarHtml(it)}</div>
-        <div class="q${it.memo ? '' : ' empty-memo'}">${it.memo ? `“${escapeHtml(it.memo)}”` : '아직 감상을 적지 않았어요.'}</div>
-        ${stars}
-        ${detailHtml(it)}
-        ${it.creator ? `<div class="back-creator">${escapeHtml(it.creator)}</div>` : ''}
+        <div class="back-head"><span class="type">${type}${rare ? ` · ${featureLabel(it.cat)}` : ''}</span><span class="back-head-end">${expandable ? `<button type="button" class="expand-btn" data-act="expand" aria-label="크게 보기" title="크게 보기" hidden>${EXPAND_ICON}</button>` : ''}${readOnly ? '' : featureStarHtml(it)}</span></div>
+        <div class="back-body">
+          <div class="q${it.memo ? '' : ' empty-memo'}">${it.memo ? `“${escapeHtml(it.memo)}”` : '아직 감상을 적지 않았어요.'}</div>
+          ${stars}
+          ${detailHtml(it)}
+          ${it.creator ? `<div class="back-creator">${escapeHtml(it.creator)}</div>` : ''}
+        </div>
         <div class="back-actions">${backButtons(it, { onListen, readOnly })}</div>
       </div>
     </div>`;
+}
+
+// 뒷면 가운데(감상·별점·세부 기록·만든 사람)가 카드에 다 안 들어가면 — 그 칸만 안에서 스크롤되고, 아래로 더 있으면
+// 끝을 흐리게(.more), "크게 보기" 버튼을 보임. 맨 위 종류 줄과 아래 버튼 줄은 늘 보임(2026-11-26 사용자 피드백
+// "정보가 많으면 뒤집었을 때 잘림" — 전엔 세부 기록이 많으면 감상이 0줄로 눌리고, 폰에선 버튼까지 잘렸음).
+// 카드가 보이는 상태에서 불러야 높이를 잴 수 있음(뒤집을 때 · 큰 카드 창을 열 때).
+export function paintOverflow(card) {
+  const body = card && card.querySelector('.back-body');
+  if (!body) return;
+  const over = body.scrollHeight > body.clientHeight + 1;
+  body.classList.toggle('more', over && body.scrollTop + body.clientHeight < body.scrollHeight - 2);
+  const expand = card.querySelector('[data-act="expand"]');
+  if (expand) expand.hidden = !over;
 }
 
 // 인생작 카드: 마우스 위치에 따라 기울고 홀로그램 빛이 따라 움직임.
@@ -124,7 +142,7 @@ function attachTilt(slot) {
   });
 }
 
-function makeSlot(it, { onEdit, onDelete, onFeature, onListen, onLike, readOnly }) {
+function makeSlot(it, { onEdit, onDelete, onFeature, onListen, onLike, onExpand, readOnly }) {
   const slot = document.createElement('div');
   slot.className = 'slot' + (it.featured ? ' rare' : '');
   slot.dataset.cat = it.cat;
@@ -136,7 +154,9 @@ function makeSlot(it, { onEdit, onDelete, onFeature, onListen, onLike, readOnly 
   card.setAttribute('role', 'button');
   card.setAttribute('aria-pressed', 'false');
   card.setAttribute('aria-label', `${it.title} 기록 뒤집기`);
-  card.innerHTML = cardHtml(it, { onListen, readOnly });
+  card.innerHTML = cardHtml(it, { onListen, readOnly, expandable: !!onExpand });
+  const body = card.querySelector('.back-body');
+  body.addEventListener('scroll', () => paintOverflow(card), { passive: true });
   // 인생작의 홀로그램 빛은 표지 위에만(아래 글자 칸엔 안 덮이게).
   if (it.featured) card.querySelector('.cover').insertAdjacentHTML('beforeend', '<div class="foil" aria-hidden="true"></div>');
 
@@ -150,7 +170,9 @@ function makeSlot(it, { onEdit, onDelete, onFeature, onListen, onLike, readOnly 
   };
   const flip = () => {
     if (asking && asking.card === card) stopAsking();
-    card.setAttribute('aria-pressed', String(card.getAttribute('aria-pressed') !== 'true'));
+    const toBack = card.getAttribute('aria-pressed') !== 'true';
+    card.setAttribute('aria-pressed', String(toBack));
+    if (toBack) { body.scrollTop = 0; paintOverflow(card); }
   };
   card.addEventListener('click', (e) => {
     const act = e.target.closest('[data-act]');
@@ -161,6 +183,7 @@ function makeSlot(it, { onEdit, onDelete, onFeature, onListen, onLike, readOnly 
       case 'feature': ask(confirmFeatureHtml(it), 'cancel-feature'); break;
       case 'confirm-feature': asking = null; onFeature(it); break;
       case 'listen': onListen(it); break;
+      case 'expand': if (onExpand) onExpand(it); break;
       // 공감 — 바뀐 수·상태로 하트만 다시 그림(목록 전체를 다시 불러오지 않음). onLike가 null을
       // 돌려주면(로그인 안내를 띄웠거나 실패) 그대로 둠.
       case 'like':
@@ -205,13 +228,14 @@ function makeSlot(it, { onEdit, onDelete, onFeature, onListen, onLike, readOnly 
 // onEdit(it)/onDelete(id)/onFeature(it): 내 기록의 뒷면 버튼(readOnly면 안 그림).
 // onListen: 주면 유튜브 링크가 있는 음악 카드 뒷면에 "▶ 듣기".
 // onLike(it): 남의 기록 카드의 공감 하트 — { count, liked }(또는 null) Promise.
-export function renderCards(containerEl, list, { emptyText, onEdit, onDelete, onFeature, onListen, onLike, readOnly = false }) {
+// onExpand(it): 주면 뒷면 내용이 넘칠 때 "크게 보기" 버튼(카드 보기 → 큰 카드 창). 큰 카드 창 안에선 안 줌.
+export function renderCards(containerEl, list, { emptyText, onEdit, onDelete, onFeature, onListen, onLike, onExpand, readOnly = false }) {
   containerEl.innerHTML = '';
   if (list.length === 0) {
     if (emptyText) containerEl.innerHTML = `<div class="empty">${emptyText}</div>`;
     return [];
   }
-  const slots = list.map((it) => makeSlot(it, { onEdit, onDelete, onFeature, onListen, onLike, readOnly }));
+  const slots = list.map((it) => makeSlot(it, { onEdit, onDelete, onFeature, onListen, onLike, onExpand, readOnly }));
   containerEl.append(...slots);
   return slots;
 }

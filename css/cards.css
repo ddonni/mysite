@@ -214,16 +214,30 @@ body.cards .stars-view .fg svg{ fill:var(--gold); }
   transform:rotateY(180deg); background:var(--back);
   padding:14px; display:flex; flex-direction:column; gap:8px; font-size:13px;
 }
-.back .q{
-  font-size:15px; line-height:1.55; word-break:keep-all; overflow-wrap:anywhere;
-  overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:7;
+/* 가운데만 스크롤(cardsView.js의 paintOverflow) — 위 종류 줄·아래 버튼 줄은 늘 보이고, 안의 줄들은 눌려 줄지 않음 */
+.back-body{
+  flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain;
+  display:flex; flex-direction:column; gap:8px;
+  scrollbar-width:none; /* 작은 카드엔 스크롤바가 자리를 많이 먹음 — 아래 흐림(.more)과 "크게 보기"가 대신 알려 줌 */
 }
+.back-body::-webkit-scrollbar{ display:none; }
+.back-body > *{ flex:none; }
+.back-body.more{ -webkit-mask-image:linear-gradient(#000 75%, transparent); mask-image:linear-gradient(#000 75%, transparent); }
+.back-head-end{ display:flex; align-items:center; gap:2px; flex:none; }
+/* 종류 글씨("애니 · 인생애니")가 길면 줄임표 — 오른쪽 버튼들(크게 보기·별)이 밀려나지 않게 */
+.back-head .type{ min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.expand-btn{
+  width:24px; height:24px; margin:-4px 0 0; padding:4px; border:none; background:transparent; cursor:pointer; color:var(--paper-dim);
+}
+.expand-btn[hidden]{ display:none; }
+.expand-btn svg{ width:100%; height:100%; display:block; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.expand-btn:hover{ color:var(--paper); background:rgba(23,24,28,0.06); }
+.back .q{ font-size:15px; line-height:1.55; word-break:keep-all; overflow-wrap:anywhere; }
 .back .q.empty-memo{ color:var(--paper-dim); font-size:13px; }
 .back .who{ color:var(--paper-dim); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.back-actions{ margin-top:auto; display:flex; flex-wrap:wrap; gap:6px; }
+.back-actions{ flex:none; display:flex; flex-wrap:wrap; gap:6px; }
 /* 뒷면 아래 버튼 바로 위 — 작가·감독·가수(2026-11-18 사용자 요청으로 다시 넣음, 아래쪽에) */
-.back-creator{ margin-top:auto; padding-top:6px; font-size:11.5px; color:var(--paper-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.back-creator + .back-actions{ margin-top:8px; }
+.back-creator{ margin-top:auto; padding-top:2px; font-size:11.5px; color:var(--paper-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .back-btn{
   font:inherit; font-size:12px; padding:5px 10px; border-radius:0; cursor:pointer;
   border:none; background:var(--paper); color:#FFFFFF;
@@ -366,7 +380,11 @@ body.cards .si-add.on{ color:#FFFFFF; background:var(--paper); border-color:var(
   body.cards .badges{ top:5px; left:5px; }
   body.cards .badge{ font-size:8px; padding:1px 5px; letter-spacing:0.04em; }
   .back{ padding:8px; gap:5px; font-size:11px; }
-  .back .q{ font-size:12px; -webkit-line-clamp:5; }
+  .back .q{ font-size:12px; }
+  .back-body{ gap:5px; }
+  .back-actions{ gap:4px; }
+  .back-btn{ font-size:11px; padding:4px 7px; }
+  .expand-btn{ width:20px; height:20px; padding:3px; }
   .back .who{ font-size:10.5px; }
   .back-btn{ font-size:10.5px; padding:4px 7px; }
   .feat-btn{ width:22px; height:22px; font-size:15px; }

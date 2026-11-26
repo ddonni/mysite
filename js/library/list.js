@@ -98,7 +98,7 @@ export function createList({ onEdit, onDelete, onFeature, onListen, onLike, onTa
     listEl.dataset.view = view;
     // 촘촘히·목록은 덱에서 나눠주는 효과 없이 바로(수백 개를 한눈에 보는 게 목적이라).
     const slots = view === 'cards'
-      ? renderCards(listEl, list, { onEdit, onDelete, onFeature, readOnly, onListen, onLike, emptyText })
+      ? renderCards(listEl, list, { onEdit, onDelete, onFeature, readOnly, onListen, onLike, emptyText, onExpand: cardDialog.open })
       : (renderCompact(listEl, list, { view, emptyText, onOpen: cardDialog.open }), []);
     // 내 기록이 비어 있으면 안내 아래 가운데에 "+ 기록" 버튼(위 줄의 같은 버튼을 못 찾는 사람이 많아서).
     const emptyEl = listEl.querySelector('.empty');

@@ -172,3 +172,54 @@ describe('칩 개수 세기', () => {
     vi.useRealTimers();
   });
 });
+
+// 2026-11-26 "정보가 많으면 뒤집었을 때 잘림" — 뒷면 가운데만 스크롤, 넘치면 "크게 보기".
+// jsdom은 레이아웃이 없어서 scrollHeight/clientHeight를 직접 정해 넘침을 흉내 냄.
+describe('뒷면 내용이 넘칠 때', () => {
+  const heavy = book(7, { memo: '아주 긴 감상', details: { scores: { ending: 4 }, genres: ['소설', '인문'] } });
+  function fakeSize(card, scrollHeight, clientHeight) {
+    const body = card.querySelector('.back-body');
+    Object.defineProperty(body, 'scrollHeight', { configurable: true, value: scrollHeight });
+    Object.defineProperty(body, 'clientHeight', { configurable: true, value: clientHeight });
+    return body;
+  }
+
+  it('감상·별점·세부 기록·만든 사람은 스크롤 칸 안에, 버튼 줄은 그 바깥(늘 보임)', () => {
+    renderCards(grid, [{ ...heavy, creator: '헤세' }], { onEdit: () => {}, onDelete: () => {}, onFeature: () => {} });
+    const body = grid.querySelector('.back-body');
+    expect(body.querySelector('.q')).not.toBeNull();
+    expect(body.querySelector('.back-details')).not.toBeNull();
+    expect(body.querySelector('.back-creator')).not.toBeNull();
+    expect(body.querySelector('.back-actions')).toBeNull();
+    expect(grid.querySelector('.back > .back-actions')).not.toBeNull();
+  });
+
+  it('넘치면 뒤집을 때 "크게 보기"가 보이고 끝이 흐려짐 → 누르면 onExpand(기록), 카드는 안 뒤집힘', () => {
+    const onExpand = vi.fn();
+    renderCards(grid, [heavy], { onEdit: () => {}, onDelete: () => {}, onFeature: () => {}, onExpand });
+    const card = grid.querySelector('.card');
+    const body = fakeSize(card, 400, 120);
+    const expand = card.querySelector('[data-act="expand"]');
+    expect(expand.hidden).toBe(true);
+    card.click();
+    expect(expand.hidden).toBe(false);
+    expect(body.classList.contains('more')).toBe(true);
+    expand.click();
+    expect(onExpand).toHaveBeenCalledWith(heavy);
+    expect(card.getAttribute('aria-pressed')).toBe('true');
+    // 끝까지 내리면 흐림이 사라짐
+    body.scrollTop = 280;
+    body.dispatchEvent(new Event('scroll'));
+    expect(body.classList.contains('more')).toBe(false);
+  });
+
+  it('다 들어가면 "크게 보기" 없음, onExpand를 안 주면(큰 카드 창 안) 버튼 자체가 없음', () => {
+    renderCards(grid, [heavy], { onEdit: () => {}, onDelete: () => {}, onFeature: () => {}, onExpand: () => {} });
+    const card = grid.querySelector('.card');
+    fakeSize(card, 100, 120);
+    card.click();
+    expect(card.querySelector('[data-act="expand"]').hidden).toBe(true);
+    renderCards(grid, [heavy], { onEdit: () => {}, onDelete: () => {}, onFeature: () => {} });
+    expect(grid.querySelector('[data-act="expand"]')).toBeNull();
+  });
+});
