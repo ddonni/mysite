@@ -75,14 +75,18 @@ function handleCredential(response) {
     .then((res) => (res.ok ? res.json() : Promise.reject()))
     .then(({ code, token, linked_new, current_empty }) => {
       if (linked_new) {
-        // 처음 연결된 것 — 지금 방은 그대로고, 나중에 이 계정으로
-        // 로그인하면 이 방을 되찾을 수 있다는 것만 알려주면 됨. 새로고침해서
-        // 로그인 버튼이 "연동됨" 표시로 곧바로 바뀌게 함.
+        // 처음 연결된 것 — 지금 방은 그대로지만 token은 바뀜(서버가 구글 계정으로
+        // 다시 만들 수 있는 token으로 교체, 백엔드 crud.linked_token). 그래서 응답의
+        // token을 꼭 저장해야 함 — 안 그러면 이 브라우저가 옛 token을 들고 있다가 403.
+        // 새로고침해서 로그인 버튼이 "연동됨" 표시로 곧바로 바뀌게 함.
+        adoptRoom({ code, token });
         alert('구글 계정을 연동했어요. 다른 기기에서도 이 계정으로 연동하면 내 기록을 불러올 수 있어요.');
         window.location.reload();
         return;
       }
       if (stored && stored.code === code) {
+        // 같은 방이어도 token은 저장 — 예전에 연결해 둔 방은 이때 한 번 새 token으로 바뀜.
+        adoptRoom({ code, token });
         alert('이미 이 기록에 연결된 계정이에요.');
         return;
       }
