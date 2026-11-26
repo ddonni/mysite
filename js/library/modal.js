@@ -10,7 +10,7 @@
 // 수정은 입력 칸만.
 //
 // 실제 서버 저장은 records.js의 uploadPhoto/saveRecord/deleteRecord를 불러 씀.
-import { CATS, uploadPhoto, saveRecord, deleteRecord, fetchScreenCreator, fetchMusicListen } from './records.js';
+import { WORK_CATS as CATS, uploadPhoto, saveRecord, deleteRecord, fetchScreenCreator, fetchMusicListen } from './records.js';
 import { normalizeYouTube, getPlayer } from '../shared/youtube.js';
 import { CREATOR_FIELD, TITLE_PLACEHOLDER } from './modal/categoryFields.js';
 import { createStarPicker } from './modal/starPicker.js';

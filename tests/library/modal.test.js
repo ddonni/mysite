@@ -25,6 +25,11 @@ vi.mock('../../js/library/records.js', () => ({
     { key: 'book', label: '책' }, { key: 'anime', label: '애니' },
     { key: 'movie', label: '영화' }, { key: 'music', label: '음악' },
   ],
+  // 새 기록 창은 작품 카테고리만(?!는 창 없이 quickNote.js).
+  WORK_CATS: [
+    { key: 'book', label: '책' }, { key: 'anime', label: '애니' },
+    { key: 'movie', label: '영화' }, { key: 'music', label: '음악' },
+  ],
   uploadPhoto: vi.fn(),
   saveRecord: (...a) => saveRecord(...a),
   deleteRecord: (...a) => deleteRecord(...a),

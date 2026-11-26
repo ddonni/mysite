@@ -1,10 +1,16 @@
 import { CATS } from '../records.js';
 import { escapeHtml, escapeAttr } from '../../shared/dom.js';
 import { photoSrc } from '../../shared/photoSrc.js';
+import { noteTitle, youtubeThumb } from '../noteText.js';
 
 export function catLabel(key) {
   const cat = CATS.find((c) => c.key === key);
   return cat ? cat.label : '';
+}
+
+// 카드·목록에 보이는 이름 — ?!는 제목 칸이 없어서 글의 첫 줄(noteText.noteTitle).
+export function displayTitle(it) {
+  return it.cat === 'note' ? noteTitle(it) : (it.title || '');
 }
 
 // 카드 아래 한 줄짜리 별점 — 별점을 안 매긴(0) 기록은 아무것도 안 보임.
@@ -78,6 +84,8 @@ const CAT_ICONS = {
     + '<path d="M11.5 14.2l.7 1.4 1.5.2-1.1 1 .3 1.5-1.4-.7-1.4.7.3-1.5-1.1-1 1.5-.2z" fill="#FFD25A"/>'
     + '<path d="M13.5 3v6.5l1.3-1.1 1.3 1.1V3" fill="#FFD25A" stroke="#7A4A36" stroke-width="1"/></svg>',
   anime: '<svg viewBox="0 0 24 24"><text x="12" y="19" text-anchor="middle" font-size="19" font-weight="900" font-family="Arial Black, Arial, sans-serif" fill="#F06292" stroke="#B83B6A" stroke-width=".8">A</text></svg>',
+  // ?! = 글자 그대로 "?!"(사용자 요청 — 애니의 A처럼 굵은 글자).
+  note: '<svg viewBox="0 0 24 24"><text x="12" y="18.5" text-anchor="middle" font-size="17" font-weight="900" font-family="Arial Black, Arial, sans-serif" letter-spacing="-1" fill="#17181C">?!</text></svg>',
   movie: '<svg viewBox="0 0 24 24" stroke-linejoin="round">'
     + '<rect x="3" y="10" width="18" height="11" rx="2" fill="#3F4A5E" stroke="#232834" stroke-width="1.3"/>'
     + '<path d="M6 14h8M6 17h5" stroke="#FFFFFF" stroke-width="1.3" stroke-linecap="round" opacity=".75"/>'
@@ -103,6 +111,7 @@ export function coverHtml(it) {
     it.in_progress && it.cat !== 'music' ? `<span class="badge progress">${progressLabel(it.cat)}</span>` : '',
   ].join('');
   const badge = (tags ? `<span class="badges">${tags}</span>` : '') + catIconHtml(it.cat);
+  if (it.cat === 'note') return noteCoverHtml(it, badge);
   if (it.photo_url) {
     const src = escapeAttr(photoSrc(it.photo_url));
     // crossorigin: 예전 3D 방이 같은 사진을 CORS로 받아 WebGL 텍스처로 썼고, CORS 없이
@@ -119,5 +128,36 @@ export function coverHtml(it) {
       <span class="tc-title">${escapeHtml(it.title)}</span>
       ${it.creator ? `<span class="tc-creator">${escapeHtml(it.creator)}</span>` : ''}
       ${badge}
+    </div>`;
+}
+
+// ?! 표지 — 유튜브 영상이면 썸네일 + 가운데 ▶(누르면 작은 플레이어, cardsView의 data-act="listen"),
+// 아니면 글 앞부분만(빈 줄은 접어서). 썸네일은 i.ytimg.com이 CORS를 안 줄 수 있어서 crossorigin 없이.
+const PLAY_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>';
+function noteCoverHtml(it, badge) {
+  // 사진이 있으면 사진(영상 링크도 있으면 그 위에 ▶).
+  if (it.photo_url) {
+    return `
+    <div class="cover note-photo-cover">
+      <img src="${escapeAttr(photoSrc(it.photo_url))}" alt="" loading="lazy" crossorigin="anonymous">
+      ${it.listen_url ? `<button type="button" class="note-play" data-act="listen" aria-label="영상 보기" title="영상 보기">${PLAY_ICON}</button>` : ''}
+      ${badge}
+    </div>`;
+  }
+  const thumb = youtubeThumb(it.listen_url);
+  if (thumb) {
+    return `
+    <div class="cover note-video">
+      <img src="${escapeAttr(thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer">
+      <button type="button" class="note-play" data-act="listen" aria-label="영상 보기" title="영상 보기">${PLAY_ICON}</button>
+      ${badge}
+    </div>`;
+  }
+  // 글만 — 투명한 바탕에 글씨만(아이콘·종이 없이, css/notes.css — 사용자 요청 "메모지 느낌 말고").
+  const text = (it.memo || '').replace(/\n\s*\n+/g, '\n').slice(0, 220);
+  return `
+    <div class="cover note-paper">
+      <span class="np-text">${escapeHtml(text)}</span>
+      ${it.listen_url ? '<span class="np-link">▶ 유튜브 재생목록</span>' : ''}
     </div>`;
 }

@@ -4,10 +4,19 @@
 // 인생작·공감·듣기를 카드 보기와 똑같이 씀(createCardDialog).
 import { escapeHtml, escapeAttr } from '../../shared/dom.js';
 import { photoSrc } from '../../shared/photoSrc.js';
-import { catLabel, catIconHtml, featureLabel, progressLabel, ratingStars } from './itemFormat.js';
+import { catLabel, catIconHtml, displayTitle, featureLabel, progressLabel, ratingStars } from './itemFormat.js';
+import { youtubeThumb } from '../noteText.js';
 import { paintOverflow, renderCards } from './cardsView.js';
 
 function coverImg(it) {
+  if (it.cat === 'note') {
+    // ?! — 사진이면 사진, 영상이면 유튜브 썸네일, 아니면 투명한 바탕에 글 첫 글자.
+    if (it.photo_url) return `<img src="${escapeAttr(photoSrc(it.photo_url))}" alt="" loading="lazy" crossorigin="anonymous">`;
+    const thumb = youtubeThumb(it.listen_url);
+    return thumb
+      ? `<img src="${escapeAttr(thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer">`
+      : `<span class="noimg note" aria-hidden="true">${escapeHtml(displayTitle(it).slice(0, 1))}</span>`;
+  }
   return it.photo_url
     ? `<img src="${escapeAttr(photoSrc(it.photo_url))}" alt="" loading="lazy" crossorigin="anonymous">`
     : `<span class="noimg" aria-hidden="true">${escapeHtml((it.title || '').slice(0, 1))}</span>`;
@@ -17,14 +26,14 @@ const inProgress = (it) => it.in_progress && it.cat !== 'music';
 
 // 촘촘히 — 표지만. 인생작은 금테, 보는 중은 초록 점, 오른쪽 위 작은 카테고리 아이콘. 제목은 마우스를 올리면.
 function denseHtml(it) {
-  const label = `${it.title}${it.creator ? ` — ${it.creator}` : ''}`;
+  const label = `${displayTitle(it)}${it.creator ? ` — ${it.creator}` : ''}`;
   return `
     <button type="button" class="dense-item${it.featured ? ' rare' : ''}" data-id="${it.id}" data-cat="${it.cat}"
       title="${escapeAttr(label)}" aria-label="${escapeAttr(`${catLabel(it.cat)} ${label}`)}">
       ${coverImg(it)}
       ${catIconHtml(it.cat)}
       ${inProgress(it) ? `<span class="dense-progress" aria-label="${progressLabel(it.cat)}"></span>` : ''}
-      <span class="dense-title" aria-hidden="true">${escapeHtml(it.title)}</span>
+      <span class="dense-title" aria-hidden="true">${escapeHtml(displayTitle(it))}</span>
     </button>`;
 }
 
@@ -38,7 +47,7 @@ function rowHtml(it) {
     <button type="button" class="row-item" data-id="${it.id}" data-cat="${it.cat}">
       <span class="row-cover">${coverImg(it)}</span>
       <span class="row-main">
-        <span class="row-title">${escapeHtml(it.title)}${tags}</span>
+        <span class="row-title">${escapeHtml(displayTitle(it))}${tags}</span>
         <span class="row-sub">${it.creator ? escapeHtml(it.creator) : ''}</span>
       </span>
       <span class="row-cat"><i class="dot"></i>${catLabel(it.cat)}</span>
@@ -63,7 +72,7 @@ export function renderCompact(containerEl, list, { view, emptyText, onOpen }) {
 
 // 카드 크게 보기 — 카드 하나를 가운데 띄우고 바로 뒷면을 보여 줌. 수정·삭제·인생작은 창을 닫고 원래
 // 동작으로(목록이 다시 그려지니까), 공감·듣기는 창을 연 채로. 바깥·×·Esc로 닫힘.
-export function createCardDialog({ onEdit, onDelete, onFeature, onListen, onLike, readOnly }) {
+export function createCardDialog({ onEdit, onDelete, onFeature, onListen, onLike, onSaveNote, readOnly }) {
   const dialog = document.getElementById('cardDialog');
   const holder = dialog && dialog.querySelector('.card-dialog-slot');
   if (!dialog || !holder) return { open() {} };
@@ -88,6 +97,8 @@ export function createCardDialog({ onEdit, onDelete, onFeature, onListen, onLike
       onFeature: closing(onFeature),
       onListen,
       onLike,
+      // ?!는 창 안에서 그대로 고치고, 저장되면 닫음.
+      onSaveNote: onSaveNote && ((note, parts) => onSaveNote(note, parts).then((r) => { close(); return r; })),
     });
     const card = holder.querySelector('.card');
     if (card) card.setAttribute('aria-pressed', 'true'); // 바로 뒷면(감상·버튼)

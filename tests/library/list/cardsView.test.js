@@ -3,7 +3,7 @@
 // 눌러도 카드가 뒤집히지 않는지, 카드 순서(인생작 먼저 → 최신순).
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderCards } from '../../../js/library/list/cardsView.js';
-import { sortForGrid } from '../../../js/library/list.js';
+import { shuffleForGrid } from '../../../js/library/list.js';
 
 const song = (id, extra = {}) => ({ id, cat: 'music', title: `곡${id}`, rating: 0, featured: true, ...extra });
 const book = (id, extra = {}) => ({ id, cat: 'book', title: `책${id}`, rating: 4.5, ...extra });
@@ -142,15 +142,22 @@ describe('음악 카드', () => {
   });
 });
 
-describe('카드 순서', () => {
-  it('인생작이 앞에, 그다음은 최신순', () => {
-    const list = [
-      book(1, { date: '2026-01-01' }),
-      book(2, { date: '2026-03-01' }),
-      book(3, { date: '2025-12-01', featured: true }),
-      book(4, { date: '2026-02-01', featured: true }),
-    ];
-    expect(sortForGrid(list).map((i) => i.id)).toEqual([4, 3, 2, 1]);
+describe('카드 순서(무작위)', () => {
+  const list = Array.from({ length: 20 }, (_, i) => book(i + 1));
+  const ids = (l) => l.map((i) => i.id);
+
+  it('같은 seed면 늘 같은 순서, seed가 바뀌면 다른 순서 — 빠지는 것 없이', () => {
+    const a = ids(shuffleForGrid(list, 12345));
+    expect(ids(shuffleForGrid(list.slice().reverse(), 12345))).toEqual(a);
+    expect(a.slice().sort((x, y) => x - y)).toEqual(ids(list));
+    expect(ids(shuffleForGrid(list, 999))).not.toEqual(a);
+    expect(a).not.toEqual(ids(list)); // 날짜·id 순서 그대로가 아님
+  });
+
+  it('연 뒤에 새로 넣은 건 맨 앞에 최신순', () => {
+    const known = new Set(ids(list));
+    const out = ids(shuffleForGrid([...list, book(21), book(22)], 7, known));
+    expect(out.slice(0, 2)).toEqual([22, 21]);
   });
 });
 

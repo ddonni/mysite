@@ -77,7 +77,6 @@ body.cards .site-nav.lib-bar > .chips{
   font:inherit; font-size:13px; cursor:pointer; white-space:nowrap;
   padding:6px 14px; border-radius:0; border:none; background:var(--paper); color:#FFFFFF;
 }
-body.cards.read-only #addTabBtn{ display:none; }
 /* 칩 옆 티어리스트 버튼 */
 .lib-bar .tier-btn{
   display:inline-flex; align-items:center; gap:5px; font:inherit; font-size:13px; white-space:nowrap; cursor:pointer;
@@ -443,20 +442,6 @@ body.cards .feedback-field textarea:focus, body.cards .feedback-field input:focu
 body.cards .feedback-actions button{ border-radius:0; font-weight:400; }
 body.cards .feedback-cancel, body.cards .feedback-again{ background:var(--chip); border:none; color:var(--paper); }
 
-/* 내 기록이 비어 있을 때 — 안내 한 줄 + 가운데 큰 "+ 기록"(js/library/list.js). 위 줄 아래 남은
-   화면의 가운데쯤에 오게 높이를 줌. */
-body.cards .empty.empty-add{
-  min-height:calc(100vh - 160px); padding:0;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
-}
-.empty-add-btn{
-  font:inherit; font-size:16px; padding:14px 30px; border:none; border-radius:0; cursor:pointer;
-  background:var(--paper); color:#FFFFFF;
-  transition:transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s cubic-bezier(.2,.8,.2,1);
-}
-.empty-add-btn:hover{ transform:translateY(-3px); box-shadow:0 14px 24px -14px rgba(23,24,28,.6); }
-.empty-add-btn:focus-visible{ outline:2px solid var(--gold); outline-offset:3px; }
-@media (prefers-reduced-motion:reduce){ .empty-add-btn{ transition:none; } .empty-add-btn:hover{ transform:none; } }
 
 /* 뒤집힌 카드에선 앞면이 클릭을 받지 않게 — 앞면의 정보 칸(.info)은 투명해도(opacity:0) 클릭은
    받아서, 뒷면 아래 "자세히" 버튼 위를 덮고 있었음(누르면 카드만 다시 뒤집힘). 안 보이는 면은

@@ -1,5 +1,7 @@
 import { escapeHtml } from '../../shared/dom.js';
-import { catLabel, coverHtml, featureLabel, featureButtonLabel, ratingStars, withEuro } from './itemFormat.js';
+import { catLabel, coverHtml, displayTitle, featureLabel, featureButtonLabel, ratingStars, withEuro } from './itemFormat.js';
+import { isPrivateCat } from '../records.js';
+import { mountNoteEditor } from '../quickNote.js';
 import { detailSummary } from '../modal/detailFields.js';
 
 // 뒷면의 세부 기록 — 요소별 별점("스토리 4.5")과 장르 태그. 없으면 빈 문자열.
@@ -59,6 +61,7 @@ function backButtons(it, { onListen, readOnly }) {
     btns.push('<button type="button" class="back-btn ghost" data-act="delete">삭제</button>');
   }
   if (it.cat === 'music' && it.listen_url && onListen) btns.push('<button type="button" class="back-btn ghost" data-act="listen">▶ 듣기</button>');
+  if (it.cat === 'note' && it.listen_url && onListen) btns.push('<button type="button" class="back-btn ghost" data-act="listen">▶ 보기</button>');
   return btns.join('');
 }
 const confirmDeleteHtml = `
@@ -85,8 +88,20 @@ function featureStarHtml(it) {
 // "크게 보기"(뒷면 내용이 카드에 다 안 들어갈 때만 보임 — paintOverflow) — 촘촘히·목록 보기의 큰 카드 창으로.
 const EXPAND_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg>';
 
+// 뒷면 가운데 글 — 작품은 따옴표 친 감상, ?!는 쓴 글 그대로(따옴표 없이).
+function backTextHtml(it) {
+  if (it.cat === 'note') {
+    return it.memo
+      ? `<div class="q note-q">${escapeHtml(it.memo)}</div>`
+      : `<div class="q note-q empty-memo">${it.listen_url ? '유튜브 링크만 남겼어요.' : '사진만 남겼어요.'}</div>`;
+  }
+  return `<div class="q${it.memo ? '' : ' empty-memo'}">${it.memo ? `“${escapeHtml(it.memo)}”` : '아직 감상을 적지 않았어요.'}</div>`;
+}
+
 function cardHtml(it, { onListen, readOnly, expandable }) {
   const rare = !!it.featured;
+  // ?!(나만 보는 기록)는 인생작이 없어서 별도 안 그림(서버도 막음 — "not_featurable").
+  const star = readOnly || isPrivateCat(it.cat) ? '' : featureStarHtml(it);
   const type = catLabel(it.cat);
   const stars = it.rating ? ratingStars(it.rating) : '';
   return `
@@ -95,13 +110,13 @@ function cardHtml(it, { onListen, readOnly, expandable }) {
         ${coverHtml(it)}
         <div class="info">
           <div class="row"><span class="type">${type}</span><span class="row-end">${stars}${likeHtml(it, readOnly)}</span></div>
-          <div class="card-title">${escapeHtml(it.title)}</div>
+          <div class="card-title">${escapeHtml(displayTitle(it))}</div>
         </div>
       </div>
       <div class="face back">
-        <div class="back-head"><span class="type">${type}${rare ? ` · ${featureLabel(it.cat)}` : ''}</span><span class="back-head-end">${expandable ? `<button type="button" class="expand-btn" data-act="expand" aria-label="크게 보기" title="크게 보기" hidden>${EXPAND_ICON}</button>` : ''}${readOnly ? '' : featureStarHtml(it)}</span></div>
+        <div class="back-head"><span class="type">${type}${rare ? ` · ${featureLabel(it.cat)}` : ''}</span><span class="back-head-end">${expandable ? `<button type="button" class="expand-btn" data-act="expand" aria-label="크게 보기" title="크게 보기" hidden>${EXPAND_ICON}</button>` : ''}${star}</span></div>
         <div class="back-body">
-          <div class="q${it.memo ? '' : ' empty-memo'}">${it.memo ? `“${escapeHtml(it.memo)}”` : '아직 감상을 적지 않았어요.'}</div>
+          ${backTextHtml(it)}
           ${stars}
           ${detailHtml(it)}
           ${it.creator ? `<div class="back-creator">${escapeHtml(it.creator)}</div>` : ''}
@@ -142,7 +157,7 @@ function attachTilt(slot) {
   });
 }
 
-function makeSlot(it, { onEdit, onDelete, onFeature, onListen, onLike, onExpand, readOnly }) {
+function makeSlot(it, { onEdit, onDelete, onFeature, onListen, onLike, onExpand, onSaveNote, readOnly }) {
   const slot = document.createElement('div');
   slot.className = 'slot' + (it.featured ? ' rare' : '');
   slot.dataset.cat = it.cat;
@@ -153,7 +168,7 @@ function makeSlot(it, { onEdit, onDelete, onFeature, onListen, onLike, onExpand,
   card.tabIndex = 0;
   card.setAttribute('role', 'button');
   card.setAttribute('aria-pressed', 'false');
-  card.setAttribute('aria-label', `${it.title} 기록 뒤집기`);
+  card.setAttribute('aria-label', `${displayTitle(it)} 기록 뒤집기`);
   card.innerHTML = cardHtml(it, { onListen, readOnly, expandable: !!onExpand });
   const body = card.querySelector('.back-body');
   body.addEventListener('scroll', () => paintOverflow(card), { passive: true });
@@ -174,12 +189,30 @@ function makeSlot(it, { onEdit, onDelete, onFeature, onListen, onLike, onExpand,
     card.setAttribute('aria-pressed', String(toBack));
     if (toBack) { body.scrollTop = 0; paintOverflow(card); }
   };
+  // ?! 고치기 — 창 없이 그 카드 자리가 맨 앞 "+ ?!"와 같은 입력 칸으로(한 줄을 다 차지 — 폰의 작은 카드
+  // 뒷면은 너무 좁아서). 취소하면 카드가 그대로 돌아오고, 저장되면 목록이 새로 그려짐(2026-11-26 사용자 요청).
+  const startEditing = () => {
+    stopAsking();
+    const box = document.createElement('div');
+    box.className = 'note-draft';
+    const host = slot.querySelector('.tilt') || card;
+    host.hidden = true;
+    slot.classList.add('drafting');
+    slot.appendChild(box);
+    mountNoteEditor(box, {
+      item: it,
+      hint: '나만 봐요 · Ctrl+Enter 저장',
+      onSave: (parts) => onSaveNote(it, parts),
+      onCancel: () => { box.remove(); slot.classList.remove('drafting'); host.hidden = false; card.focus(); },
+    });
+  };
+
   card.addEventListener('click', (e) => {
     const act = e.target.closest('[data-act]');
     if (!act) { flip(); return; }
     e.stopPropagation();
     switch (act.dataset.act) {
-      case 'edit': onEdit(it); break;
+      case 'edit': if (it.cat === 'note' && onSaveNote) startEditing(); else onEdit(it); break;
       case 'feature': ask(confirmFeatureHtml(it), 'cancel-feature'); break;
       case 'confirm-feature': asking = null; onFeature(it); break;
       case 'listen': onListen(it); break;
@@ -229,13 +262,14 @@ function makeSlot(it, { onEdit, onDelete, onFeature, onListen, onLike, onExpand,
 // onListen: 주면 유튜브 링크가 있는 음악 카드 뒷면에 "▶ 듣기".
 // onLike(it): 남의 기록 카드의 공감 하트 — { count, liked }(또는 null) Promise.
 // onExpand(it): 주면 뒷면 내용이 넘칠 때 "크게 보기" 버튼(카드 보기 → 큰 카드 창). 큰 카드 창 안에선 안 줌.
-export function renderCards(containerEl, list, { emptyText, onEdit, onDelete, onFeature, onListen, onLike, onExpand, readOnly = false }) {
+// onSaveNote(it, parts) → Promise: 주면 ?! 카드의 "수정"이 창 대신 뒷면에서 바로 고침.
+export function renderCards(containerEl, list, { emptyText, onEdit, onDelete, onFeature, onListen, onLike, onExpand, onSaveNote, readOnly = false }) {
   containerEl.innerHTML = '';
   if (list.length === 0) {
     if (emptyText) containerEl.innerHTML = `<div class="empty">${emptyText}</div>`;
     return [];
   }
-  const slots = list.map((it) => makeSlot(it, { onEdit, onDelete, onFeature, onListen, onLike, onExpand, readOnly }));
+  const slots = list.map((it) => makeSlot(it, { onEdit, onDelete, onFeature, onListen, onLike, onExpand, onSaveNote, readOnly }));
   containerEl.append(...slots);
   return slots;
 }

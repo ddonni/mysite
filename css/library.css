@@ -62,7 +62,6 @@ body{ background:#1c1612; }
   transition:filter .15s ease, transform .15s ease;
 }
 .add-btn:hover{ filter:brightness(1.08); transform:translateY(-1px); }
-body.read-only #addTabBtn{ display:none; }
 .top-actions{ display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; }
 .add-btn.ghost{ color:var(--paper); background:transparent; border:1px solid var(--line-strong); }
 

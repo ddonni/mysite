@@ -2,14 +2,15 @@
 // welcome.js(처음 온 사람 안내)를 만들어서 서로 연결하고, 첫 목록을 불러옴.
 // (예전엔 첫 화면이 3D 방이었고 이 화면은 library.html "기록 보관소"였음 — library.html은
 // 이제 쿼리를 들고 여기로 넘어오기만 함.)
-import { fetchRecords, deleteRecord, setFeatured, setRoom, setActor, likeRecord } from './records.js';
+import { fetchRecords, deleteRecord, setFeatured, setRoom, setActor, likeRecord, WORK_CATS } from './records.js';
 import { createList } from './list.js';
 import { createModal } from './modal.js';
+import { saveNote } from './quickNote.js';
 import { initWelcome } from './welcome.js';
 import { initProfileHeader } from './profileHeader.js';
 import { initSocial } from './social.js';
 import { initRoomNav } from '../shared/roomNav.js';
-import { featureLabel, withEunNeun, withEulReul } from './list/itemFormat.js';
+import { displayTitle, featureLabel, withEunNeun, withEulReul } from './list/itemFormat.js';
 import { watchForSlow, SLOW_MESSAGE } from '../shared/slow.js';
 import { getPlayer } from '../shared/youtube.js';
 import { API_BASE } from '../shared/config.js';
@@ -93,10 +94,12 @@ initRoomNav({ navEl, currentPage: './', settings: true }).then((ctx) => {
   const initialTab = new URLSearchParams(location.search).get('cat');
 
   const modal = createModal({ onSaved: reload, getItems: () => currentItems });
+  // ?!는 창 없이 — 맨 앞 "+ ?!" 칸과 카드의 "수정"이 그 자리에서 입력 칸으로(quickNote.js).
   list = createList({
     readOnly,
     initialTab,
     onEdit: (item) => modal.openEdit(item),
+    onSaveNote: (item, parts) => saveNote(parts, item && item.id).then(reload),
     onDelete: (id) => deleteRecord(id).then(reload).catch(() => alert('삭제에 실패했어요. 잠시 후 다시 시도해주세요.')),
     onFeature: (item) => setFeatured(item.id, !item.featured).then(reload).catch((err) => {
       const label = featureLabel(item.cat);
@@ -105,14 +108,15 @@ initRoomNav({ navEl, currentPage: './', settings: true }).then((ctx) => {
         : '저장에 실패했어요. 잠시 후 다시 시도해주세요.');
     }),
     // 유튜브 링크가 있는 음악을 화면 구석의 작은 플레이어로 틂.
-    onListen: (item) => getPlayer().play(item),
+    // ?!의 유튜브 영상도 같은 플레이어로(제목 칸이 없어서 글 첫 줄을 제목으로).
+    onListen: (item) => getPlayer().play(item.cat === 'note' ? { ...item, title: displayTitle(item) } : item),
     // 남의 기록 카드에 공감 — 구글 연동이 안 됐으면 로그인 안내 창(social.js).
     onLike: async (item) => {
       const why = '공감은 구글 계정을 연동한 사람만 누를 수 있어요.';
       if (!item.liked && !(await social.isLinked())) { social.askLogin(why); return null; }
       try {
         const res = await likeRecord(item.id, !item.liked);
-        social.showToast(res.liked ? `"${item.title}"에 공감했어요 ♥` : '공감을 취소했어요');
+        social.showToast(res.liked ? `"${displayTitle(item)}"에 공감했어요 ♥` : '공감을 취소했어요');
         return res;
       } catch (err) {
         if (err.code === 'login') social.askLogin(why);
@@ -122,7 +126,8 @@ initRoomNav({ navEl, currentPage: './', settings: true }).then((ctx) => {
     },
     // 칩을 바꾸면 아래로 내려와 있었어도 맨 위로(그 카테고리를 처음부터 보게).
     onTabChange: () => window.scrollTo({ top: 0 }),
-    onAdd: (cat) => modal.openAdd(cat),
+    // 맨 앞 "+"의 작품 기록(전체·작품만이면 책).
+    onAdd: (tab) => modal.openAdd(tab),
   });
 
   // 보기 방식 전환(카드 · 촘촘히 · 목록) — 위 줄의 아이콘 버튼.
@@ -134,11 +139,10 @@ initRoomNav({ navEl, currentPage: './', settings: true }).then((ctx) => {
   // 티어리스트 페이지로 — 지금 보는 기록(남의 기록이면 그 기록)과 칩(카테고리)을 그대로 들고 감.
   document.getElementById('tierBtn').addEventListener('click', () => {
     const tab = list.activeTab();
-    window.location.href = roomLink(tab && tab !== 'all' ? `tier?cat=${tab}` : 'tier', viewingCode, mine.code);
+    const isWork = WORK_CATS.some((c) => c.key === tab); // 전체·작품만·?!면 티어리스트 전체로
+    window.location.href = roomLink(isWork ? `tier?cat=${tab}` : 'tier', viewingCode, mine.code);
   });
 
-  // 보고 있던 칩의 카테고리로 새 기록 창을 엶(전체면 책).
-  document.getElementById('addTabBtn').addEventListener('click', () => modal.openAdd(list.activeTab()));
 
   // 처음 온 사람 환영 카드에서 카테고리를 고르면 그 카테고리로 새 기록 창.
   const startWith = (cat) => {
