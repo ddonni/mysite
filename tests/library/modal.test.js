@@ -72,9 +72,11 @@ let onSaved;
 beforeEach(() => {
   saveRecord.mockReset().mockResolvedValue();
   deleteRecord.mockReset().mockResolvedValue();
-  searchMusic.mockReset();
-  searchBooks.mockReset();
-  searchScreen.mockReset();
+  // 기본은 빈 결과 — 앞 테스트가 글자를 치고 끝나면 자동완성의 늦은 검색이 다음 테스트 중에
+  // 실행되는데, 그때 이 함수가 undefined를 돌려주면 .then/.catch에서 오류가 남음.
+  searchMusic.mockReset().mockResolvedValue([]);
+  searchBooks.mockReset().mockResolvedValue([]);
+  searchScreen.mockReset().mockResolvedValue([]);
   fetchScreenCreator.mockReset();
   fetchMusicListen.mockReset().mockResolvedValue(null);
   play.mockReset();
