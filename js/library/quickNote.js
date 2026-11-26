@@ -17,7 +17,8 @@ const imageIn = (files) => [...(files || [])].find((f) => f && f.type && f.type.
 
 // root 안에 입력 칸 + 사진 미리보기 + [사진] [취소] [저장]. item을 주면 그 ?!의 값으로 채움(고치기).
 // onSave(parts) → Promise(실패하면 안내하고 그대로), onCancel(): 취소·Esc.
-export function mountNoteEditor(root, { item = null, onSave, onCancel, hint = '' }) {
+// file·text: 열자마자 붙일 사진·넣을 글("+ ?!" 칸에 끌어다 놓은 것 — list.js).
+export function mountNoteEditor(root, { item = null, onSave, onCancel, hint = '', file = null, text = '' }) {
   root.innerHTML = `
     <div class="note-editor">
       <textarea class="note-input" maxlength="${NOTE_MAX}" rows="4" aria-label="?! 내용"
@@ -42,7 +43,7 @@ export function mountNoteEditor(root, { item = null, onSave, onCancel, hint = ''
   let preview = photoUrl ? photoSrc(photoUrl) : null; // 보여 줄 그림(올리는 중엔 이 기기의 파일)
   let uploading = false;
   let saving = false;
-  input.value = item ? joinNote(item) : '';
+  input.value = item ? joinNote(item) : text;
   hintEl.textContent = hint;
 
   function paint() {
@@ -112,12 +113,23 @@ export function mountNoteEditor(root, { item = null, onSave, onCancel, hint = ''
   paint();
   input.focus();
   input.setSelectionRange(input.value.length, input.value.length);
+  if (file) attach(file);
+}
+
+// 끌어다 놓은 것에서 사진 한 장 또는 글(링크 포함)을 꺼냄 — 둘 다 없으면 null.
+export function droppedNote(dataTransfer) {
+  if (!dataTransfer) return null;
+  const file = imageIn(dataTransfer.files);
+  if (file) return { file };
+  const text = (dataTransfer.getData && (dataTransfer.getData('text/plain') || dataTransfer.getData('text/uri-list'))) || '';
+  return text.trim() ? { text: text.trim() } : null;
 }
 
 // 격자 맨 앞 칸(slot)을 입력 칸으로 — 한 줄을 다 차지해서 폰에서도 넉넉하게. onSave(parts) → Promise
 // (저장되면 목록이 새로 그려져서 칸도 원래대로), onClose(): 취소했을 때 칸을 되돌림.
-export function openNoteDraft(slot, { onSave, onClose }) {
+// file·text: 끌어다 놓아서 연 경우 바로 붙일 사진·글.
+export function openNoteDraft(slot, { onSave, onClose, file = null, text = '' }) {
   slot.classList.add('drafting');
   slot.innerHTML = '<div class="note-draft"></div>';
-  mountNoteEditor(slot.firstElementChild, { onSave, onCancel: onClose, hint: '나만 봐요 · Ctrl+Enter 저장' });
+  mountNoteEditor(slot.firstElementChild, { onSave, onCancel: onClose, hint: '나만 봐요 · Ctrl+Enter 저장', file, text });
 }

@@ -117,6 +117,26 @@ describe('?! — 창 없이 쓰기·고치기(사진 포함)', () => {
     expect(onSaveNote).toHaveBeenCalledWith(null, { memo: '', listen_url: null, photo_url: 'https://bucket/records/p.jpg' });
   });
 
+  it('"+ ?!"에 사진을 끌어다 놓으면 입력 칸이 열리면서 사진이 붙음, 글을 놓으면 칸에 들어감', async () => {
+    const { grid, onSaveNote } = mountList([book]);
+    const drop = (target, dataTransfer) => {
+      const e = new Event('drop', { bubbles: true, cancelable: true });
+      e.dataTransfer = dataTransfer;
+      target.dispatchEvent(e);
+    };
+    drop(grid.querySelector('[data-add="note"]'), { files: [new File(['x'], 'd.jpg', { type: 'image/jpeg' })], getData: () => '' });
+    const slot = grid.querySelector('.drafting');
+    expect(slot).not.toBeNull();
+    await vi.waitFor(() => expect(slot.querySelector('[data-ed="save"]').disabled).toBe(false));
+    expect(uploadPhoto).toHaveBeenCalledTimes(1);
+    slot.querySelector('[data-ed="save"]').click();
+    expect(onSaveNote).toHaveBeenCalledWith(null, { memo: '', listen_url: null, photo_url: 'https://bucket/records/p.jpg' });
+
+    const again = mountList([book]).grid;
+    drop(again.querySelector('[data-add="note"]'), { files: [], getData: (t) => (t === 'text/plain' ? YT : '') });
+    expect(again.querySelector('.drafting textarea').value).toBe(YT);
+  });
+
   it('사진을 빼면(×) 다시 저장할 게 없음', async () => {
     const { grid } = mountList([book]);
     grid.querySelector('[data-add="note"]').click();

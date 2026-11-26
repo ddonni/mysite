@@ -9,7 +9,7 @@
 import { CATS, WORK_CATS, isPrivateCat } from './records.js';
 import { renderCards, deal } from './list/cardsView.js';
 import { renderCompact, createCardDialog } from './list/compactViews.js';
-import { openNoteDraft } from './quickNote.js';
+import { droppedNote, openNoteDraft } from './quickNote.js';
 
 // 보기 방식 — 'cards'(뒤집는 카드, 기본) · 'dense'(촘촘히) · 'list'(목록). 고른 건 이 브라우저에 기억함.
 export const VIEWS = ['cards', 'dense', 'list'];
@@ -91,6 +91,19 @@ function addCardEl(tab, { onAdd, onNote }, view) {
   slot.querySelectorAll('[data-add]').forEach((b) => b.addEventListener('click', () => {
     if (b.dataset.add === 'note') onNote(slot); else onAdd(b.dataset.add);
   }));
+  // "+ ?!"에 사진(또는 글·링크)을 끌어다 놓으면 입력 칸이 열리면서 바로 붙음(2026-11-26 사용자 요청).
+  const noteBtn = slot.querySelector('[data-add="note"]');
+  if (noteBtn) {
+    const over = (on) => noteBtn.classList.toggle('drop-ready', on);
+    noteBtn.addEventListener('dragover', (e) => { e.preventDefault(); over(true); });
+    noteBtn.addEventListener('dragleave', () => over(false));
+    noteBtn.addEventListener('drop', (e) => {
+      e.preventDefault();
+      over(false);
+      const dropped = droppedNote(e.dataTransfer);
+      if (dropped) onNote(slot, dropped);
+    });
+  }
   return slot;
 }
 
@@ -110,7 +123,8 @@ export function createList({ onEdit, onDelete, onFeature, onListen, onLike, onTa
   let view = storedView();
   const cardDialog = createCardDialog({ onEdit, onDelete, onFeature, onListen, onLike, onSaveNote, readOnly });
   // 맨 앞 칸 → 입력 칸. 취소하면 그 칸만 원래 "+"로(목록 전체를 다시 그리지 않음 — 덱 효과가 다시 안 나게).
-  const onNote = (slot) => openNoteDraft(slot, {
+  const onNote = (slot, dropped = {}) => openNoteDraft(slot, {
+    ...dropped,
     onSave: (parts) => onSaveNote(null, parts),
     onClose: () => slot.replaceWith(addCardEl(activeTab, { onAdd, onNote }, view)),
   });

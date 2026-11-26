@@ -191,6 +191,7 @@
   쓰기·고치기는 **창(팝업) 없이**(`js/library/quickNote.js`의 `mountNoteEditor`): 격자 맨 앞 "+ ?!" → 그 칸이 한 줄을
   다 차지하는 입력 칸(`openNoteDraft`), 카드 뒷면 "수정" → 그 카드 자리가 같은 입력 칸(`cardsView.js`, `onSaveNote`).
   Ctrl+Enter 저장·Esc 취소. 사진 한 장은 입력 칸에 붙여넣기·끌어다 놓기·"사진" 버튼(`shrinkImage` → `uploadPhoto`).
+  닫혀 있는 "+ ?!" 칸에 사진·글을 끌어다 놓아도 입력 칸이 열리면서 바로 붙음(`droppedNote`).
   **페이지 아무 데서나 붙여넣기는 만들었다가 뺐음**(사용자가 원한 건 입력 칸에 붙여넣기). 글 속 첫 유튜브 주소는
   `listen_url`, 나머지는 `memo`(`noteText.js`의 `splitNote`/`notePartsFrom`).
   카드는 사진이면 사진, 영상이면 썸네일 + ▶(작은 플레이어, `onListen`), 글이면 투명한 바탕에 글씨만(종이·테두리·아이콘 없이, 사용자 요청), 아이콘은 글자 "?!" — `itemFormat.js`의
