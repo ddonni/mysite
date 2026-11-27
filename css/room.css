@@ -1,12 +1,8 @@
 /* "내 방" 보기(js/library/list/roomView.js) — 네모난 방을 대각선 위에서 내려다본 모습(바닥 + 안쪽 벽 둘).
    전부 흰색, 면이 구분되게만 아주 옅은 회색. 원근 없이(perspective 없음). */
 .grid[data-view="room"]{ display:block; }
-.room-view{ position:relative; width:100%; overflow:hidden; }
-/* 방 뒤 배경 — 작품 사진 격자로 꽉(roomView.js의 backdropHtml). 눌리지 않음 */
-.rv-backdrop{ position:absolute; inset:0; display:grid; justify-content:center; align-content:center; pointer-events:none; }
-.rv-bg-cell{ display:block; overflow:hidden; background:#FFFFFF; }
-.rv-bg-cell img{ display:block; width:100%; height:100%; object-fit:cover; }
-.rv-bg-title{ display:flex; align-items:center; justify-content:center; padding:6%; box-sizing:border-box; font-size:10px; text-align:center; color:var(--paper-dim); word-break:keep-all; }
+.room-view{ position:relative; width:100%; overflow:hidden; background:#E9E8E4; }
+/* 방 뒤 배경은 단색(위 .room-view) — 작품 사진 격자는 사용자가 "너무 어지럽다"고 해서 뺌. 흰 방과 구분되게 옅은 회색 */
 .rv-room{ position:absolute; transform-style:preserve-3d; transform:rotateX(60deg) rotateZ(45deg); }
 .rv-floor{ position:absolute; inset:0; background:#F3F3F1; }
 /* 마우스는 작품 사진만 받음 — 3D로 비스듬한 면(침대·옷장 윗면 등)이 보이는 자리와 다른 곳에서 클릭·휠을 가로채는

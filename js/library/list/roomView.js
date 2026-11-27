@@ -144,28 +144,6 @@ function attachWallScroll(surface, gallery, track, maxOffset) {
   return { scrollTo: apply };
 }
 
-// 방 뒤 배경(방 둘레의 빈 곳)을 작품 사진 격자로 꽉 채움(사용자 요청 "방이 아닌 뒤에 배경을 작품들로"). 그림처럼
-// 깔리기만 하고 눌리지 않음. 그림 있는 것만(없으면 제목 칸), 칸보다 적으면 처음부터 되풀이.
-export function backdropHtml(works, W, H) {
-  const pool = works.filter((it) => tileImg(it));
-  const src = pool.length ? pool : works;
-  if (!src.length) return '';
-  const tw = Math.max(44, Math.min(90, W / 16));
-  const th = tw * COVER;
-  const gap = Math.max(2, Math.round(tw * 0.06));
-  const cols = Math.ceil((W + gap) / (tw + gap));
-  const rows = Math.ceil((H + gap) / (th + gap));
-  const cells = [];
-  for (let i = 0; i < cols * rows; i++) {
-    const it = src[i % src.length];
-    const img = tileImg(it);
-    cells.push(img
-      ? `<span class="rv-bg-cell">${img}</span>`
-      : `<span class="rv-bg-cell rv-bg-title">${escapeHtml(displayTitle(it))}</span>`);
-  }
-  return `<div class="rv-backdrop" aria-hidden="true" style="grid-template-columns:repeat(${cols}, ${tw}px);grid-auto-rows:${th}px;gap:${gap}px">${cells.join('')}</div>`;
-}
-
 // 벽 사진 격자 하나 — 위에서 아래로 채우고 다음 열로.
 function galleryHtml(cls, items, lay, part, { left, width }) {
   return `
@@ -200,7 +178,6 @@ export function renderRoom(containerEl, list, { onOpen } = {}) {
 
   containerEl.innerHTML = `
     <div class="room-view" style="height:${viewH}px">
-      ${backdropHtml(works, W, viewH)}
       <div class="rv-room" style="width:${L}px;height:${L}px;left:${(W - L) / 2}px;top:${cy - L / 2}px">
         <div class="rv-floor"></div>
         <div class="rv-wall rv-wall-left" style="width:${L}px;height:${H}px;top:${L - H}px">
