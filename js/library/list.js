@@ -10,6 +10,7 @@ import { CATS, WORK_CATS, isPrivateCat } from './records.js';
 import { renderCards, deal } from './list/cardsView.js';
 import { renderCompact, createCardDialog } from './list/compactViews.js';
 import { renderRoom } from './list/roomView.js';
+import { createNotebook } from './list/notebook.js';
 import { droppedNote, openNoteDraft } from './quickNote.js';
 
 // 보기 방식 — 'cards'(뒤집는 카드, 기본) · 'dense'(촘촘히) · 'list'(목록). 고른 건 이 브라우저에 기억함.
@@ -111,6 +112,8 @@ export function createList({ onEdit, onDelete, onFeature, onListen, onLike, onTa
     cancelAnimationFrame(resizeFrame);
     resizeFrame = requestAnimationFrame(() => renderBody());
   });
+  // 내 방 책상 위 공책 → ?! 모음(날짜 + 내용), 유튜브는 작은 플레이어로.
+  const notebook = createNotebook({ onListen });
   const cardDialog = createCardDialog({ onEdit, onDelete, onFeature, onListen, onLike, onSaveNote, readOnly });
   // 맨 앞 칸 → 입력 칸. 취소하면 그 칸만 원래 "+"로(목록 전체를 다시 그리지 않음 — 덱 효과가 다시 안 나게).
   const onNote = (slot, dropped = {}) => openNoteDraft(slot, {
@@ -166,7 +169,10 @@ export function createList({ onEdit, onDelete, onFeature, onListen, onLike, onTa
     listEl.dataset.view = view;
     // 내 방은 칩과 따로 — 어느 칩이었든 모든 작품(책·애니·영화, roomView.js가 음악·?!를 뺌)을 벽에.
     if (view === 'room') {
-      renderRoom(listEl, shuffleForGrid(currentItems, seed, knownIds), { onOpen: (it, order) => cardDialog.open(it, { front: true, list: order }) });
+      renderRoom(listEl, shuffleForGrid(currentItems, seed, knownIds), {
+        onOpen: (it, order) => cardDialog.open(it, { front: true, list: order }),
+        onNotebook: (notes) => notebook.open(notes),
+      });
       shownIds = null; // 방에서 나올 땐 카드를 처음부터 나눠줌
       return;
     }

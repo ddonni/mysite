@@ -17,8 +17,10 @@ const SIN = Math.sin((TILT * Math.PI) / 180); // 벽 높이가 화면에 보이�
 const ROOT2 = Math.SQRT2;
 const COVER = 7 / 5; // 작품 사진 세로/가로(카드와 같은 5:7)
 
-// 방에 거는 것 — 작품 넷 + ?!(2026-11-27 사용자 "?!랑 음악도 걍 벽에 넣자").
-export const ROOM_CATS = ['book', 'anime', 'movie', 'music', 'note'];
+// 벽에 거는 것 — 작품 넷(음악 포함). ?!는 벽에 걸었다가(사용자 "?!랑 음악도 걍 벽에 넣자") 책상 위 공책으로 옮김
+// (2026-11-27 사용자 "?!는 벽에서 빼고 그 책을 클릭해야 볼 수 있게" — list/notebook.js).
+export const ROOM_CATS = ['book', 'anime', 'movie', 'music'];
+export const roomNotes = (list) => list.filter((it) => it.cat === 'note');
 export const roomItems = (list) => list.filter((it) => ROOM_CATS.includes(it.cat));
 
 // 화면(폭 W, 높이 availH)에 맞는 방 크기 — 방 전체(앞쪽 바닥 끝까지)가 화면 안에 들어오게(사용자: "밑에 절반이
@@ -76,10 +78,11 @@ export function layoutWalls(n, { leftW, rightW, h, minW = 8 }) {
 
 // 바닥 위의 상자(침대·옷장) — 보이는 면은 윗면·앞(+y)·오른쪽(+x) 셋뿐이라 그것만. x·y는 바닥 위 위치,
 // w(x 방향)·d(y 방향)·h(높이), z = 바닥에서 띄운 높이.
-function boxHtml(cls, { x, y, w, d, h, z = 0 }) {
+// top: 윗면 안에 넣을 것(공책 표지의 "?!" 등).
+function boxHtml(cls, { x, y, w, d, h, z = 0, top = '' }) {
   return `
     <div class="rv-box ${cls}" style="left:${x}px;top:${y}px;width:${w}px;height:${d}px;transform:translateZ(${z}px)">
-      <div class="rv-face rv-top" style="transform:translateZ(${h}px)"></div>
+      <div class="rv-face rv-top" style="transform:translateZ(${h}px)">${top}</div>
       <div class="rv-face rv-front" style="left:0;top:${d - h}px;width:${w}px;height:${h}px"></div>
       <div class="rv-face rv-side" style="left:${w}px;top:${d - h}px;width:${d}px;height:${h}px"></div>
     </div>`;
@@ -98,50 +101,101 @@ function tileHtml(it) {
   return `<button type="button" class="rv-work" data-id="${escapeAttr(String(it.id))}" title="${label}" aria-label="${label}">${inner}</button>`;
 }
 
-// 작품 벽 옆으로 스크롤 — 벽이 3D로 비스듬해서 브라우저 스크롤 대신 직접: 휠(세로 휠도 옆으로)·끌기. 끌었으면
-// 그 클릭은 작품 열기로 안 침. **마우스가 작품 벽 위에 있을 때만**(방 바깥 빈 곳·바닥에선 페이지 그대로 — 사용자 요청).
-// 크롬이 3D로 기울어진 요소에선 휠의 대상만 엉뚱하게 잡아서(마우스 이동·클릭은 맞음), 벽 위인지는 마우스 이동
-// (pointerenter/leave)으로 알아 두고 휠은 방 전체(surface, 평평한 2D 요소)에서 받음.
-function attachWallScroll(surface, gallery, track, maxOffset) {
-  let offset = 0;
-  const apply = (v) => {
-    offset = Math.min(maxOffset, Math.max(0, v));
-    track.style.transform = `translateX(${-offset}px)`;
+// 방 안 조작(2026-11-27 사용자 요청 "방 안에서 스크롤하면 확대되고, 작품 더 보는 건 잡고 넘기기로"):
+//   - 휠 = 확대·축소(마우스 자리를 중심으로, ZOOM_MIN~ZOOM_MAX배). 페이지는 안 움직임.
+//   - 오른쪽 작품 벽을 잡고 옆으로 끌기 = 벽 넘기기(작품이 벽보다 많을 때). 끌었으면 그 클릭은 작품 열기로 안 침.
+//   - 확대한 상태에서 벽 말고 다른 데(바닥·빈 곳)를 잡고 끌기 = 보는 자리 옮기기.
+//   - 폰: 두 손가락으로 벌리고 오므리기 = 확대·축소.
+// 크롬은 3D로 기운 요소에선 휠의 대상만 엉뚱하게 잡아서(마우스 이동·클릭은 맞음) 휠·끌기는 방 전체(surface,
+// 평평한 2D 요소)에서 받고, 벽 위인지는 누른 요소(e.target)로 봄. stage = 확대·이동하는 층(방을 감쌈).
+export const ZOOM_MIN = 1;
+export const ZOOM_MAX = 4;
+export function attachRoomControls(surface, stage, wall) {
+  const W = () => surface.clientWidth || 1;
+  const H = () => surface.clientHeight || 1;
+  let s = 1; let tx = 0; let ty = 0;
+  const clampPan = () => {
+    tx = Math.min(0, Math.max(W() - W() * s, tx));
+    ty = Math.min(0, Math.max(H() - H() * s, ty));
   };
-  let overWall = false;
-  gallery.addEventListener('pointerenter', () => { overWall = true; });
-  gallery.addEventListener('pointerleave', () => { overWall = false; });
+  const paint = () => {
+    clampPan();
+    stage.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+    surface.classList.toggle('zoomed', s > 1.001);
+  };
+  // (cx, cy) = surface 안 좌표 — 그 자리가 그대로 있게 확대.
+  const zoomAt = (next, cx, cy) => {
+    const ns = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, next));
+    tx = cx - ((cx - tx) / s) * ns;
+    ty = cy - ((cy - ty) / s) * ns;
+    s = ns;
+    paint();
+  };
+  const local = (e) => {
+    const r = surface.getBoundingClientRect();
+    return [e.clientX - r.left, e.clientY - r.top];
+  };
   surface.addEventListener('wheel', (e) => {
-    if (!overWall) return;
-    const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-    // 벽 위에서 굴린 휠은 벽만 — 끝에 닿아도 페이지는 안 내려감(사용자 요청).
     e.preventDefault();
-    apply(offset + d);
+    const [cx, cy] = local(e);
+    zoomAt(s * Math.exp(-e.deltaY * 0.0015), cx, cy);
   }, { passive: false });
-  let start = null;
-  let dragged = false;
+
+  // 벽 넘기기
+  let offset = 0;
+  const maxOffset = wall ? wall.maxOffset : 0;
+  const scrollWall = (v) => {
+    offset = Math.min(maxOffset, Math.max(0, v));
+    wall.track.style.transform = `translateX(${-offset}px)`;
+  };
+
+  const pts = new Map(); // 누르고 있는 손가락·마우스
+  let drag = null; // { kind: 'wall'|'pan', x, y, offset, tx, ty }
+  let pinch = null; // { dist, s }
+  let moved = false;
+  const dist = () => { const [a, b] = [...pts.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
   surface.addEventListener('pointerdown', (e) => {
-    if (!gallery.contains(e.target)) return; // 끌기도 작품 벽에서 시작할 때만
-    start = { x: e.clientX, offset };
-    dragged = false;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    moved = false;
+    if (pts.size === 2) { drag = null; pinch = { dist: dist(), s }; return; }
+    const onWall = !!(wall && wall.gallery.contains(e.target));
+    if (onWall) drag = { kind: 'wall', x: e.clientX, y: e.clientY, offset };
+    else if (s > 1.001) drag = { kind: 'pan', x: e.clientX, y: e.clientY, tx, ty };
+    else drag = null;
   });
   surface.addEventListener('pointermove', (e) => {
-    if (!start) return;
-    const dx = e.clientX - start.x;
-    if (!dragged && Math.abs(dx) < 5) return;
-    if (!dragged) { dragged = true; if (surface.setPointerCapture) surface.setPointerCapture(e.pointerId); }
-    apply(start.offset - dx * ROOT2); // 벽이 45도로 서 있어서 화면에서 움직인 것보다 벽 위에선 √2배
+    if (!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && pts.size === 2) {
+      const [a, b] = [...pts.values()];
+      const r = surface.getBoundingClientRect();
+      zoomAt(pinch.s * (dist() / pinch.dist), (a.x + b.x) / 2 - r.left, (a.y + b.y) / 2 - r.top);
+      moved = true;
+      return;
+    }
+    if (!drag) return;
+    const dx = e.clientX - drag.x;
+    const dy = e.clientY - drag.y;
+    if (!moved && Math.hypot(dx, dy) < 5) return;
+    if (!moved) { moved = true; if (surface.setPointerCapture) surface.setPointerCapture(e.pointerId); }
+    if (drag.kind === 'wall') scrollWall(drag.offset - (dx / s) * ROOT2); // 벽이 45도라 벽 위에선 √2배, 확대 중엔 그만큼 덜
+    else { tx = drag.tx + dx; ty = drag.ty + dy; paint(); }
   });
-  const end = () => { start = null; };
+  const end = (e) => {
+    pts.delete(e.pointerId);
+    if (pts.size < 2) pinch = null;
+    if (!pts.size) drag = null;
+  };
   surface.addEventListener('pointerup', end);
   surface.addEventListener('pointercancel', end);
   surface.addEventListener('click', (e) => {
-    if (!dragged) return;
+    if (!moved) return;
     e.stopPropagation();
     e.preventDefault();
-    dragged = false;
+    moved = false;
   }, true);
-  return { scrollTo: apply };
+  paint();
+  return { zoomAt, scale: () => s, scrollWall: (v) => (wall ? scrollWall(v) : null) };
 }
 
 // 벽 사진 격자 하나 — 위에서 아래로 채우고 다음 열로.
@@ -156,9 +210,11 @@ function galleryHtml(cls, items, lay, part, { left, width }) {
           </div>`;
 }
 
-// containerEl에 방을 그림. list: 기록 전부(방은 칩과 따로). onOpen(it): 벽의 작품을 누르면(큰 카드).
-export function renderRoom(containerEl, list, { onOpen } = {}) {
+// containerEl에 방을 그림. list: 기록 전부(방은 칩과 따로). onOpen(it, 벽 순서): 벽의 작품을 누르면(큰 카드).
+// onNotebook(notes): 책상 위 공책을 누르면(?! 모음 — 공책은 ?!가 있을 때만, 남의 방엔 ?!가 안 와서 없음).
+export function renderRoom(containerEl, list, { onOpen, onNotebook } = {}) {
   const works = roomItems(list);
+  const notes = roomNotes(list);
   const W = containerEl.clientWidth || window.innerWidth;
   const top = containerEl.getBoundingClientRect().top + (window.scrollY || 0);
   const { L, H, viewH } = roomSize(W, window.innerHeight - top - 8);
@@ -178,6 +234,7 @@ export function renderRoom(containerEl, list, { onOpen } = {}) {
 
   containerEl.innerHTML = `
     <div class="room-view" style="height:${viewH}px">
+      <div class="rv-stage">
       <div class="rv-room" style="width:${L}px;height:${L}px;left:${(W - L) / 2}px;top:${cy - L / 2}px">
         <div class="rv-floor"></div>
         <div class="rv-wall rv-wall-left" style="width:${L}px;height:${H}px;top:${L - H}px">
@@ -191,6 +248,11 @@ export function renderRoom(containerEl, list, { onOpen } = {}) {
         ${boxHtml('rv-bed', { x: 0, y: L * 0.06, w: L * 0.42, d: L * 0.28, h: L * 0.045 })}
         ${boxHtml('rv-pillow', { x: L * 0.025, y: L * 0.095, w: L * 0.075, d: L * 0.21, h: L * 0.016, z: L * 0.045 })}
         ${boxHtml('rv-wardrobe', { x: 0, y: L * 0.58, w: L * 0.15, d: L * 0.28, h: Math.min(H * 0.85, L * 0.36) })}
+        ${/* 책상은 화면 기준 남쪽(앞쪽) 모서리 — 바닥의 오른쪽 아래 꼭짓점(L, L)에서 조금 띄워서, 위에 ?! 공책(사용자 요청) */ ''}
+        ${boxHtml('rv-desk', { x: L * 0.73, y: L * 0.8, w: L * 0.2, d: L * 0.13, h: L * 0.1 })}
+        ${notes.length ? boxHtml('rv-notebook', { x: L * 0.78, y: L * 0.825, w: L * 0.1, d: L * 0.075, h: L * 0.008, z: L * 0.1,
+            top: `<button type="button" class="rv-notebook-btn" aria-label="?! 공책 열기" title="?! 공책">?!</button>` }) : ''}
+      </div>
       </div>
     </div>`;
 
@@ -200,10 +262,11 @@ export function renderRoom(containerEl, list, { onOpen } = {}) {
     const order = [...leftItems, ...rightItems];
     containerEl.querySelectorAll('.rv-work').forEach((b) => b.addEventListener('click', () => onOpen(byId.get(b.dataset.id), order)));
   }
-  if (lay.scroll) {
-    const surface = containerEl.querySelector('.room-view');
-    surface.classList.add('scroll');
-    const gallery = containerEl.querySelector('.rv-gallery-right');
-    attachWallScroll(surface, gallery, gallery.querySelector('.rv-track'), lay.right.w - rightViewW);
-  }
+  const notebookBtn = containerEl.querySelector('.rv-notebook-btn');
+  if (notebookBtn && onNotebook) notebookBtn.addEventListener('click', () => onNotebook(notes));
+  const surface = containerEl.querySelector('.room-view');
+  const gallery = containerEl.querySelector('.rv-gallery-right');
+  if (lay.scroll) surface.classList.add('scroll');
+  attachRoomControls(surface, containerEl.querySelector('.rv-stage'),
+    lay.scroll && gallery ? { gallery, track: gallery.querySelector('.rv-track'), maxOffset: lay.right.w - rightViewW } : null);
 }

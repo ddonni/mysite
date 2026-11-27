@@ -1,21 +1,22 @@
-// "내 방" 보기 — 두 벽(왼쪽은 옷장 앞을 뺀 부분)에 작품·음악·?!를 걸고, 작품 수에 맞춰 사진 크기를 정하고, 넘치면
-// 오른쪽 벽을 옆으로 스크롤. 방 전체가 화면 안에, 작품을 누르면 큰 카드.
+// "내 방" 보기 — 두 벽에 작품(음악 포함)을 걸고, 작품 수에 맞춰 사진 크기를 정하고, 넘치면 오른쪽 벽을 끌어서 넘김.
+// ?!는 벽이 아니라 책상 위 공책(누르면 날짜 + 내용). 방 전체가 화면 안에, 작품을 누르면 큰 카드.
 import { describe, expect, it, vi } from 'vitest';
 import { layoutWalls, renderRoom, roomItems, roomSize } from '../../../js/library/list/roomView.js';
 import { createCardDialog } from '../../../js/library/list/compactViews.js';
+import { createNotebook, noteDate, notesNewestFirst } from '../../../js/library/list/notebook.js';
 
 const items = [
   { id: 1, cat: 'book', title: '데미안', photo_url: 'https://example.com/a.jpg' },
   { id: 2, cat: 'anime', title: '진격의 거인' },
   { id: 3, cat: 'movie', title: '기생충' },
   { id: 4, cat: 'music', title: 'Ditto', photo_url: 'https://example.com/m.jpg' },
-  { id: 5, cat: 'note', title: '', memo: '오이 싫음' },
-  { id: 6, cat: 'note', title: '', memo: null, listen_url: 'https://youtu.be/dQw4w9WgXcQ' },
+  { id: 5, cat: 'note', title: '', memo: '오이 싫음', date: '2026-11-20' },
+  { id: 6, cat: 'note', title: '', memo: null, listen_url: 'https://youtu.be/dQw4w9WgXcQ', date: '2026-11-25' },
 ];
 
 describe('내 방', () => {
-  it('벽에는 작품 넷 + ?! 전부', () => {
-    expect(roomItems(items).map((i) => i.id)).toEqual([1, 2, 3, 4, 5, 6]);
+  it('벽에는 작품 넷(음악 포함)만 — ?!는 빼고', () => {
+    expect(roomItems(items).map((i) => i.id)).toEqual([1, 2, 3, 4]);
   });
 
   it('두 벽에 나눠 걺 — 다 들어가고, 적으면 크게, 두 벽 다 씀', () => {
@@ -52,51 +53,108 @@ describe('내 방', () => {
     expect(tall.L * Math.SQRT2).toBeCloseTo(390 * 0.98, 0);
   });
 
-  it('작품마다 벽에 한 칸(두 벽 합쳐서), 음악은 표지·?! 영상은 썸네일·글은 글, 누르면 onOpen', () => {
+  it('작품마다 벽에 한 칸(두 벽 합쳐서), 음악은 표지, 누르면 onOpen', () => {
     document.body.innerHTML = '<div id="g"></div>';
     const g = document.getElementById('g');
     const onOpen = vi.fn();
     renderRoom(g, items, { onOpen });
     const tiles = [...g.querySelectorAll('.rv-work')];
-    expect(tiles.length).toBe(6);
+    expect(tiles.length).toBe(4);
     expect(g.querySelectorAll('.rv-gallery-left .rv-work').length).toBeGreaterThan(0);
     expect(g.querySelectorAll('.rv-gallery-right .rv-work').length).toBeGreaterThan(0);
     const tileOf = (id) => tiles.find((t) => t.dataset.id === String(id));
     expect(tileOf(4).querySelector('img').getAttribute('src')).toContain('example.com/m.jpg');
-    expect(tileOf(6).querySelector('img').getAttribute('src')).toContain('i.ytimg.com/vi/dQw4w9WgXcQ');
-    expect(tileOf(5).querySelector('.rv-title').textContent).toBe('오이 싫음');
-    expect(g.querySelectorAll('.rv-wardrobe, .rv-bed').length).toBe(2);
+    expect(tileOf(5)).toBeUndefined();
+    expect(g.querySelectorAll('.rv-wardrobe, .rv-bed, .rv-desk').length).toBe(3);
     tileOf(2).click();
     // 두 번째 인자 = 벽에 걸린 순서(왼쪽 벽 → 오른쪽 벽) — 큰 카드에서 옆 작품으로 넘길 때
     const [opened, order] = onOpen.mock.calls[0];
     expect(opened).toBe(items[1]);
-    expect(order.map((i) => i.id).sort()).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(order.map((i) => i.id).sort()).toEqual([1, 2, 3, 4]);
   });
 
-  it('오른쪽 벽이 넘치면 그 벽 위에서 휠을 굴리면 옆으로 — 끝에서 멈추고 페이지는 안 내려감, 벽 밖에선 그대로', () => {
+  it('책상 위 공책 — ?!가 있을 때만, 누르면 onNotebook(?!들)', () => {
     document.body.innerHTML = '<div id="g"></div>';
     const g = document.getElementById('g');
+    const onNotebook = vi.fn();
+    renderRoom(g, items, { onNotebook });
+    g.querySelector('.rv-notebook-btn').click();
+    expect(onNotebook.mock.calls[0][0].map((i) => i.id)).toEqual([5, 6]);
+    renderRoom(g, items.filter((i) => i.cat !== 'note'), { onNotebook });
+    expect(g.querySelector('.rv-notebook')).toBeNull(); // 남의 방(?!가 안 옴) — 공책 없이 책상만
+    expect(g.querySelector('.rv-desk')).not.toBeNull();
+  });
+
+  it('공책 화면 — 최신순으로 날짜와 내용, 유튜브는 누르면 onListen, 바깥·×로 닫힘', () => {
+    document.body.innerHTML = '';
+    const onListen = vi.fn();
+    const nb = createNotebook({ onListen });
+    nb.open(items.filter((i) => i.cat === 'note'));
+    const entries = [...document.querySelectorAll('.notebook .nb-entry')];
+    expect(entries.map((e) => e.querySelector('.nb-date').textContent)).toEqual(['2026.11.25', '2026.11.20']);
+    expect(entries[1].querySelector('.nb-text').textContent).toBe('오이 싫음');
+    entries[0].querySelector('[data-act="listen"]').click();
+    expect(onListen).toHaveBeenCalledWith(expect.objectContaining({ id: 6 }));
+    document.querySelector('.nb-close').click();
+    expect(document.querySelector('.notebook').hidden).toBe(true);
+    expect(noteDate('2026-01-02')).toBe('2026.01.02');
+    expect(notesNewestFirst([{ id: 1, date: '2026-01-01' }, { id: 2, date: '2026-01-01' }]).map((i) => i.id)).toEqual([2, 1]);
+  });
+
+  describe('방 안 조작 — 휠은 확대, 작품 벽 끌기는 넘기기, 확대 중 다른 데 끌기는 이동', () => {
     const many = Array.from({ length: 300 }, (_, i) => ({ id: i + 1, cat: 'book', title: `책${i + 1}` }));
-    renderRoom(g, many, {});
-    expect(g.querySelectorAll('.rv-work').length).toBe(300);
-    const surface = g.querySelector('.room-view.scroll');
-    const gallery = g.querySelector('.rv-gallery-right');
-    const track = gallery.querySelector('.rv-track');
-    const wheel = (deltaY) => surface.dispatchEvent(new WheelEvent('wheel', { deltaY, cancelable: true }));
-    const outside = new WheelEvent('wheel', { deltaY: 120, cancelable: true });
-    surface.dispatchEvent(outside);
-    expect(outside.defaultPrevented).toBe(false);
-    expect(track.style.transform).toBe('');
-    gallery.dispatchEvent(new Event('pointerenter'));
-    wheel(120);
-    expect(track.style.transform).toBe('translateX(-120px)');
-    wheel(-500);
-    expect(track.style.transform).toBe('translateX(0px)');
-    wheel(1e7);
-    expect(track.style.transform).not.toBe('translateX(-10000000px)');
-    const e = new WheelEvent('wheel', { deltaY: 120, cancelable: true });
-    surface.dispatchEvent(e);
-    expect(e.defaultPrevented).toBe(true);
+    const mount = () => {
+      document.body.innerHTML = '<div id="g"></div>';
+      const g = document.getElementById('g');
+      renderRoom(g, many, {});
+      return { surface: g.querySelector('.room-view'), stage: g.querySelector('.rv-stage'), track: g.querySelector('.rv-gallery-right .rv-track'), tile: g.querySelector('.rv-gallery-right .rv-work') };
+    };
+    const ptr = (target, type, x, y = 0) => {
+      const e = new MouseEvent(type, { clientX: x, clientY: y, bubbles: true, cancelable: true });
+      Object.defineProperty(e, 'pointerId', { value: 1 });
+      target.dispatchEvent(e);
+    };
+    const scaleOf = (stage) => Number((/scale\(([\d.]+)\)/.exec(stage.style.transform) || [])[1]);
+
+    it('휠을 올리면 커지고(페이지는 안 움직임), 내리면 원래 크기까지만', () => {
+      const { surface, stage } = mount();
+      const up = new WheelEvent('wheel', { deltaY: -400, cancelable: true });
+      surface.dispatchEvent(up);
+      expect(up.defaultPrevented).toBe(true);
+      expect(scaleOf(stage)).toBeGreaterThan(1.5);
+      surface.dispatchEvent(new WheelEvent('wheel', { deltaY: 100000, cancelable: true }));
+      expect(scaleOf(stage)).toBe(1);
+      for (let k = 0; k < 20; k++) surface.dispatchEvent(new WheelEvent('wheel', { deltaY: -400, cancelable: true }));
+      expect(scaleOf(stage)).toBe(4); // 최대 4배
+    });
+
+    it('작품 벽을 잡고 왼쪽으로 끌면 다음 작품들이 나오고, 끈 뒤의 클릭은 작품 열기로 안 침', () => {
+      const { surface, track, tile } = mount();
+      ptr(tile, 'pointerdown', 100);
+      ptr(surface, 'pointermove', 60);
+      ptr(surface, 'pointerup', 60);
+      expect(track.style.transform).toMatch(/^translateX\(-56\.5\d*px\)$/); // 40px × √2
+      const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+      tile.dispatchEvent(click);
+      expect(click.defaultPrevented).toBe(true);
+    });
+
+    it('원래 크기에선 벽 아닌 데를 끌어도 그대로, 확대하면 보는 자리가 움직임', () => {
+      const { surface, stage } = mount();
+      const before = stage.style.transform;
+      ptr(surface, 'pointerdown', 100, 100);
+      ptr(surface, 'pointermove', 50, 80);
+      ptr(surface, 'pointerup', 50, 80);
+      expect(stage.style.transform).toBe(before);
+      Object.defineProperty(surface, 'clientWidth', { value: 1000 });
+      Object.defineProperty(surface, 'clientHeight', { value: 600 });
+      surface.dispatchEvent(new WheelEvent('wheel', { deltaY: -600, clientX: 500, clientY: 300, cancelable: true }));
+      const zoomed = stage.style.transform;
+      ptr(surface, 'pointerdown', 500, 300);
+      ptr(surface, 'pointermove', 450, 280);
+      ptr(surface, 'pointerup', 450, 280);
+      expect(stage.style.transform).not.toBe(zoomed);
+    });
   });
 });
 
