@@ -1,0 +1,92 @@
+/* "내 방" 보기(js/library/list/roomView.js) — 네모난 방을 대각선 위에서 내려다본 모습(바닥 + 안쪽 벽 둘).
+   전부 흰색, 면이 구분되게만 아주 옅은 회색. 원근 없이(perspective 없음). */
+.grid[data-view="room"]{ display:block; }
+.room-view{ position:relative; width:100%; overflow:hidden; }
+/* 방 뒤 배경 — 작품 사진 격자로 꽉(roomView.js의 backdropHtml). 눌리지 않음 */
+.rv-backdrop{ position:absolute; inset:0; display:grid; justify-content:center; align-content:center; pointer-events:none; }
+.rv-bg-cell{ display:block; overflow:hidden; background:#FFFFFF; }
+.rv-bg-cell img{ display:block; width:100%; height:100%; object-fit:cover; }
+.rv-bg-title{ display:flex; align-items:center; justify-content:center; padding:6%; box-sizing:border-box; font-size:10px; text-align:center; color:var(--paper-dim); word-break:keep-all; }
+.rv-room{ position:absolute; transform-style:preserve-3d; transform:rotateX(60deg) rotateZ(45deg); }
+.rv-floor{ position:absolute; inset:0; background:#F3F3F1; }
+/* 마우스는 작품 사진만 받음 — 3D로 비스듬한 면(침대·옷장 윗면 등)이 보이는 자리와 다른 곳에서 클릭·휠을 가로채는
+   일이 있어서(크롬 3D 히트 테스트), 바닥·벽·가구는 통과시킴 */
+.rv-room, .rv-room *{ pointer-events:none; }
+.rv-room .rv-gallery, .rv-room .rv-gallery *{ pointer-events:auto; }
+
+/* 벽 — 바닥 변에 아래쪽 모서리를 대고 세움(안쪽을 보게). 오른쪽(바닥 위 변) = 작품, 왼쪽(바닥 왼쪽 변) = 빈 벽 */
+.rv-wall{ position:absolute; left:0; transform-style:preserve-3d; transform-origin:0 100%; }
+.rv-wall-back{ background:#FCFCFB; transform:rotateX(-90deg); }
+.rv-wall-left{ background:#EDEDEB; transform:rotateZ(-90deg) rotateX(-90deg); }
+
+/* 오른쪽 벽의 작품 사진 — 카드 보기처럼 격자 */
+.rv-gallery{ position:absolute; overflow:hidden; }
+/* 작품이 벽보다 많으면 옆으로 이어 감 — 휠·끌기로 스크롤(roomView.js의 attachWallScroll) */
+/* 작품 벽 위에서만 휠·끌기(roomView.js의 attachWallScroll). 옆으로 끄는 건 페이지가 가져가지 않게 */
+.room-view.scroll{ touch-action:pan-y; }
+.room-view.scroll .rv-gallery-right{ cursor:grab; }
+.room-view.scroll .rv-gallery-right:active{ cursor:grabbing; }
+.rv-track{ display:grid; grid-auto-flow:column; transition:transform .12s ease-out; }
+.rv-work{
+  display:block; width:100%; height:100%; padding:0; border:none; border-radius:0; cursor:pointer; overflow:hidden;
+  background:#FFFFFF; box-shadow:0 1px 3px rgba(23,24,28,0.18); font:inherit; color:var(--paper);
+}
+.rv-work img{ display:block; width:100%; height:100%; object-fit:cover; }
+.rv-title{
+  display:flex; align-items:center; justify-content:center; width:100%; height:100%; box-sizing:border-box; padding:6%;
+  font-size:inherit; line-height:1.25; text-align:center; word-break:keep-all; overflow-wrap:anywhere; overflow:hidden;
+}
+.rv-work:hover, .rv-work:focus-visible{ outline:2px solid var(--paper); outline-offset:1px; }
+
+/* 침대·옷장 — 보이는 세 면(윗면·앞·옆)만. 윗면이 제일 밝고 옆으로 갈수록 조금씩 어둡게 */
+.rv-box{ position:absolute; transform-style:preserve-3d; }
+.rv-face{ position:absolute; box-sizing:border-box; border:1px solid rgba(23,24,28,0.06); }
+.rv-top{ inset:0; background:#FFFFFF; }
+.rv-front{ background:#EBEBE9; transform-origin:0 100%; transform:rotateX(-90deg); }
+.rv-side{ background:#E0E0DE; transform-origin:0 100%; transform:rotateZ(-90deg) rotateX(-90deg); }
+
+/* 위 줄은 화면 둘(js/library/main.js의 mode, 2026-11-27 사용자 설계):
+   내 방 = 내 방 · 티어리스트 · 3D 도서관 · 방 기록 편집하기 · +   /   편집 = 카테고리 버튼 · 편집 완료.
+   남의 기록엔 편집하기·+ 없음. 보기 전환(카드·촘촘히·목록)은 숨김 — 편집은 카드 보기로만. */
+body.mode-room #tabs, body.mode-room #editDoneBtn{ display:none; }
+body.mode-edit #roomViewBtn, body.mode-edit #tierBtn, body.mode-edit .room3d-btn,
+body.mode-edit #editBtn, body.mode-edit #addBtn{ display:none; }
+body.read-only #editBtn, body.read-only #addBtn{ display:none; }
+/* 편집 완료는 카테고리 버튼 바로 뒤에(오른쪽 끝 말고 — 사용자 요청) */
+body.cards.mode-edit .site-nav.lib-bar > .chips{ flex:0 1 auto; }
+.lib-bar .view-switch[hidden]{ display:none; }
+
+.lib-bar .room-view-btn, .lib-bar .bar-btn{
+  display:inline-flex; align-items:center; gap:5px; font:inherit; font-size:13px; white-space:nowrap; cursor:pointer;
+  padding:5px 10px; border:1px solid var(--line, #E6E7EA); background:#FFFFFF; color:var(--paper); border-radius:0;
+}
+.lib-bar .room-view-btn svg{ width:15px; height:15px; flex:none; }
+.lib-bar .room-view-btn:hover, .lib-bar .bar-btn:hover{ background:var(--chip); }
+.lib-bar .room-view-btn[aria-pressed="true"]{ background:var(--paper); color:#FFFFFF; border-color:var(--paper); }
+body.mode-room .lib-bar .room-view-btn{ background:var(--paper); color:#FFFFFF; border-color:var(--paper); }
+/* + 와 편집 완료 — 검은 버튼 */
+.lib-bar .bar-add, .lib-bar #editDoneBtn{ background:var(--paper); color:#FFFFFF; border-color:var(--paper); }
+.lib-bar .bar-add{ font-size:17px; line-height:1; padding:4px 12px; }
+.lib-bar .bar-add:hover, .lib-bar #editDoneBtn:hover{ background:var(--paper); filter:brightness(1.25); }
+@media (max-width:640px){
+  .lib-bar .room-view-btn{ padding:5px 7px; font-size:0; gap:0; }
+  .lib-bar .room-view-btn svg{ width:17px; height:17px; }
+  .lib-bar .bar-btn{ padding:5px 8px; font-size:12px; }
+  .lib-bar .bar-add{ font-size:16px; padding:4px 10px; }
+}
+
+/* 큰 카드 창(#cardDialog) — 글만 있는 ?!는 앞면이 투명해서 어두운 배경 위에서 안 보임 → 흰 바탕(사용자 요청) */
+.card-dialog .card:has(.note-paper) .front{ background:#FFFFFF; }
+body.cards .card-dialog .cover.note-paper{ padding:18px 16px; }
+.card-dialog .note-paper .np-text{ font-size:16px; }
+/* 옆 작품으로 넘기는 화살표(내 방 벽에서 열었을 때, compactViews.js) */
+.card-dialog-nav{
+  position:absolute; top:50%; transform:translateY(-50%); z-index:2;
+  width:44px; height:64px; padding:0; border:none; border-radius:0; cursor:pointer;
+  background:rgba(255,255,255,0.9); color:var(--paper); font-size:34px; line-height:1;
+}
+.card-dialog-nav[hidden]{ display:none; }
+.card-dialog-nav.prev{ left:max(12px, calc(50% - 230px)); }
+.card-dialog-nav.next{ right:max(12px, calc(50% - 230px)); }
+.card-dialog-nav:hover{ background:#FFFFFF; }
+@media (max-width:640px){ .card-dialog-nav{ width:36px; height:52px; font-size:28px; } .card-dialog-nav.prev{ left:4px; } .card-dialog-nav.next{ right:4px; } }

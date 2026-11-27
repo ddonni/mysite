@@ -161,25 +161,6 @@ describe('카드 순서(무작위)', () => {
   });
 });
 
-describe('칩 개수 세기', () => {
-  it('0에서 n까지 하나씩 올라감 — 1이 바로 보임', async () => {
-    vi.useFakeTimers();
-    const { countUp } = await import('../../../js/library/list.js');
-    const el = document.createElement('span');
-    countUp(el, 0, 3);
-    expect(el.textContent).toBe('1');
-    vi.advanceTimersByTime(50);
-    expect(el.textContent).toBe('2');
-    vi.advanceTimersByTime(50);
-    expect(el.textContent).toBe('3');
-    vi.advanceTimersByTime(500);
-    expect(el.textContent).toBe('3');
-    countUp(el, 5, 2); // 줄면 바로 최종 숫자
-    expect(el.textContent).toBe('2');
-    vi.useRealTimers();
-  });
-});
-
 // 2026-11-26 "정보가 많으면 뒤집었을 때 잘림" — 뒷면 가운데만 스크롤, 넘치면 "크게 보기".
 // jsdom은 레이아웃이 없어서 scrollHeight/clientHeight를 직접 정해 넘침을 흉내 냄.
 describe('뒷면 내용이 넘칠 때', () => {

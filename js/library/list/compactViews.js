@@ -77,19 +77,37 @@ export function createCardDialog({ onEdit, onDelete, onFeature, onListen, onLike
   const holder = dialog && dialog.querySelector('.card-dialog-slot');
   if (!dialog || !holder) return { open() {} };
   let returnFocus = null;
+  // 옆 작품으로 넘기기(내 방 벽에서 열었을 때 — 사용자 요청): 양옆 화살표 버튼·키보드 ←/→. seq = 벽에 걸린 순서,
+  // 끝에서 넘기면 처음으로. 촘촘히·목록에서 연 창엔 없음.
+  let seq = null;
+  let at = -1;
+  let showFront = false;
+  const navBtn = (cls, label, ch) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = `card-dialog-nav ${cls}`;
+    b.setAttribute('aria-label', label);
+    b.title = label;
+    b.textContent = ch;
+    b.hidden = true;
+    dialog.appendChild(b);
+    return b;
+  };
+  const prevBtn = navBtn('prev', '이전 작품', '‹');
+  const nextBtn = navBtn('next', '다음 작품', '›');
 
   function close() {
     if (dialog.hidden) return;
     dialog.hidden = true;
     holder.innerHTML = '';
+    seq = null;
     document.body.classList.remove('modal-open');
     if (returnFocus && returnFocus.focus) returnFocus.focus();
   }
   const closing = (fn) => (fn ? (...args) => { close(); return fn(...args); } : fn);
 
-  function open(it) {
-    if (!it) return;
-    returnFocus = document.activeElement;
+  // 카드 한 장을 창에 그림(열 때·옆으로 넘길 때).
+  function show(it) {
     renderCards(holder, [it], {
       readOnly,
       onEdit: closing(onEdit),
@@ -101,15 +119,41 @@ export function createCardDialog({ onEdit, onDelete, onFeature, onListen, onLike
       onSaveNote: onSaveNote && ((note, parts) => onSaveNote(note, parts).then((r) => { close(); return r; })),
     });
     const card = holder.querySelector('.card');
-    if (card) card.setAttribute('aria-pressed', 'true'); // 바로 뒷면(감상·버튼)
+    if (card && !showFront) card.setAttribute('aria-pressed', 'true'); // 바로 뒷면(감상·버튼)
+    paintOverflow(card); // 보이고 나서야 높이를 잴 수 있음
+  }
+
+  // front: 앞면부터(내 방 벽의 작품 — 사용자 요청). 아니면 뒷면부터(촘촘히·목록에서 감상·버튼을 바로).
+  // list: 주면 그 순서로 옆 작품 넘기기(내 방 벽).
+  function open(it, { front = false, list = null } = {}) {
+    if (!it) return;
+    returnFocus = document.activeElement;
+    showFront = front;
+    seq = list && list.length > 1 ? list : null;
+    at = seq ? seq.findIndex((x) => x.id === it.id) : -1;
+    if (at < 0) seq = null;
+    prevBtn.hidden = nextBtn.hidden = !seq;
     dialog.hidden = false;
     document.body.classList.add('modal-open');
-    paintOverflow(card); // 보이고 나서야 높이를 잴 수 있음
+    show(it);
     dialog.querySelector('.card-dialog-close').focus();
   }
 
+  function step(delta) {
+    if (!seq || dialog.hidden) return;
+    at = (at + delta + seq.length) % seq.length;
+    show(seq[at]);
+  }
+  prevBtn.addEventListener('click', () => step(-1));
+  nextBtn.addEventListener('click', () => step(1));
+
   dialog.addEventListener('click', (e) => { if (e.target === dialog) close(); });
   dialog.querySelector('.card-dialog-close').addEventListener('click', close);
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') close();
+    if (dialog.hidden || !seq || (e.target.closest && e.target.closest('input, textarea, select'))) return;
+    if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
+  });
   return { open, close };
 }

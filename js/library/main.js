@@ -93,11 +93,22 @@ initRoomNav({ navEl, currentPage: './', settings: true }).then((ctx) => {
   // 특정 카테고리를 먼저 보여주고 싶을 때 ./?cat=music 형태로 들어옴.
   const initialTab = new URLSearchParams(location.search).get('cat');
 
+  // 화면은 둘(2026-11-27 사용자 설계): "내 방"(보여 주는 곳 — 위 줄: 내 방 · 티어리스트 · 3D 도서관 · 방 기록
+  // 편집하기 · +)과 "편집"(지금의 카드 보기 — 위 줄: 전체 … ?! · 편집 완료). 첫 화면은 내 방, 내 기록에서 ?cat=로
+  // 들어오면(상단 메뉴의 카테고리) 그 카테고리의 편집 화면. 남의 기록은 늘 방(편집·+ 없음).
+  let mode = !readOnly && initialTab ? 'edit' : 'room';
+  const paintMode = () => {
+    document.body.classList.toggle('mode-room', mode === 'room');
+    document.body.classList.toggle('mode-edit', mode === 'edit');
+  };
+  paintMode();
+
   const modal = createModal({ onSaved: reload, getItems: () => currentItems });
   // ?!는 창 없이 — 맨 앞 "+ ?!" 칸과 카드의 "수정"이 그 자리에서 입력 칸으로(quickNote.js).
   list = createList({
     readOnly,
     initialTab,
+    initialView: mode === 'room' ? 'room' : 'cards',
     onEdit: (item) => modal.openEdit(item),
     onSaveNote: (item, parts) => saveNote(parts, item && item.id).then(reload),
     onDelete: (id) => deleteRecord(id).then(reload).catch(() => alert('삭제에 실패했어요. 잠시 후 다시 시도해주세요.')),
@@ -130,11 +141,21 @@ initRoomNav({ navEl, currentPage: './', settings: true }).then((ctx) => {
     onAdd: (tab) => modal.openAdd(tab),
   });
 
-  // 보기 방식 전환(카드 · 촘촘히 · 목록) — 위 줄의 아이콘 버튼.
-  const viewBtns = [...document.querySelectorAll('#viewSwitch [data-view]')];
-  const paintView = () => viewBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === list.view())));
-  viewBtns.forEach((b) => b.addEventListener('click', () => { list.setView(b.dataset.view); paintView(); }));
-  paintView();
+  // 내 방 ↔ 편집. 보기 전환(카드·촘촘히·목록) 버튼은 위 줄에서 뺌 — 편집은 카드 보기로만.
+  const setMode = (next) => {
+    if (next === mode) return;
+    mode = next;
+    paintMode();
+    list.setView(mode === 'room' ? 'room' : 'cards');
+    window.scrollTo({ top: 0 });
+  };
+  const roomBtn = document.getElementById('roomViewBtn');
+  if (readOnly) roomBtn.lastChild.textContent = '방';
+  roomBtn.addEventListener('click', () => setMode('room'));
+  document.getElementById('editBtn').addEventListener('click', () => setMode('edit'));
+  document.getElementById('editDoneBtn').addEventListener('click', () => setMode('room'));
+  // + — 기록 하나 추가(작품 기록 창, ?! 탭도 있음 — modal.js).
+  document.getElementById('addBtn').addEventListener('click', () => modal.openAdd('all'));
 
   // 티어리스트 페이지로 — 지금 보는 기록(남의 기록이면 그 기록)과 칩(카테고리)을 그대로 들고 감.
   document.getElementById('tierBtn').addEventListener('click', () => {
@@ -146,7 +167,7 @@ initRoomNav({ navEl, currentPage: './', settings: true }).then((ctx) => {
 
   // 처음 온 사람 환영 카드에서 카테고리를 고르면 그 카테고리로 새 기록 창.
   const startWith = (cat) => {
-    list.selectTab(cat);
+    if (mode === 'edit') list.selectTab(cat);
     modal.openAdd(cat);
     document.getElementById('fTitle').focus();
   };

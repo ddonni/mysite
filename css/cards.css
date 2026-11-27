@@ -89,13 +89,13 @@ body.cards .site-nav.lib-bar > .chips:has(+ .tier-btn){ flex:0 1 auto; }
 .lib-bar .room3d-btn{
   display:inline-flex; align-items:center; gap:5px; font:inherit; font-size:13px; white-space:nowrap;
   padding:5px 10px; border:1px solid var(--line, #E6E7EA); background:#FFFFFF; color:var(--paper);
-  text-decoration:none; margin-right:auto; border-radius:0;
+  text-decoration:none; border-radius:0;
 }
 .lib-bar .room3d-btn svg{ width:15px; height:15px; flex:none; }
 .lib-bar .room3d-btn:hover{ background:var(--chip); }
 @media (max-width:640px){ .lib-bar .room3d-btn{ padding:5px 7px; font-size:0; gap:0; } .lib-bar .room3d-btn svg{ width:17px; height:17px; } }
 @media (max-width:640px){ .lib-bar .tier-btn{ padding:5px 7px; font-size:0; gap:0; } .lib-bar .tier-btn svg{ width:17px; height:17px; } }
-.lib-bar .add.my-room{ text-decoration:none; }
+.lib-bar .add.my-room{ text-decoration:none; margin-left:auto; }
 .lib-bar .add.my-room[hidden]{ display:none; }
 @media (max-width:640px){
   body.cards .site-nav.lib-bar{ gap:8px; padding-left:max(10px, env(safe-area-inset-left)); padding-right:max(10px, env(safe-area-inset-right)); }

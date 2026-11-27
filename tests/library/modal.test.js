@@ -621,3 +621,30 @@ describe('검색 화면(새 기록)', () => {
     expect($('overlay').classList.contains('open')).toBe(false);
   });
 });
+
+describe('?! 탭', () => {
+  it('?! 탭을 누르면 검색·입력 칸 대신 ?! 입력 칸, 저장하면 ?!로 저장하고 창을 닫음', async () => {
+    modal.openAdd('book');
+    const noteTab = [...document.querySelectorAll('#catTabs button')].find((b) => b.dataset.key === 'note');
+    expect(noteTab.textContent).toBe('?!');
+    noteTab.click();
+    const view = document.querySelector('.modal-note');
+    expect(view.hidden).toBe(false);
+    expect(document.getElementById('searchView').hidden).toBe(true);
+    const input = view.querySelector('textarea');
+    input.value = '오이 싫음';
+    input.dispatchEvent(new Event('input'));
+    view.querySelector('[data-ed="save"]').click();
+    await vi.waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(saveRecord).toHaveBeenCalledWith({ cat: 'note', title: '', memo: '오이 싫음', listen_url: null, photo_url: null }, undefined);
+    expect(document.getElementById('overlay').classList.contains('open')).toBe(false);
+  });
+
+  it("openAdd('note')면 ?! 탭으로 열리고, 작품 탭을 누르면 다시 검색 화면", () => {
+    modal.openAdd('note');
+    expect(document.querySelector('.modal-note').hidden).toBe(false);
+    [...document.querySelectorAll('#catTabs button')].find((b) => b.dataset.key === 'movie').click();
+    expect(document.querySelector('.modal-note').hidden).toBe(true);
+    expect(document.getElementById('searchView').hidden).toBe(false);
+  });
+});

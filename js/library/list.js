@@ -9,6 +9,7 @@
 import { CATS, WORK_CATS, isPrivateCat } from './records.js';
 import { renderCards, deal } from './list/cardsView.js';
 import { renderCompact, createCardDialog } from './list/compactViews.js';
+import { renderRoom } from './list/roomView.js';
 import { droppedNote, openNoteDraft } from './quickNote.js';
 
 // 보기 방식 — 'cards'(뒤집는 카드, 기본) · 'dense'(촘촘히) · 'list'(목록). 고른 건 이 브라우저에 기억함.
@@ -34,24 +35,6 @@ export function itemsForTab(items, tab) {
   if (tab === 'all') return items;
   if (tab === WORKS_TAB) return items.filter((i) => !isPrivateCat(i.cat));
   return items.filter((i) => i.cat === tab);
-}
-
-// 지금 칩 오른쪽의 개수를 from에서 to까지 하나씩 올려 보임 — 기록이 덱에서 한 장씩 날아와
-// 놓이는 속도(cardsView.js의 deal, 50ms 간격)에 맞춰 "세는 것처럼". 많으면 1초 안에 끝나게 간격을
-// 줄임. 움직임 줄이기면 바로 최종 숫자.
-const reduceMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-let countTimer = null;
-export function countUp(el, from, to) {
-  clearTimeout(countTimer);
-  if (reduceMotion() || to <= from) { el.textContent = String(to); return; }
-  const step = Math.max(16, Math.min(50, 1000 / (to - from)));
-  let n = Math.max(from, 0);
-  const tick = () => {
-    n += 1;
-    el.textContent = String(n);
-    if (n < to) countTimer = setTimeout(tick, step);
-  };
-  tick(); // 첫 숫자(0에서 시작하면 1)는 바로 보임
 }
 
 // 카드 순서는 무작위(2026-11-26 사용자 요청 — 날짜순 기록장이 아니라 취향을 모아 둔 방이라). 페이지를 열 때마다
@@ -109,7 +92,7 @@ function addCardEl(tab, { onAdd, onNote }, view) {
 
 // onAdd(cat): 맨 앞 "+"의 작품 기록 — 새 기록 창을 엶.
 // onSaveNote(it|null, parts) → Promise: ?! 저장(null이면 새로) — 맨 앞 칸의 입력 칸·카드 뒷면에서 고치기가 씀.
-export function createList({ onEdit, onDelete, onFeature, onListen, onLike, onTabChange, onAdd, onSaveNote, readOnly, initialTab }) {
+export function createList({ onEdit, onDelete, onFeature, onListen, onLike, onTabChange, onAdd, onSaveNote, readOnly, initialTab, initialView }) {
   const tabsEl = document.getElementById('tabs');
   const listEl = document.getElementById('list');
 
@@ -117,10 +100,17 @@ export function createList({ onEdit, onDelete, onFeature, onListen, onLike, onTa
   let activeTab = tabs.some((c) => c.key === initialTab) ? initialTab : 'all';
   let currentItems = [];
   let shownIds = null; // 지금 격자에 있는 카드 id — 다시 그릴 때 새로 생긴 카드만 나눠주려고
-  let shownCount = 0; // 지금 칩 오른쪽에 보이는 개수 — 기록이 늘거나 줄었을 때 거기서부터 셈
   const seed = Math.floor(Math.random() * 0x7fffffff); // 카드 순서 섞기(shuffleForGrid) — 페이지를 열 때마다 새로
   let knownIds = null; // 처음 받은 기록의 id들 — 그 뒤에 넣은 건 맨 앞에
-  let view = storedView();
+  // initialView: 'room'(내 방) 또는 'cards'(편집) — main.js. 안 주면 마지막으로 고른 카드·촘촘히·목록.
+  let view = initialView === 'room' || initialView === 'cards' ? initialView : storedView();
+  // 내 방은 화면 크기에 맞춰 그려서, 창 크기가 바뀌면 다시(한 프레임에 한 번).
+  let resizeFrame = 0;
+  window.addEventListener('resize', () => {
+    if (view !== 'room') return;
+    cancelAnimationFrame(resizeFrame);
+    resizeFrame = requestAnimationFrame(() => renderBody());
+  });
   const cardDialog = createCardDialog({ onEdit, onDelete, onFeature, onListen, onLike, onSaveNote, readOnly });
   // 맨 앞 칸 → 입력 칸. 취소하면 그 칸만 원래 "+"로(목록 전체를 다시 그리지 않음 — 덱 효과가 다시 안 나게).
   const onNote = (slot, dropped = {}) => openNoteDraft(slot, {
@@ -131,15 +121,20 @@ export function createList({ onEdit, onDelete, onFeature, onListen, onLike, onTa
 
   // 칩 바꾸기 — 이 페이지의 칩을 누르거나, 상단 메뉴의 책·애니·영화·음악을 눌렀을 때
   // (main.js가 페이지를 다시 불러오지 않고 이걸 부름).
+  // 내 방에서 누르면(지금 칩이어도) 카드 보기로 — 방은 칩과 따로라서(사용자 요청).
   function selectTab(key) {
-    if (activeTab === key || !tabs.some((c) => c.key === key)) return;
+    if (!tabs.some((c) => c.key === key)) return;
+    const leavingRoom = view === 'room';
+    if (activeTab === key && !leavingRoom) return;
+    if (leavingRoom) view = 'cards';
     activeTab = key;
     // 새로고침하거나 주소를 공유해도 같은 칩이 열리게 주소에도 남김.
     const url = new URL(location.href);
     if (key === 'all') url.searchParams.delete('cat'); else url.searchParams.set('cat', key);
     history.replaceState(null, '', url);
     renderTabs();
-    renderBody({ dealAll: true });
+    // 칩을 바꿀 땐 덱에서 나눠주는 효과 없이 바로(사용자 요청) — 처음 열 때·새로 넣은 카드만 날아옴.
+    renderBody({ dealAll: true, animate: false });
     if (onTabChange) onTabChange(key);
   }
 
@@ -151,10 +146,12 @@ export function createList({ onEdit, onDelete, onFeature, onListen, onLike, onTa
       btn.className = 'chip';
       btn.dataset.cat = t.key;
       if (t.private) { btn.classList.add('private'); btn.title = '나만 볼 수 있어요'; } // 작은 자물쇠(css/notes.css)
-      btn.setAttribute('aria-pressed', String(t.key === activeTab));
+      // 내 방에선 어느 칩도 안 눌린 모양(방은 칩과 따로 — 모든 작품을 보여 줌).
+      const on = view !== 'room' && t.key === activeTab;
+      btn.setAttribute('aria-pressed', String(on));
       btn.textContent = t.label;
-      // 지금 칩에만 그 칩의 기록 개수(renderBody가 1부터 세며 채움).
-      if (t.key === activeTab) btn.insertAdjacentHTML('beforeend', '<span class="chip-count" aria-hidden="true"></span>');
+      // 지금 칩에만 그 칩의 기록 개수(renderBody가 채움).
+      if (on) btn.insertAdjacentHTML('beforeend', '<span class="chip-count" aria-hidden="true"></span>');
       btn.addEventListener('click', () => selectTab(t.key));
       tabsEl.appendChild(btn);
     });
@@ -162,11 +159,17 @@ export function createList({ onEdit, onDelete, onFeature, onListen, onLike, onTa
 
   // dealAll: 카드 전부를 덱에서 나눠줌(처음 열 때·칩을 바꿀 때). 아니면(추가/수정 뒤
   // 다시 그릴 때) 새로 생긴 카드만.
-  function renderBody({ dealAll = false } = {}) {
+  function renderBody({ dealAll = false, animate = true } = {}) {
     const list = shuffleForGrid(itemsForTab(currentItems, activeTab), seed, knownIds);
     const emptyText = readOnly ? EMPTY_READONLY
       : activeTab === 'all' || activeTab === WORKS_TAB ? EMPTY_ALL : activeTab === 'note' ? EMPTY_NOTE : EMPTY_CAT;
     listEl.dataset.view = view;
+    // 내 방은 칩과 따로 — 어느 칩이었든 모든 작품(책·애니·영화, roomView.js가 음악·?!를 뺌)을 벽에.
+    if (view === 'room') {
+      renderRoom(listEl, shuffleForGrid(currentItems, seed, knownIds), { onOpen: (it, order) => cardDialog.open(it, { front: true, list: order }) });
+      shownIds = null; // 방에서 나올 땐 카드를 처음부터 나눠줌
+      return;
+    }
     // 촘촘히·목록은 덱에서 나눠주는 효과 없이 바로(수백 개를 한눈에 보는 게 목적이라).
     const slots = view === 'cards'
       ? renderCards(listEl, list, { onEdit, onDelete, onFeature, readOnly, onListen, onLike, onSaveNote, emptyText, onExpand: cardDialog.open })
@@ -179,20 +182,23 @@ export function createList({ onEdit, onDelete, onFeature, onListen, onLike, onTa
     }
     const before = shownIds;
     shownIds = new Set(list.map((i) => i.id));
-    // 칩 개수: 처음 열 때·칩을 바꿀 때는 0부터(첫 숫자가 1), 추가/삭제 뒤엔 전에 보이던 숫자부터.
     const countEl = tabsEl.querySelector('.chip-count');
-    if (countEl) countUp(countEl, dealAll || !before ? 0 : shownCount, list.length);
-    shownCount = list.length;
-    deal(dealAll || !before ? slots : slots.filter((s) => !before.has(Number(s.dataset.id)) && !before.has(s.dataset.id)));
+    // 개수는 바로 최종 숫자(1부터 세며 올라가던 효과는 사용자 요청으로 뺌).
+    if (countEl) countEl.textContent = String(list.length);
+    if (animate) deal(dealAll || !before ? slots : slots.filter((s) => !before.has(Number(s.dataset.id)) && !before.has(s.dataset.id)));
   }
 
   return {
     // 보기 방식 바꾸기(위 줄의 전환 버튼) — 다시 그리고 기억함.
     view: () => view,
+    // 'room'(내 방)은 기억하지 않음 — 첫 화면은 늘 카드 쪽(사용자: "메인은 아직 카드 보기").
     setView(next) {
-      if (!VIEWS.includes(next) || next === view) return;
+      if (!(VIEWS.includes(next) || next === 'room') || next === view) return;
       view = next;
-      try { localStorage.setItem(VIEW_KEY, view); } catch (e) { /* 기억 못 해도 지금은 바뀜 */ }
+      if (view !== 'room') {
+        try { localStorage.setItem(VIEW_KEY, view); } catch (e) { /* 기억 못 해도 지금은 바뀜 */ }
+      }
+      renderTabs(); // 방에선 칩이 안 눌린 모양, 나오면 다시
       renderBody({ dealAll: true });
     },
     // 지금 보고 있는 칩('all' · 'works' 또는 카테고리) — "+ 기록"의 기본 카테고리로 씀.

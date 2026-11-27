@@ -19,6 +19,7 @@ import { createPhotoPicker } from './modal/photoPicker.js';
 import { createRecordSearch } from './modal/recordSearch.js';
 import { createSearchView } from './modal/searchView.js';
 import { shrinkImage } from './modal/shrinkImage.js';
+import { mountNoteEditor, saveNote } from './quickNote.js';
 import { fitToViewport } from './modal/fitViewport.js';
 
 // onSaved(): 기록을 저장·삭제한 뒤(목록을 다시 불러오라고). getItems(): 지금 방의 기록 —
@@ -136,6 +137,7 @@ export function createModal({ onSaved, getItems = () => [] }) {
   // 기록 수정 중엔 카테고리를 못 바꿈(사용자 요청) — 지금 카테고리 탭만 켜진 채 보이고 나머지는 눌리지 않음.
   function lockCatTabs(locked) {
     catTabsEl.classList.toggle('locked', locked);
+    // ?! 탭(noteTab)도 같이 — 작품을 고치는 중엔 ?!로 못 바꿈.
     [...catTabsEl.children].forEach((b) => {
       b.disabled = locked && b.dataset.key !== currentCat;
     });
@@ -148,12 +150,39 @@ export function createModal({ onSaved, getItems = () => [] }) {
     btn.dataset.key = cat.key;
     if (cat.key === currentCat) btn.classList.add('active');
     btn.addEventListener('click', () => {
+      const fromNote = !noteEl.hidden;
       selectCatTab(cat.key);
+      if (fromNote) { showView(false); searchView.refresh(); searchView.focus(); return; }
       if (formEl.hidden) searchView.refresh();
       else search.refresh();
     });
     catTabsEl.appendChild(btn);
   });
+
+  // ---- ?! 탭(2026-11-27 사용자 요청 "작품 기록에 카테고리 하나 더 만들어서 ?!도") — 검색·입력 칸 대신 ?! 입력 칸
+  // 하나(글·유튜브 링크·사진 — quickNote.js의 mountNoteEditor). 저장하면 창을 닫음. 고치기는 카드 뒷면에서.
+  const noteTab = document.createElement('button');
+  noteTab.textContent = '?!';
+  noteTab.dataset.key = 'note';
+  noteTab.addEventListener('click', () => { if (noteEl.hidden) openNote(); });
+  catTabsEl.appendChild(noteTab);
+  const noteEl = document.createElement('div');
+  noteEl.className = 'modal-note';
+  noteEl.hidden = true;
+  catTabsEl.after(noteEl);
+  function openNote() {
+    [...catTabsEl.children].forEach((b) => b.classList.toggle('active', b === noteTab));
+    searchEl.hidden = true;
+    formEl.hidden = true;
+    noteEl.hidden = false;
+    mountNoteEditor(noteEl, {
+      hint: '나만 봐요 · Ctrl+Enter 저장',
+      onSave: (parts) => saveNote(parts).then(() => { onSaved(); setOpen(false); }),
+      onCancel: () => setOpen(false),
+    });
+    if (overlay.classList.contains('open')) fit.update();
+  }
+  const noteTyped = () => !noteEl.hidden && !!(noteEl.querySelector('textarea') || {}).value;
 
   // ---- 모달 열기/닫기 ----
   // 열려 있는 동안 뒤 페이지(body)는 스크롤을 막음 — 폰에서 창 끝까지 당기면 그 당김이
@@ -165,6 +194,7 @@ export function createModal({ onSaved, getItems = () => [] }) {
   }
 
   function showView(form) {
+    noteEl.hidden = true;
     searchEl.hidden = form;
     formEl.hidden = !form;
     if (overlay.classList.contains('open')) fit.update();
@@ -256,7 +286,7 @@ export function createModal({ onSaved, getItems = () => [] }) {
   overlay.addEventListener('pointerdown', (e) => { downOnBackdrop = e.target === overlay; });
   overlay.addEventListener('click', (e) => {
     if (e.target !== overlay || !downOnBackdrop) return;
-    if (!formEl.hidden && touched && !confirm('작성 중인 내용이 사라져요. 닫을까요?')) return;
+    if (((!formEl.hidden && touched) || noteTyped()) && !confirm('작성 중인 내용이 사라져요. 닫을까요?')) return;
     setOpen(false);
   });
   document.getElementById('searchCloseBtn').addEventListener('click', () => setOpen(false));
@@ -329,9 +359,16 @@ export function createModal({ onSaved, getItems = () => [] }) {
   saveBtn.addEventListener('click', handleSave);
 
   return {
-    // cat: 처음 골라둘 카테고리 — 보고 있던 탭(음악 탭이면 음악). 전체 탭이면 책.
+    // cat: 처음 골라둘 카테고리 — 보고 있던 탭(음악 탭이면 음악). 전체 탭이면 책, 'note'면 ?! 탭.
     openAdd(cat) {
       lockCatTabs(false);
+      if (cat === 'note') {
+        editingId = null;
+        modalTitle.textContent = '새 기록';
+        setOpen(true);
+        openNote();
+        return;
+      }
       editingId = null;
       fromSearch = false;
       modalTitle.textContent = '새 기록';
