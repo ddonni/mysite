@@ -35,7 +35,8 @@ export function roomSize(W, availH) {
   let ratio = Math.min(RATIO_MAX, Math.max(RATIO_MIN, (fit / L - floorK) / SIN));
   if ((floorK + SIN * ratio) * L > fit) { ratio = RATIO_MIN; L = fit / (floorK + SIN * RATIO_MIN); }
   const H = ratio * L;
-  return { L, H, viewH: floorK * L + SIN * H };
+  // cy = 바닥 마름모 가운데의 화면 높이 — 안쪽 구석 벽 꼭대기가 위에서 조금 아래에 오게.
+  return { L, H, viewH: floorK * L + SIN * H, cy: 8 + SIN * H + (floorK * L) / 2 };
 }
 
 // 두 벽에 n장을 5:7로 — 두 벽은 높이가 같아서 같은 크기·같은 줄 수로. 다 들어가면 가장 크게(양쪽 벽에 열 수
@@ -110,7 +111,47 @@ function tileHtml(it) {
 // 평평한 2D 요소)에서 받고, 벽 위인지는 누른 요소(e.target)로 봄. stage = 확대·이동하는 층(방을 감쌈).
 export const ZOOM_MIN = 1;
 export const ZOOM_MAX = 4;
-export function attachRoomControls(surface, stage, wall) {
+// 방이 화면에서 차지하는 모양(바닥 마름모 + 두 벽 = 육각형, 확대 전 .room-view 안 좌표) — 방 바깥 회색에서 휠을
+// 굴리면 페이지가 내려가게(2026-11-27 사용자 요청). 바닥 꼭짓점 넷과 벽이 선 세 꼭짓점(안쪽·왼쪽·오른쪽)을 벽 높이만큼
+// 올린 점의 볼록 껍질. 방은 가운데를 축으로 rotateX(TILT) rotateZ(45).
+export function roomOutline(W, L, H, cy) {
+  const cx = W / 2;
+  const h = L / 2;
+  const at = (x, y, up = 0) => {
+    const rx = (x - y) * Math.SQRT1_2;
+    const ry = (x + y) * Math.SQRT1_2;
+    return [cx + rx, cy + ry * COS - up * SIN];
+  };
+  const pts = [at(-h, -h), at(h, -h), at(h, h), at(-h, h), at(-h, -h, H), at(h, -h, H), at(-h, h, H)];
+  // 볼록 껍질(모노톤 체인) — 시계 반대 방향 꼭짓점 목록
+  pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const half = (list) => {
+    const out = [];
+    for (const p of list) {
+      while (out.length >= 2 && cross(out[out.length - 2], out[out.length - 1], p) <= 0) out.pop();
+      out.push(p);
+    }
+    out.pop();
+    return out;
+  };
+  return [...half(pts), ...half(pts.slice().reverse())];
+}
+export function insideOutline(poly, x, y) {
+  let sign = 0;
+  for (let i = 0; i < poly.length; i++) {
+    const [ax, ay] = poly[i];
+    const [bx, by] = poly[(i + 1) % poly.length];
+    const c = (bx - ax) * (y - ay) - (by - ay) * (x - ax);
+    if (c === 0) continue;
+    if (!sign) sign = Math.sign(c);
+    else if (Math.sign(c) !== sign) return false;
+  }
+  return true;
+}
+
+// outline: roomOutline(...) — 주면 방 바깥의 휠은 페이지 스크롤로 둠.
+export function attachRoomControls(surface, stage, wall, outline = null) {
   const W = () => surface.clientWidth || 1;
   const H = () => surface.clientHeight || 1;
   let s = 1; let tx = 0; let ty = 0;
@@ -135,22 +176,32 @@ export function attachRoomControls(surface, stage, wall) {
     const r = surface.getBoundingClientRect();
     return [e.clientX - r.left, e.clientY - r.top];
   };
-  surface.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    const [cx, cy] = local(e);
-    zoomAt(s * Math.exp(-e.deltaY * 0.0015), cx, cy);
-  }, { passive: false });
-
-  // 벽 넘기기
+  // 벽 넘기기 — 휠로만(끌어서 넘기기는 2026-11-27 사용자 요청으로 뺌).
   let offset = 0;
   const maxOffset = wall ? wall.maxOffset : 0;
   const scrollWall = (v) => {
     offset = Math.min(maxOffset, Math.max(0, v));
     wall.track.style.transform = `translateX(${-offset}px)`;
   };
+  // 휠 = 오른쪽 벽 옆으로 넘기기, Ctrl+휠 = 확대(2026-11-27 사용자 요청 — 전엔 휠이 확대였음). 노트북 터치패드의
+  // 두 손가락 벌리기도 브라우저가 Ctrl+휠로 보내서 그대로 확대. 방 안에선 페이지가 안 움직임(벽 끝에서 화면이 내려가던 문제).
+  surface.addEventListener('wheel', (e) => {
+    const [cx, cy] = local(e);
+    // 방 바깥(회색)이면 손대지 않음 — 페이지가 내려가고, Ctrl이면 브라우저 확대. 확대 중엔 확대 전 좌표로 되돌려 봄.
+    if (outline && !insideOutline(outline, (cx - tx) / s, (cy - ty) / s)) return;
+    e.preventDefault();
+    if (e.ctrlKey) {
+      zoomAt(s * Math.exp(-e.deltaY * 0.0015), cx, cy);
+      return;
+    }
+    if (!wall || maxOffset <= 0) return;
+    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? surface.clientWidth || 800 : 1; // 줄·쪽 단위 휠
+    scrollWall(offset + ((e.deltaY + e.deltaX) * unit) / s);
+  }, { passive: false });
 
+  // 끌기는 확대 중 보는 자리 옮기기만, 두 손가락은 확대(폰).
   const pts = new Map(); // 누르고 있는 손가락·마우스
-  let drag = null; // { kind: 'wall'|'pan', x, y, offset, tx, ty }
+  let drag = null; // { x, y, tx, ty }
   let pinch = null; // { dist, s }
   let moved = false;
   const dist = () => { const [a, b] = [...pts.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
@@ -158,10 +209,7 @@ export function attachRoomControls(surface, stage, wall) {
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     moved = false;
     if (pts.size === 2) { drag = null; pinch = { dist: dist(), s }; return; }
-    const onWall = !!(wall && wall.gallery.contains(e.target));
-    if (onWall) drag = { kind: 'wall', x: e.clientX, y: e.clientY, offset };
-    else if (s > 1.001) drag = { kind: 'pan', x: e.clientX, y: e.clientY, tx, ty };
-    else drag = null;
+    drag = s > 1.001 ? { x: e.clientX, y: e.clientY, tx, ty } : null;
   });
   surface.addEventListener('pointermove', (e) => {
     if (!pts.has(e.pointerId)) return;
@@ -178,8 +226,7 @@ export function attachRoomControls(surface, stage, wall) {
     const dy = e.clientY - drag.y;
     if (!moved && Math.hypot(dx, dy) < 5) return;
     if (!moved) { moved = true; if (surface.setPointerCapture) surface.setPointerCapture(e.pointerId); }
-    if (drag.kind === 'wall') scrollWall(drag.offset - (dx / s) * ROOT2); // 벽이 45도라 벽 위에선 √2배, 확대 중엔 그만큼 덜
-    else { tx = drag.tx + dx; ty = drag.ty + dy; paint(); }
+    tx = drag.tx + dx; ty = drag.ty + dy; paint();
   });
   const end = (e) => {
     pts.delete(e.pointerId);
@@ -217,7 +264,7 @@ export function renderRoom(containerEl, list, { onOpen, onNotebook } = {}) {
   const notes = roomNotes(list);
   const W = containerEl.clientWidth || window.innerWidth;
   const top = containerEl.getBoundingClientRect().top + (window.scrollY || 0);
-  const { L, H, viewH } = roomSize(W, window.innerHeight - top - 8);
+  const { L, H, viewH, cy } = roomSize(W, window.innerHeight - top - 8);
   // 왼쪽 벽도 끝에서 끝까지(옷장 뒤까지 — 사용자 요청, 옷장에 가려지는 사진도 있음). 벽 안에서 왼쪽 끝 = 앞 모서리.
   const pad = H * 0.06;
   const leftStart = pad;
@@ -229,8 +276,6 @@ export function renderRoom(containerEl, list, { onOpen, onNotebook } = {}) {
   const rightItems = works.slice(lay.left.count);
   const rightViewW = lay.scroll ? L - 2 * pad : lay.right.w; // 오른쪽 벽에서 사진이 보이는 폭
 
-  // 바닥 마름모 가운데의 화면 위치 — 안쪽 구석 벽 꼭대기가 위에서 조금 아래에 오게.
-  const cy = 8 + SIN * H + (ROOT2 * L * COS) / 2;
 
   containerEl.innerHTML = `
     <div class="room-view" style="height:${viewH}px">
@@ -268,5 +313,6 @@ export function renderRoom(containerEl, list, { onOpen, onNotebook } = {}) {
   const gallery = containerEl.querySelector('.rv-gallery-right');
   if (lay.scroll) surface.classList.add('scroll');
   attachRoomControls(surface, containerEl.querySelector('.rv-stage'),
-    lay.scroll && gallery ? { gallery, track: gallery.querySelector('.rv-track'), maxOffset: lay.right.w - rightViewW } : null);
+    lay.scroll && gallery ? { gallery, track: gallery.querySelector('.rv-track'), maxOffset: lay.right.w - rightViewW } : null,
+    roomOutline(W, L, H, cy));
 }

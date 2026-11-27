@@ -18,12 +18,10 @@
 /* 오른쪽 벽의 작품 사진 — 카드 보기처럼 격자 */
 .rv-gallery{ position:absolute; overflow:hidden; }
 /* 작품이 벽보다 많으면 옆으로 이어 감 — 휠·끌기로 스크롤(roomView.js의 attachWallScroll) */
-/* 방 안 조작(roomView.js의 attachRoomControls) — 휠·두 손가락 = 확대, 작품 벽 끌기 = 넘기기, 확대 중 다른 데 끌기 = 이동.
+/* 방 안 조작(roomView.js의 attachRoomControls) — 휠 = 벽 넘기기, Ctrl+휠·두 손가락 = 확대, 확대 중 끌기 = 이동.
    손가락 동작은 전부 직접 처리(페이지가 가져가지 않게). rv-stage = 확대·이동하는 층 */
 .room-view{ touch-action:none; }
 .rv-stage{ position:absolute; inset:0; transform-origin:0 0; }
-.room-view.scroll .rv-gallery-right{ cursor:grab; }
-.room-view.scroll .rv-gallery-right:active{ cursor:grabbing; }
 .room-view.zoomed{ cursor:grab; }
 .room-view.zoomed:active{ cursor:grabbing; }
 .rv-track{ display:grid; grid-auto-flow:column; transition:transform .12s ease-out; }

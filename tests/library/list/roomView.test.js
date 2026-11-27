@@ -101,12 +101,16 @@ describe('내 방', () => {
     expect(notesNewestFirst([{ id: 1, date: '2026-01-01' }, { id: 2, date: '2026-01-01' }]).map((i) => i.id)).toEqual([2, 1]);
   });
 
-  describe('방 안 조작 — 휠은 확대, 작품 벽 끌기는 넘기기, 확대 중 다른 데 끌기는 이동', () => {
+  describe('방 안 조작 — 휠은 벽 넘기기, Ctrl+휠은 확대, 확대 중 끌기는 이동', () => {
     const many = Array.from({ length: 300 }, (_, i) => ({ id: i + 1, cat: 'book', title: `책${i + 1}` }));
     const mount = () => {
       document.body.innerHTML = '<div id="g"></div>';
       const g = document.getElementById('g');
       renderRoom(g, many, {});
+      // jsdom은 크기가 0이라 화면 크기를 줌(확대 중 보는 자리 범위가 이걸로 정해짐).
+      const view = g.querySelector('.room-view');
+      Object.defineProperty(view, 'clientWidth', { value: window.innerWidth, configurable: true });
+      Object.defineProperty(view, 'clientHeight', { value: window.innerHeight, configurable: true });
       return { surface: g.querySelector('.room-view'), stage: g.querySelector('.rv-stage'), track: g.querySelector('.rv-gallery-right .rv-track'), tile: g.querySelector('.rv-gallery-right .rv-work') };
     };
     const ptr = (target, type, x, y = 0) => {
@@ -114,46 +118,63 @@ describe('내 방', () => {
       Object.defineProperty(e, 'pointerId', { value: 1 });
       target.dispatchEvent(e);
     };
+    // 방 바닥 가운데(방 안) — 방 바깥 휠은 페이지 스크롤로 둬서, 휠은 여기서 굴림.
+    const mid = () => ({ clientX: window.innerWidth / 2, clientY: roomSize(window.innerWidth, window.innerHeight - 8).cy });
     const scaleOf = (stage) => Number((/scale\(([\d.]+)\)/.exec(stage.style.transform) || [])[1]);
 
-    it('휠을 올리면 커지고(페이지는 안 움직임), 내리면 원래 크기까지만', () => {
+    it('Ctrl+휠을 올리면 커지고(페이지는 안 움직임), 내리면 원래 크기까지만', () => {
       const { surface, stage } = mount();
-      const up = new WheelEvent('wheel', { deltaY: -400, cancelable: true });
+      const up = new WheelEvent('wheel', { deltaY: -400, ctrlKey: true, ...mid(), cancelable: true });
       surface.dispatchEvent(up);
       expect(up.defaultPrevented).toBe(true);
       expect(scaleOf(stage)).toBeGreaterThan(1.5);
-      surface.dispatchEvent(new WheelEvent('wheel', { deltaY: 100000, cancelable: true }));
+      surface.dispatchEvent(new WheelEvent('wheel', { deltaY: 100000, ctrlKey: true, ...mid(), cancelable: true }));
       expect(scaleOf(stage)).toBe(1);
-      for (let k = 0; k < 20; k++) surface.dispatchEvent(new WheelEvent('wheel', { deltaY: -400, cancelable: true }));
+      for (let k = 0; k < 20; k++) surface.dispatchEvent(new WheelEvent('wheel', { deltaY: -400, ctrlKey: true, ...mid(), cancelable: true }));
       expect(scaleOf(stage)).toBe(4); // 최대 4배
     });
 
-    it('작품 벽을 잡고 왼쪽으로 끌면 다음 작품들이 나오고, 끈 뒤의 클릭은 작품 열기로 안 침', () => {
-      const { surface, track, tile } = mount();
-      ptr(tile, 'pointerdown', 100);
-      ptr(surface, 'pointermove', 60);
-      ptr(surface, 'pointerup', 60);
-      expect(track.style.transform).toMatch(/^translateX\(-56\.5\d*px\)$/); // 40px × √2
-      const click = new MouseEvent('click', { bubbles: true, cancelable: true });
-      tile.dispatchEvent(click);
-      expect(click.defaultPrevented).toBe(true);
+    it('그냥 휠은 벽을 옆으로 넘김(확대는 그대로, 페이지도 안 움직임), 처음보다 앞으로는 안 감', () => {
+      const { surface, stage, track } = mount();
+      const before = stage.style.transform;
+      const down = new WheelEvent('wheel', { deltaY: 120, ...mid(), cancelable: true });
+      surface.dispatchEvent(down);
+      expect(down.defaultPrevented).toBe(true);
+      expect(track.style.transform).toBe('translateX(-120px)');
+      expect(stage.style.transform).toBe(before);
+      surface.dispatchEvent(new WheelEvent('wheel', { deltaY: -1000, ...mid(), cancelable: true }));
+      expect(track.style.transform).toBe('translateX(0px)');
     });
 
-    it('원래 크기에선 벽 아닌 데를 끌어도 그대로, 확대하면 보는 자리가 움직임', () => {
-      const { surface, stage } = mount();
+    it('방 바깥(회색)에서 굴리면 손대지 않음 — 페이지가 내려감(Ctrl이어도 브라우저 몫)', () => {
+      const { surface, track, stage } = mount();
+      for (const ctrlKey of [false, true]) {
+        const e = new WheelEvent('wheel', { deltaY: 120, ctrlKey, clientX: 2, clientY: 2, cancelable: true });
+        surface.dispatchEvent(e);
+        expect(e.defaultPrevented).toBe(false);
+      }
+      expect(track.style.transform).toBe('');
+      expect(scaleOf(stage)).toBe(1);
+    });
+
+    it('끌어서는 벽이 안 넘어감(휠로만), 확대하면 끌기 = 보는 자리 이동이고 끈 뒤의 클릭은 작품 열기로 안 침', () => {
+      const { surface, stage, track, tile } = mount();
       const before = stage.style.transform;
-      ptr(surface, 'pointerdown', 100, 100);
-      ptr(surface, 'pointermove', 50, 80);
-      ptr(surface, 'pointerup', 50, 80);
+      ptr(tile, 'pointerdown', 100, 100);
+      ptr(surface, 'pointermove', 50, 100);
+      ptr(surface, 'pointerup', 50, 100);
       expect(stage.style.transform).toBe(before);
-      Object.defineProperty(surface, 'clientWidth', { value: 1000 });
-      Object.defineProperty(surface, 'clientHeight', { value: 600 });
-      surface.dispatchEvent(new WheelEvent('wheel', { deltaY: -600, clientX: 500, clientY: 300, cancelable: true }));
+      expect(track.style.transform).toBe('');
+      surface.dispatchEvent(new WheelEvent('wheel', { deltaY: -600, ctrlKey: true, ...mid(), cancelable: true }));
       const zoomed = stage.style.transform;
       ptr(surface, 'pointerdown', 500, 300);
       ptr(surface, 'pointermove', 450, 280);
       ptr(surface, 'pointerup', 450, 280);
       expect(stage.style.transform).not.toBe(zoomed);
+      expect(track.style.transform).toBe('');
+      const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+      tile.dispatchEvent(click);
+      expect(click.defaultPrevented).toBe(true);
     });
   });
 });
