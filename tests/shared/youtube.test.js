@@ -62,7 +62,12 @@ describe('getPlayer', () => {
     resetPlayerForTest();
     delete window.YT;
   });
-  const tick = () => new Promise((r) => setTimeout(r, 5));
+  // 플레이어를 만드는 Promise 사슬(마이크로태스크)이 먼저 다 돈 뒤에 5ms 타이머를 걺 — 타이머를 먼저 걸면 다른
+  // 테스트로 바쁠 때 가짜 onReady(setTimeout 0)보다 먼저 끝나 가끔 실패했음(2026-11-27).
+  const tick = async () => {
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+    await new Promise((r) => setTimeout(r, 5));
+  };
 
   it('영상 주소는 그 영상을, 제목·가수와 유튜브 링크를 보여줌', async () => {
     const p = getPlayer();
