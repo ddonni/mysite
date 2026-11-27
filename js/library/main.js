@@ -19,7 +19,7 @@ import { forgetMyRoom, roomLink } from '../shared/room.js';
 // 남의 방을 구경하는 사람의 "내 방으로" 버튼 문구 — 내 방이 비었으면 "만들기"(방은 이
 // 페이지를 연 순간 이미 만들어져 있고, 이 링크는 거기로 이동만 함), 모르면 "돌아가기".
 export function myRoomLabel(empty) {
-  return empty === true ? '나도 내 기록 만들기' : '내 기록으로';
+  return empty === true ? '나도 내 기록 만들기' : '내 방으로';
 }
 
 // 서버에서 기록을 다시 불러와 목록을 새로 그림. 추가/수정/삭제가 성공한
@@ -150,6 +150,7 @@ initRoomNav({ navEl, currentPage: './', settings: true }).then((ctx) => {
     window.scrollTo({ top: 0 });
   };
   const roomBtn = document.getElementById('roomViewBtn');
+  // 남의 방이면 "방"(지금 보는 그 사람 방 — 검게 눌린 모양), 내 방으로 가는 건 오른쪽 "내 방으로"(myRoomCta).
   if (readOnly) roomBtn.lastChild.textContent = '방';
   roomBtn.addEventListener('click', () => setMode('room'));
   document.getElementById('editBtn').addEventListener('click', () => setMode('edit'));

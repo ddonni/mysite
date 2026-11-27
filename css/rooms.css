@@ -60,3 +60,6 @@
   .room-cards{ grid-template-columns:1fr; gap:10px; }
 }
 @media (prefers-reduced-motion: reduce){ .room-card{ transition:none; } .room-card:hover{ transform:none; } }
+
+/* 페이지 이름(위 줄에서 내려옴) */
+.rooms-title{ margin:4px 0 12px; font-size:18px; font-weight:600; }

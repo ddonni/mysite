@@ -83,15 +83,5 @@ body.cards .t-cover .cat-icon{ top:auto; bottom:1px; right:1px; width:14px; heig
 }
 @media (prefers-reduced-motion: reduce){ .t-row{ transition:none; } }
 
-/* 위 줄 — 첫 화면("내 방")과 같은 버튼들(2026-11-27). 편집하기·+는 내 방에서만, +는 검은 버튼 */
-.lib-bar .bar-link{
-  display:inline-flex; align-items:center; font:inherit; font-size:13px; white-space:nowrap; text-decoration:none;
-  padding:5px 10px; border:1px solid var(--line, #E6E7EA); background:#FFFFFF; color:var(--paper); border-radius:0;
-}
-.lib-bar .bar-link:hover{ background:var(--chip); }
-.lib-bar .bar-link.active, .lib-bar .bar-link.bar-add{ background:var(--paper); color:#FFFFFF; border-color:var(--paper); }
-.lib-bar .bar-link.bar-add{ font-size:17px; line-height:1; padding:4px 12px; }
-body.read-only .lib-bar .owner-only{ display:none; }
 /* 티어리스트의 카테고리 — 위 줄 아래 */
 .tier-cats{ display:flex; flex-wrap:wrap; gap:4px; margin:0 0 12px; }
-@media (max-width:640px){ .lib-bar .bar-link{ padding:5px 8px; font-size:12px; } }

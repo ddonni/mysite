@@ -8,6 +8,7 @@
 // 옮길 때마다 바뀐 줄들을 서버에 저장(PUT .../tierlist). "별점순으로 초기화"는 지금 보이는 작품을
 // 전부 자동 배치로 되돌림. 남의 기록이면 보기만.
 import { initRoomNav } from '../shared/roomNav.js';
+import { initProfileHeader } from '../library/profileHeader.js';
 import { roomTitle } from '../shared/room.js';
 import { API_BASE } from '../shared/config.js';
 import { escapeHtml, escapeAttr } from '../shared/dom.js';
@@ -242,9 +243,12 @@ initRoomNav({ navEl, currentPage: 'tier' }).then((ctx) => {
   readOnly = ctx.readOnly;
   setRoom(ctx.viewingCode, readOnly ? null : mine.token);
   document.body.classList.toggle('read-only', readOnly);
-  // 남의 방이면 위 줄 "내 방" 대신 "방"(첫 화면과 같게).
-  const homeLink = document.querySelector('.site-nav > a[data-page="./"]');
-  if (readOnly && homeLink) homeLink.textContent = '방';
+  initProfileHeader(ctx); // 그 방 주인의 프로필(첫 화면과 같은 머리말)
+  // 남의 방이면 위 줄 "내 방" 대신 "방"(그 사람 방으로 — 첫 화면과 같게).
+  const homeLink = document.querySelector('.site-nav > .home-link');
+  if (readOnly && homeLink) homeLink.lastChild.textContent = '방';
+  const myRoomCta = document.getElementById('myRoomCta');
+  if (myRoomCta) myRoomCta.hidden = !readOnly; // 오른쪽 "내 방으로"
   renderTools();
   if (readOnly) {
     fetch(`${API_BASE}/api/rooms/${encodeURIComponent(ctx.viewingCode)}`)

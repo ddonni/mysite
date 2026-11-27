@@ -21,6 +21,7 @@
 <link rel="stylesheet" href="css/nav.css?v=8">
 <link rel="stylesheet" href="css/feedback.css?v=2">
 <link rel="stylesheet" href="css/inapp.css">
+<link rel="stylesheet" href="css/visibility.css">
 <!-- 첫 화면과 같은 테마(흰 바탕·Orbit·각진 모서리) -->
 <link rel="stylesheet" href="css/cards.css?v=15">
 <link rel="stylesheet" href="css/tier.css?v=3">
@@ -28,15 +29,31 @@
 <body class="cards tier-page">
 
 <!-- 위 줄(첫 화면과 같은 모양): ☰ 서랍(js/shared/roomNav.js) · 기록으로 돌아가기 · 페이지 이름 · 카테고리 칩(거르기만) -->
+<!-- 그 방 주인의 프로필 — 첫 화면과 같은 머리말(js/library/profileHeader.js)이라 위 줄이 같은 자리에 있고(사용자 요청
+     "티어리스트 볼 때도 바 위치가 안 바뀌게"), 누구의 티어리스트인지도 보임 -->
+<header class="profile-head" id="profileHead">
+  <button type="button" class="avatar-btn" id="avatarBtn">
+    <span class="avatar xl" id="profileAvatar"></span>
+    <!-- 내 기록일 때만(마우스를 올리면) — 눌러서 사진을 바꿀 수 있다는 표시 -->
+    <span class="avatar-edit" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span>
+  </button>
+  <div class="profile-main">
+    <h1 class="profile-name" id="profileName">내 기록</h1>
+    <p class="profile-bio" id="profileBio"></p>
+  </div>
+  <div class="profile-vis vis-box" id="profileVis" hidden></div>
+</header>
 <nav class="site-nav lib-bar" aria-label="페이지 이동">
   <button type="button" class="nav-menu" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navDrawer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
   <!-- 위 줄은 첫 화면("내 방")과 같게(2026-11-27 사용자 요청): 내 방 · 티어리스트 · 3D 도서관 · 방 기록 편집하기(첫 화면의
-       편집 — ?cat=all) · +(새 기록 창 — ?new=1). 남의 방이면 편집하기·+ 없음. data-page라 남의 방이면 그 방으로(roomNav.js) -->
-  <a class="bar-link" href="./" data-page="./">내 방</a>
-  <a class="bar-link active" href="tier" data-page="tier" aria-current="page">티어리스트</a>
-  <a class="bar-link" href="lobby" data-page="lobby">3D 도서관</a>
+       편집 — ?cat=all) · +(새 기록 창 — ?new=1). 남의 방이면 편집하기·+ 없음. data-page라 남의 방이면 그 방으로(roomNav.js), 그땐 "내 방" 대신 "방" -->
+  <a class="bar-link home-link" href="./" data-page="./"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5 12 4l9 4.5v8L12 21l-9-4.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 8.5v8L12 21V12.5zM12 12.5 21 8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><rect x="14" y="10.5" width="4" height="3" transform="skewY(-26)" fill="currentColor" opacity=".35"/></svg>내 방</a>
+  <a class="bar-link active" href="tier" data-page="tier" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="4" height="4" rx="1" fill="#E0485E"/><rect x="3" y="10" width="4" height="4" rx="1" fill="#F2C14E"/><rect x="3" y="16" width="4" height="4" rx="1" fill="#4AA3DF"/><path d="M10 6h11M10 12h8M10 18h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>티어리스트</a>
+  <a class="bar-link owner-only" href="lobby" data-page="lobby"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9.5 12 4l9 5.5v9L12 23l-9-4.5z" fill="#F3E7D3" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 9.5 12 15l9-5.5M12 15v8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>3D 도서관</a>
   <a class="bar-link owner-only" href="./?cat=all" data-page="./?cat=all">방 기록 편집하기</a>
   <a class="bar-link bar-add owner-only" href="./?new=1" data-page="./?new=1" aria-label="기록 추가" title="기록 추가">+</a>
+  <!-- 남의 방을 보는 중에만: 내 방으로 가는 길(첫 화면과 같게) -->
+  <a class="add my-room" id="myRoomCta" href="./" hidden>내 방으로</a>
 </nav>
 
 <main class="wrap">
@@ -52,6 +69,17 @@
     <aside class="t-tray" id="tray" aria-label="미배치"></aside>
   </div>
 </main>
+
+<!-- 프로필 사진 크게 보기(첫 화면과 같음) -->
+<div class="avatar-dialog" id="avatarDialog" role="dialog" aria-modal="true" aria-label="프로필 사진" hidden>
+  <div class="avatar-dialog-card">
+    <button type="button" class="avatar-close" aria-label="닫기">×</button>
+    <span class="avatar huge" id="avatarBig"></span>
+    <div class="avatar-actions" id="avatarActions"></div>
+    <p class="avatar-status" id="avatarStatus" aria-live="polite"></p>
+    <input type="file" id="avatarFile" accept="image/*" hidden>
+  </div>
+</div>
 
 <div class="t-toast" id="tierToast" role="status" aria-live="polite" hidden></div>
 

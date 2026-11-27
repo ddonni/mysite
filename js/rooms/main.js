@@ -94,7 +94,13 @@ function render(rooms, mine) {
   rooms.forEach((r) => listEl.appendChild(roomCard(r, mine)));
 }
 
-initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: 'rooms' }).then(({ mine }) => {
+initRoomNav({ navEl: document.querySelector('.site-nav'), currentPage: 'rooms' }).then(({ mine, readOnly }) => {
+  // 남의 방을 보다 들어왔으면 위 줄은 그 방 기준 — 편집하기·+ 없고 "내 방" 대신 "방"(첫 화면과 같게).
+  document.body.classList.toggle('read-only', !!readOnly);
+  const homeLink = document.querySelector('.site-nav > .home-link');
+  if (readOnly && homeLink) homeLink.lastChild.textContent = '방';
+  const myRoomCta = document.getElementById('myRoomCta');
+  if (myRoomCta) myRoomCta.hidden = !readOnly; // 오른쪽 "내 방으로"
   const stopWatch = watchForSlow(() => { metaEl.textContent = SLOW_MESSAGE; });
   const load = () => fetchPublicRooms()
     .then((rooms) => render(rooms, mine))

@@ -31,17 +31,20 @@
 <!-- 위 줄 하나(첫 화면과 같은 모양): ☰ 서랍(js/shared/roomNav.js) · 페이지 이름 · 첫 화면의 카테고리로 가는 칩 -->
 <nav class="site-nav lib-bar" aria-label="페이지 이동">
   <button type="button" class="nav-menu" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navDrawer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-  <div class="logo">기록 둘러보기</div>
-  <div class="chips">
-    <a class="chip" href="./" data-page="./">전체</a>
-    <a class="chip" href="./?cat=book" data-page="./?cat=book">책</a>
-    <a class="chip" href="./?cat=anime" data-page="./?cat=anime">애니</a>
-    <a class="chip" href="./?cat=movie" data-page="./?cat=movie">영화·시리즈</a>
-    <a class="chip" href="./?cat=music" data-page="./?cat=music">음악</a>
-  </div>
+  <!-- 위 줄은 첫 화면("내 방")과 같게(2026-11-27 사용자 요청): 내 방 · 티어리스트 · 3D 도서관 · 방 기록 편집하기(첫 화면의
+       편집 — ?cat=all) · +(새 기록 창 — ?new=1). 남의 방이면 편집하기·+ 없음. data-page라 남의 방이면 그 방으로(roomNav.js), 그땐 "내 방" 대신 "방" -->
+  <a class="bar-link home-link" href="./" data-page="./"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5 12 4l9 4.5v8L12 21l-9-4.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 8.5v8L12 21V12.5zM12 12.5 21 8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><rect x="14" y="10.5" width="4" height="3" transform="skewY(-26)" fill="currentColor" opacity=".35"/></svg>내 방</a>
+  <a class="bar-link" href="tier" data-page="tier"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="4" height="4" rx="1" fill="#E0485E"/><rect x="3" y="10" width="4" height="4" rx="1" fill="#F2C14E"/><rect x="3" y="16" width="4" height="4" rx="1" fill="#4AA3DF"/><path d="M10 6h11M10 12h8M10 18h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>티어리스트</a>
+  <a class="bar-link owner-only" href="lobby" data-page="lobby"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9.5 12 4l9 5.5v9L12 23l-9-4.5z" fill="#F3E7D3" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 9.5 12 15l9-5.5M12 15v8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>3D 도서관</a>
+  <a class="bar-link owner-only" href="./?cat=all" data-page="./?cat=all">방 기록 편집하기</a>
+  <a class="bar-link bar-add owner-only" href="./?new=1" data-page="./?new=1" aria-label="기록 추가" title="기록 추가">+</a>
+  <!-- 남의 방을 보는 중에만: 내 방으로 가는 길(첫 화면과 같게) -->
+  <a class="add my-room" id="myRoomCta" href="./" hidden>내 방으로</a>
 </nav>
 
 <main class="wrap">
+  <!-- 페이지 이름은 위 줄 대신 여기(위 줄은 다른 화면과 같은 버튼이라) -->
+  <h1 class="rooms-title">기록 둘러보기</h1>
   <div class="rooms-top">
     <div class="meta rooms-meta" id="roomsMeta">불러오는 중…</div>
     <!-- 정렬 — 최근 활동순(기본) · 인기순(받은 좋아요 많은 순, 서버 GET /api/rooms?sort=popular) -->

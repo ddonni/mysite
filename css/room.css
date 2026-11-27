@@ -47,7 +47,8 @@
 body.mode-room #tabs, body.mode-room #editDoneBtn{ display:none; }
 body.mode-edit #roomViewBtn, body.mode-edit #tierBtn, body.mode-edit .room3d-btn,
 body.mode-edit #editBtn, body.mode-edit #addBtn{ display:none; }
-body.read-only #editBtn, body.read-only #addBtn{ display:none; }
+/* 남의 방이면 방 · 티어리스트만(3D 도서관·편집하기·+ 없음 — 사용자 요청) */
+body.read-only #editBtn, body.read-only #addBtn, body.read-only .room3d-btn{ display:none; }
 /* 편집 완료는 카테고리 버튼 바로 뒤에(오른쪽 끝 말고 — 사용자 요청) */
 body.cards.mode-edit .site-nav.lib-bar > .chips{ flex:0 1 auto; }
 .lib-bar .view-switch[hidden]{ display:none; }
