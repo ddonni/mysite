@@ -469,3 +469,11 @@ body .site-nav{max-width:calc(100% - 28px - 52px);}
 /* 위 줄(첫 화면 "내 방"과 같은 버튼들) — 편집하기·+는 내 방에서만, +는 검은 버튼 */
 body.read-only .site-nav .owner-only{ display:none; }
 .site-nav a.nav-add{ background:var(--nav-ink); color:var(--nav-paper); font-size:16px; line-height:1; }
+
+/* 꺼내 본 기록 패널의 옆 기록 버튼(‹ ›) — 그 사람 서가 안에서만 */
+.memory-steps{display:flex;justify-content:space-between;gap:8px;margin-top:10px;}
+.memory-step{
+  flex:1;font:inherit;font-size:20px;line-height:1;padding:6px 0;border-radius:999px;cursor:pointer;
+  background:transparent;color:inherit;border:1px solid rgba(255,255,255,0.25);
+}
+.memory-step:hover{background:rgba(255,255,255,0.08);}

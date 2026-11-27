@@ -15,6 +15,7 @@ import { buildArchiveScene } from './archive/scene.js';
 import { SHELF } from './archive/layout.js';
 import { createOrbitControls } from './archive/controls.js';
 import { createHeldCover } from './archive/heldCover.js';
+import { stepIndex } from './memoryStep.js';
 import { roomContext, roomInfo, roomRecords, roomApi, pageUrl, publicRooms } from './roomContext.js';
 import { initRoomChrome } from './roomChrome.js';
 import { webglAvailable } from './webgl.js';
@@ -189,6 +190,22 @@ function start(ctx, records, neighborRooms) {
     });
   }
   el('memClose').addEventListener('click', () => closeMemory());
+  // 옆 기록으로(2026-11-27 사용자 요청) — 서가 순서대로, 그 사람 기록 안에서만(내 서가면 내 것, 이웃 서가면 그 이웃
+  // 것만). 끝에서 넘기면 처음으로. 지금 것은 꽂고 다음 것을 꺼냄(openMemory가 알아서 닫고 엶).
+  function stepMemory(delta) {
+    const item = current;
+    if (!item) return;
+    const sameOwner = (k) => !!item.set.recordAt(k) && (item.room ? neighbors.ownerOf(k) === item.room : true);
+    const k = stepIndex(item.k, delta, item.set.count, sameOwner);
+    if (k != null) openMemory({ set: item.set, k, room: item.room });
+  }
+  el('memPrev').addEventListener('click', () => stepMemory(-1));
+  el('memNext').addEventListener('click', () => stepMemory(1));
+  document.addEventListener('keydown', (e) => {
+    if (!current || (e.target.closest && e.target.closest('input, textarea, select'))) return;
+    if (e.key === 'ArrowLeft') { e.preventDefault(); stepMemory(-1); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); stepMemory(1); }
+  });
   // 꺼내 보는 동안 화면(3D) 아무 데나 누르면 다시 꽂음.
   // (기록을 연 바로 그 클릭은 빼고)
   canvasEl.addEventListener('click', () => {

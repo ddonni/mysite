@@ -29,8 +29,8 @@
   <!-- 위 줄: 어디서든 바로 가는 곳. 방 코드·둘러보기·의견 보내기 등은 ☰ 서랍(js/shared/roomNav.js) -->
   <button type="button" class="nav-menu" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navDrawer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
   <!-- 3D 도서관(예전 3D 방). 위 줄은 첫 화면("내 방")과 같게(2026-11-27 사용자 요청): 내 방 · 티어리스트 · 3D 도서관 ·
-       방 기록 편집하기(첫 화면의 편집 — ?cat=all) · +(새 기록 창 — ?new=1). 남의 방이면 편집하기·+ 없음(js/lobby/roomChrome.js) -->
-  <a href="./" data-page="./">내 방</a>
+       방 기록 편집하기(첫 화면의 편집 — ?cat=all) · +(새 기록 창 — ?new=1). 남의 방이면 편집하기·+ 없음(js/lobby/roomChrome.js). "내 방"은 홈 버튼 — 늘 내 방으로 -->
+  <a href="./" class="home-link">내 방</a>
   <a href="tier" data-page="tier">티어리스트</a>
   <a href="lobby" data-page="lobby" class="active" aria-current="page">3D 도서관</a>
   <a href="./?cat=all" data-page="./?cat=all" class="owner-only">방 기록 편집하기</a>
@@ -100,6 +100,11 @@
     <div class="memory-actions">
       <button type="button" id="memListen" class="memory-listen" hidden>▶ 듣기</button>
       <a id="memOpen" class="memory-cardlink">카드로 보기</a>
+    </div>
+    <!-- 옆 기록으로 — 그 사람 서가 안에서만(js/lobby/main.js의 stepMemory, 키보드 ←/→도) -->
+    <div class="memory-steps">
+      <button type="button" id="memPrev" class="memory-step" aria-label="이전 기록" title="이전 기록">‹</button>
+      <button type="button" id="memNext" class="memory-step" aria-label="다음 기록" title="다음 기록">›</button>
     </div>
   </aside>
   <!-- 마우스를 올린 기록의 제목 -->

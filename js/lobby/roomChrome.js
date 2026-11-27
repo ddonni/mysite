@@ -18,9 +18,6 @@ export function initRoomChrome(ctx) {
   const { mine, viewingCode, readOnly } = ctx;
   // 위 줄의 "방 기록 편집하기"·"+"는 내 방에서만(css/lobby.css의 .owner-only).
   document.body.classList.toggle('read-only', !!readOnly);
-  // 남의 방이면 "내 방" 대신 "방"(첫 화면과 같게).
-  const homeLink = document.querySelector('.site-nav > a[data-page="./"]');
-  if (readOnly && homeLink) homeLink.textContent = '방';
 
   document.querySelectorAll('.room-info').forEach((el) => {
     const visitForm = `
