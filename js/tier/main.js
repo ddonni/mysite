@@ -8,7 +8,7 @@
 // 옮길 때마다 바뀐 줄들을 서버에 저장(PUT .../tierlist). "별점순으로 초기화"는 지금 보이는 작품을
 // 전부 자동 배치로 되돌림. 남의 기록이면 보기만.
 import { initRoomNav } from '../shared/roomNav.js';
-import { roomLink, roomTitle } from '../shared/room.js';
+import { roomTitle } from '../shared/room.js';
 import { API_BASE } from '../shared/config.js';
 import { escapeHtml, escapeAttr } from '../shared/dom.js';
 import { photoSrc } from '../shared/photoSrc.js';
@@ -23,7 +23,6 @@ const trayEl = document.getElementById('tray');
 const areas = [boardEl, trayEl];
 const chipsEl = document.getElementById('tierChips');
 const toolsEl = document.getElementById('tierTools');
-const titleEl = document.getElementById('tierTitle');
 const toastEl = document.getElementById('tierToast');
 const navEl = document.querySelector('.site-nav');
 
@@ -243,12 +242,14 @@ initRoomNav({ navEl, currentPage: 'tier' }).then((ctx) => {
   readOnly = ctx.readOnly;
   setRoom(ctx.viewingCode, readOnly ? null : mine.token);
   document.body.classList.toggle('read-only', readOnly);
-  document.getElementById('tierBack').href = roomLink('./', ctx.viewingCode, mine.code);
+  // 남의 방이면 위 줄 "내 방" 대신 "방"(첫 화면과 같게).
+  const homeLink = document.querySelector('.site-nav > a[data-page="./"]');
+  if (readOnly && homeLink) homeLink.textContent = '방';
   renderTools();
   if (readOnly) {
     fetch(`${API_BASE}/api/rooms/${encodeURIComponent(ctx.viewingCode)}`)
       .then((res) => (res.ok ? res.json() : null))
-      .then((info) => { if (info) titleEl.textContent = `${roomTitle(info.name)}의 티어리스트`.replace('기록의 티어리스트', '티어리스트'); })
+      .then((info) => { if (info) document.title = `${roomTitle(info.name)}의 티어리스트`.replace('기록의 티어리스트', '티어리스트'); })
       .catch(() => {});
   }
   return load();

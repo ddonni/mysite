@@ -30,12 +30,18 @@
 <!-- 위 줄(첫 화면과 같은 모양): ☰ 서랍(js/shared/roomNav.js) · 기록으로 돌아가기 · 페이지 이름 · 카테고리 칩(거르기만) -->
 <nav class="site-nav lib-bar" aria-label="페이지 이동">
   <button type="button" class="nav-menu" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navDrawer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-  <a class="tier-back" id="tierBack" href="./" aria-label="기록으로 돌아가기">←</a>
-  <div class="logo" id="tierTitle">티어리스트</div>
-  <div class="chips" id="tierChips" role="group" aria-label="카테고리"></div>
+  <!-- 위 줄은 첫 화면("내 방")과 같게(2026-11-27 사용자 요청): 내 방 · 티어리스트 · 3D 도서관 · 방 기록 편집하기(첫 화면의
+       편집 — ?cat=all) · +(새 기록 창 — ?new=1). 남의 방이면 편집하기·+ 없음. data-page라 남의 방이면 그 방으로(roomNav.js) -->
+  <a class="bar-link" href="./" data-page="./">내 방</a>
+  <a class="bar-link active" href="tier" data-page="tier" aria-current="page">티어리스트</a>
+  <a class="bar-link" href="lobby" data-page="lobby">3D 도서관</a>
+  <a class="bar-link owner-only" href="./?cat=all" data-page="./?cat=all">방 기록 편집하기</a>
+  <a class="bar-link bar-add owner-only" href="./?new=1" data-page="./?new=1" aria-label="기록 추가" title="기록 추가">+</a>
 </nav>
 
 <main class="wrap">
+  <!-- 티어리스트의 카테고리(보드를 거름) — 위 줄 아래로 옮김 -->
+  <div class="chips tier-cats" id="tierChips" role="group" aria-label="카테고리"></div>
   <!-- 내 기록일 때만: 옮기는 법 안내 + 별점으로 다시 맞추기(js/tier/main.js) -->
   <div class="t-tools" id="tierTools"></div>
   <!-- 왼쪽 보드(SS · S · A · B · C · D · F) + 오른쪽 미배치 칸 — 컴퓨터에선 미배치 칸이 옆에 붙어

@@ -465,3 +465,7 @@ body .site-nav{max-width:calc(100% - 28px - 52px);}
   #loading, #ui, #card{ transition:none; }
   .cta-hint{ animation:none; }
 }
+
+/* 위 줄(첫 화면 "내 방"과 같은 버튼들) — 편집하기·+는 내 방에서만, +는 검은 버튼 */
+body.read-only .site-nav .owner-only{ display:none; }
+.site-nav a.nav-add{ background:var(--nav-ink); color:var(--nav-paper); font-size:16px; line-height:1; }

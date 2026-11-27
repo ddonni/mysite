@@ -28,12 +28,13 @@
 <nav class="site-nav" aria-label="페이지 이동">
   <!-- 위 줄: 어디서든 바로 가는 곳. 방 코드·둘러보기·의견 보내기 등은 ☰ 서랍(js/shared/roomNav.js) -->
   <button type="button" class="nav-menu" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navDrawer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-  <!-- 3D 방(2026-11-18 되살림 — 첫 화면은 카드). 카테고리는 카드 화면의 그 칩으로 감 -->
-  <a href="./" data-page="./">카드로 보기</a>
-  <a href="./?cat=book" data-page="./?cat=book">책</a>
-  <a href="./?cat=anime" data-page="./?cat=anime">애니</a>
-  <a href="./?cat=movie" data-page="./?cat=movie">영화·시리즈</a>
-  <a href="./?cat=music" data-page="./?cat=music">음악</a>
+  <!-- 3D 도서관(예전 3D 방). 위 줄은 첫 화면("내 방")과 같게(2026-11-27 사용자 요청): 내 방 · 티어리스트 · 3D 도서관 ·
+       방 기록 편집하기(첫 화면의 편집 — ?cat=all) · +(새 기록 창 — ?new=1). 남의 방이면 편집하기·+ 없음(js/lobby/roomChrome.js) -->
+  <a href="./" data-page="./">내 방</a>
+  <a href="tier" data-page="tier">티어리스트</a>
+  <a href="lobby" data-page="lobby" class="active" aria-current="page">3D 도서관</a>
+  <a href="./?cat=all" data-page="./?cat=all" class="owner-only">방 기록 편집하기</a>
+  <a href="./?new=1" data-page="./?new=1" class="owner-only nav-add" aria-label="기록 추가" title="기록 추가">+</a>
 </nav>
 
 <div id="stage">
